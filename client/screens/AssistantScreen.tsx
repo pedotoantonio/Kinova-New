@@ -275,12 +275,11 @@ export default function AssistantScreen() {
     
     if (!approved) {
       setPendingAction(null);
-      setMessages(prev => [...prev, {
-        id: `reject-${Date.now()}`,
-        role: "assistant",
-        content: language === "it" ? "Azione annullata." : "Action cancelled.",
-        createdAt: new Date().toISOString(),
-      }]);
+      setStreamingContent(language === "it" ? "Azione annullata." : "Action cancelled.");
+      setTimeout(() => {
+        setStreamingContent("");
+        refetchConversation();
+      }, 1500);
       return;
     }
     
@@ -303,26 +302,21 @@ export default function AssistantScreen() {
       const result = await response.json();
       
       if (result.success) {
-        setMessages(prev => [...prev, {
-          id: `confirm-${Date.now()}`,
-          role: "assistant",
-          content: `✅ ${result.message}`,
-          createdAt: new Date().toISOString(),
-        }]);
+        setStreamingContent(`✅ ${result.message}`);
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       } else {
-        setMessages(prev => [...prev, {
-          id: `error-${Date.now()}`,
-          role: "assistant",
-          content: `❌ ${result.message || (language === "it" ? "Errore durante l'operazione" : "Operation failed")}`,
-          createdAt: new Date().toISOString(),
-        }]);
+        setStreamingContent(`❌ ${result.message || (language === "it" ? "Errore durante l'operazione" : "Operation failed")}`);
       }
       
       queryClient.invalidateQueries({ queryKey: ["/api/events"] });
       queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
       queryClient.invalidateQueries({ queryKey: ["/api/shopping"] });
       queryClient.invalidateQueries({ queryKey: ["/api/expenses"] });
+      
+      setTimeout(() => {
+        setStreamingContent("");
+        refetchConversation();
+      }, 1500);
     } catch {
       Alert.alert(t.common.error, t.errors.networkError);
     } finally {
