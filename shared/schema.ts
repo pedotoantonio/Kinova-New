@@ -63,6 +63,12 @@ export const users = pgTable("users", {
   avatarUrl: text("avatar_url"),
   role: userRoleEnum("role").default("member").notNull(),
   familyId: varchar("family_id").references(() => families.id).notNull(),
+  canViewCalendar: boolean("can_view_calendar").default(true).notNull(),
+  canViewTasks: boolean("can_view_tasks").default(true).notNull(),
+  canViewShopping: boolean("can_view_shopping").default(true).notNull(),
+  canViewBudget: boolean("can_view_budget").default(false).notNull(),
+  canViewPlaces: boolean("can_view_places").default(true).notNull(),
+  canModifyItems: boolean("can_modify_items").default(true).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

@@ -4,6 +4,7 @@ import { storage } from "./storage";
 import { randomUUID, randomBytes, scryptSync, timingSafeEqual } from "crypto";
 import type { UserRole } from "@shared/schema";
 import { createNotification, createFamilyNotification, deleteNotificationsForEntity } from "./notification-service";
+import { extractPermissions, getDefaultPermissionsForRole } from "./permissions";
 
 const ACCESS_TOKEN_EXPIRY_MS = 15 * 60 * 1000;
 const REFRESH_TOKEN_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000;
@@ -177,6 +178,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           displayName: user.displayName,
           familyId: user.familyId,
           role: user.role,
+          permissions: extractPermissions(user),
         },
       });
     } catch (error) {
@@ -208,6 +210,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           displayName: user.displayName,
           familyId: user.familyId,
           role: user.role,
+          permissions: extractPermissions(user),
         },
       });
     } catch (error) {
@@ -241,6 +244,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           displayName: user.displayName,
           familyId: user.familyId,
           role: user.role,
+          permissions: extractPermissions(user),
         },
       });
     } catch (error) {
@@ -289,6 +293,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           displayName: user.displayName,
           familyId: user.familyId,
           role: user.role,
+          permissions: extractPermissions(user),
         },
       });
     } catch (error) {
@@ -331,6 +336,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         familyId: user.familyId,
         role: user.role,
         avatarUrl: user.avatarUrl,
+        permissions: extractPermissions(user),
       });
     } catch (error) {
       console.error("Get me error:", error);
@@ -389,6 +395,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           displayName: m.displayName,
           avatarUrl: m.avatarUrl,
           role: m.role,
+          permissions: extractPermissions(m),
         }))
       );
     } catch (error) {
@@ -499,6 +506,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           displayName: user.displayName,
           familyId: user.familyId,
           role: user.role,
+          permissions: extractPermissions(user),
         },
       });
     } catch (error) {
@@ -545,6 +553,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       if (assignedTo) {
         filters.assignedTo = assignedTo as string;
+      }
+      
+      if (req.auth!.role === "child") {
+        filters.assignedTo = req.auth!.userId;
       }
       
       const events = await storage.getEvents(req.auth!.familyId, fromDate, toDate, Object.keys(filters).length > 0 ? filters : undefined);
@@ -788,6 +800,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (completed !== undefined) filters.completed = completed === "true";
       if (assignedTo) filters.assignedTo = assignedTo as string;
       
+      if (req.auth!.role === "child") {
+        filters.assignedTo = req.auth!.userId;
+      }
+      
       const tasks = await storage.getTasks(req.auth!.familyId, filters);
       res.json(tasks.map(t => ({
         id: t.id,
@@ -944,6 +960,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/shopping", authMiddleware, async (req: AuthRequest, res: Response) => {
     try {
+      const user = await storage.getUser(req.auth!.userId);
+      if (!user || !user.canViewShopping) {
+        return res.status(403).json({ error: { code: "FORBIDDEN", message: "Access denied" } });
+      }
+      
       const { purchased, category } = req.query;
       const filters: { purchased?: boolean; category?: string } = {};
       if (purchased !== undefined) filters.purchased = purchased === "true";
@@ -984,6 +1005,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         category: category || null,
         purchased: false,
         createdBy: req.auth!.userId,
+        estimatedPrice: null,
+        purchasedAt: null,
+        purchasedBy: null,
+        actualPrice: null,
+        purchaseExpenseId: null,
       });
       
       await createFamilyNotification({
@@ -1076,6 +1102,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/expenses", authMiddleware, async (req: AuthRequest, res: Response) => {
     try {
+      const user = await storage.getUser(req.auth!.userId);
+      if (!user || !user.canViewBudget) {
+        return res.status(403).json({ error: { code: "FORBIDDEN", message: "Access denied" } });
+      }
+      
       const { from, to, category, paidBy } = req.query;
       const filters: { from?: Date; to?: Date; category?: string; paidBy?: string } = {};
       if (from) filters.from = new Date(from as string);

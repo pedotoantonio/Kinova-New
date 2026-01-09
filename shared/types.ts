@@ -14,6 +14,15 @@ export interface ApiResponse<T> {
   data: T;
 }
 
+export interface UserPermissions {
+  canViewCalendar: boolean;
+  canViewTasks: boolean;
+  canViewShopping: boolean;
+  canViewBudget: boolean;
+  canViewPlaces: boolean;
+  canModifyItems: boolean;
+}
+
 export interface AuthUser {
   id: string;
   username: string;
@@ -21,6 +30,7 @@ export interface AuthUser {
   familyId: string;
   role: UserRole;
   avatarUrl?: string | null;
+  permissions: UserPermissions;
 }
 
 export interface AuthTokens {
@@ -39,6 +49,7 @@ export interface FamilyMember {
   displayName: string | null;
   avatarUrl: string | null;
   role: UserRole;
+  permissions: UserPermissions;
 }
 
 export interface FamilyInviteResponse {

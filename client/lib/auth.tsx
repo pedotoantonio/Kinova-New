@@ -10,6 +10,24 @@ const TOKEN_EXPIRY_KEY = "@kinova/token_expiry";
 
 export type UserRole = "admin" | "member" | "child";
 
+export interface UserPermissions {
+  canViewCalendar: boolean;
+  canViewTasks: boolean;
+  canViewShopping: boolean;
+  canViewBudget: boolean;
+  canViewPlaces: boolean;
+  canModifyItems: boolean;
+}
+
+const DEFAULT_PERMISSIONS: UserPermissions = {
+  canViewCalendar: true,
+  canViewTasks: true,
+  canViewShopping: true,
+  canViewBudget: false,
+  canViewPlaces: true,
+  canModifyItems: true,
+};
+
 interface User {
   id: string;
   username: string;
@@ -17,6 +35,7 @@ interface User {
   familyId: string;
   role: UserRole;
   avatarUrl?: string | null;
+  permissions: UserPermissions;
 }
 
 interface AuthContextType {
