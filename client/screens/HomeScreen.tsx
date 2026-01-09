@@ -1,14 +1,14 @@
-import React from "react";
-import { View, FlatList, StyleSheet, ActivityIndicator, Pressable } from "react-native";
+import React, { useLayoutEffect } from "react";
+import { View, ScrollView, StyleSheet, ActivityIndicator, Pressable, RefreshControl } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useHeaderHeight } from "@react-navigation/elements";
+import { useHeaderHeight, HeaderButton } from "@react-navigation/elements";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Feather } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 
 import { useTheme } from "@/hooks/useTheme";
-import { useAuth, UserRole } from "@/lib/auth";
+import { useAuth } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { Colors, Spacing, BorderRadius, Typography } from "@/constants/theme";
 import { ThemedText } from "@/components/ThemedText";
@@ -16,14 +16,6 @@ import { ThemedView } from "@/components/ThemedView";
 import { Card } from "@/components/Card";
 import { WeatherWidget } from "@/components/WeatherWidget";
 import type { Event, Task, ShoppingItem } from "@shared/types";
-
-interface FamilyMember {
-  id: string;
-  username: string;
-  displayName: string | null;
-  avatarUrl: string | null;
-  role: UserRole;
-}
 
 interface Family {
   id: string;
@@ -70,32 +62,22 @@ export default function HomeScreen() {
 
   const colors = isDark ? Colors.dark : Colors.light;
 
-  const roleLabels: Record<UserRole, string> = {
-    admin: t.family.admin,
-    member: t.family.member,
-    child: t.family.child,
-  };
-
-  const roleColors: Record<UserRole, string> = {
-    admin: "#2F7F6D",
-    member: "#6FB7A8",
-    child: "#A8D8CC",
-  };
+  const queryClient = useQueryClient();
 
   const { data: family, isLoading: familyLoading } = useQuery<Family>({
     queryKey: ["/api/family"],
     enabled: isAuthenticated,
   });
 
-  const {
-    data: members,
-    isLoading: membersLoading,
-    refetch: refetchMembers,
-    isRefetching,
-  } = useQuery<FamilyMember[]>({
-    queryKey: ["/api/family/members"],
-    enabled: isAuthenticated,
-  });
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <HeaderButton onPress={navigateToProfile}>
+          <Feather name="user" size={22} color={colors.text} />
+        </HeaderButton>
+      ),
+    });
+  }, [navigation, colors.text]);
 
   const today = new Date();
   const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
@@ -143,34 +125,6 @@ export default function HomeScreen() {
       })
       .slice(0, 3);
   }, [todayEvents]);
-
-  const renderMember = ({ item }: { item: FamilyMember }) => (
-    <Card style={styles.memberCard}>
-      <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
-        <ThemedText style={styles.avatarText}>
-          {(item.displayName || item.username).charAt(0).toUpperCase()}
-        </ThemedText>
-      </View>
-      <View style={styles.memberInfo}>
-        <ThemedText style={[styles.memberName, { color: colors.text }]}>
-          {item.displayName || item.username}
-        </ThemedText>
-        <ThemedText style={[styles.memberUsername, { color: colors.textSecondary }]}>
-          @{item.username}
-        </ThemedText>
-      </View>
-      <View style={styles.badges}>
-        <View style={[styles.roleBadge, { backgroundColor: roleColors[item.role] }]}>
-          <ThemedText style={styles.roleBadgeText}>{roleLabels[item.role]}</ThemedText>
-        </View>
-        {item.id === user?.id ? (
-          <View style={[styles.youBadge, { backgroundColor: colors.secondary }]}>
-            <ThemedText style={styles.youBadgeText}>{t.family.you}</ThemedText>
-          </View>
-        ) : null}
-      </View>
-    </Card>
-  );
 
   const navigateToCalendar = () => {
     (navigation as any).navigate("CalendarTab");
@@ -349,23 +303,6 @@ export default function HomeScreen() {
         )}
       </View>
 
-      <View style={styles.sectionHeader}>
-        <ThemedText style={[styles.sectionTitle, { color: colors.text }]}>
-          {t.home.familyMembers}
-        </ThemedText>
-        <ThemedText style={[styles.memberCount, { color: colors.textSecondary }]}>
-          {members?.length || 0} {(members?.length || 0) !== 1 ? t.home.members : t.home.member}
-        </ThemedText>
-      </View>
-    </View>
-  );
-
-  const renderEmpty = () => (
-    <View style={styles.emptyState}>
-      <Feather name="users" size={48} color={colors.textSecondary} />
-      <ThemedText style={[styles.emptyText, { color: colors.textSecondary }]}>
-        {t.home.noFamilyMembers}
-      </ThemedText>
     </View>
   );
 
@@ -377,7 +314,7 @@ export default function HomeScreen() {
     );
   }
 
-  if (familyLoading || membersLoading) {
+  if (familyLoading) {
     return (
       <ThemedView style={[styles.centered, { backgroundColor: theme.backgroundRoot }]}>
         <ActivityIndicator size="large" color={colors.primary} />
@@ -385,8 +322,16 @@ export default function HomeScreen() {
     );
   }
 
+  const onRefresh = () => {
+    queryClient.invalidateQueries({ queryKey: ["/api/family"] });
+    queryClient.invalidateQueries({ queryKey: ["/api/events"] });
+    queryClient.invalidateQueries({ queryKey: ["/api/shopping"] });
+    queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
+    queryClient.invalidateQueries({ queryKey: ["weather"] });
+  };
+
   return (
-    <FlatList
+    <ScrollView
       style={{ flex: 1, backgroundColor: theme.backgroundRoot }}
       contentContainerStyle={{
         paddingTop: headerHeight + Spacing.xl,
@@ -395,15 +340,17 @@ export default function HomeScreen() {
         flexGrow: 1,
       }}
       scrollIndicatorInsets={{ bottom: insets.bottom }}
-      data={members || []}
-      keyExtractor={(item) => item.id}
-      renderItem={renderMember}
-      ListHeaderComponent={renderHeader}
-      ListEmptyComponent={renderEmpty}
-      refreshing={isRefetching}
-      onRefresh={refetchMembers}
-      testID="list-members"
-    />
+      refreshControl={
+        <RefreshControl
+          refreshing={false}
+          onRefresh={onRefresh}
+          tintColor={colors.primary}
+        />
+      }
+      testID="home-scroll"
+    >
+      {renderHeader()}
+    </ScrollView>
   );
 }
 
@@ -439,9 +386,6 @@ const styles = StyleSheet.create({
     ...Typography.caption,
     fontWeight: "600",
   },
-  memberCount: {
-    ...Typography.caption,
-  },
   emptyTodayCard: {
     flexDirection: "row",
     alignItems: "center",
@@ -471,70 +415,6 @@ const styles = StyleSheet.create({
   eventTime: {
     ...Typography.small,
     marginTop: 2,
-  },
-  memberCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: Spacing.lg,
-    marginBottom: Spacing.md,
-  },
-  avatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  avatarText: {
-    color: "#FFFFFF",
-    ...Typography.subtitle,
-    fontWeight: "700",
-  },
-  memberInfo: {
-    flex: 1,
-    marginLeft: Spacing.md,
-  },
-  memberName: {
-    ...Typography.body,
-    fontWeight: "600",
-  },
-  memberUsername: {
-    ...Typography.caption,
-  },
-  badges: {
-    flexDirection: "column",
-    alignItems: "flex-end",
-    gap: Spacing.xs,
-  },
-  roleBadge: {
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: Spacing.xs,
-    borderRadius: BorderRadius.xs,
-  },
-  roleBadgeText: {
-    color: "#FFFFFF",
-    ...Typography.small,
-    fontWeight: "600",
-  },
-  youBadge: {
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: Spacing.xs,
-    borderRadius: BorderRadius.xs,
-  },
-  youBadgeText: {
-    color: "#FFFFFF",
-    ...Typography.small,
-    fontWeight: "600",
-  },
-  emptyState: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingVertical: Spacing["3xl"],
-  },
-  emptyText: {
-    ...Typography.body,
-    marginTop: Spacing.lg,
   },
   sectionTitleRow: {
     flexDirection: "row",
