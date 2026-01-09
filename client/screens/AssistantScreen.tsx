@@ -275,12 +275,18 @@ export default function AssistantScreen() {
     
     if (!approved) {
       setPendingAction(null);
+      setMessages(prev => [...prev, {
+        id: `reject-${Date.now()}`,
+        role: "assistant",
+        content: language === "it" ? "Azione annullata." : "Action cancelled.",
+        createdAt: new Date().toISOString(),
+      }]);
       return;
     }
     
     try {
       const token = await AsyncStorage.getItem(AUTH_TOKEN_KEY);
-      await fetch(new URL("/api/assistant/confirm", getApiUrl()).toString(), {
+      const response = await fetch(new URL("/api/assistant/confirm", getApiUrl()).toString(), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -294,6 +300,25 @@ export default function AssistantScreen() {
         }),
       });
       
+      const result = await response.json();
+      
+      if (result.success) {
+        setMessages(prev => [...prev, {
+          id: `confirm-${Date.now()}`,
+          role: "assistant",
+          content: `✅ ${result.message}`,
+          createdAt: new Date().toISOString(),
+        }]);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      } else {
+        setMessages(prev => [...prev, {
+          id: `error-${Date.now()}`,
+          role: "assistant",
+          content: `❌ ${result.message || (language === "it" ? "Errore durante l'operazione" : "Operation failed")}`,
+          createdAt: new Date().toISOString(),
+        }]);
+      }
+      
       queryClient.invalidateQueries({ queryKey: ["/api/events"] });
       queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
       queryClient.invalidateQueries({ queryKey: ["/api/shopping"] });
@@ -302,7 +327,6 @@ export default function AssistantScreen() {
       Alert.alert(t.common.error, t.errors.networkError);
     } finally {
       setPendingAction(null);
-      refetchConversation();
     }
   };
 
