@@ -66,8 +66,6 @@ export default function MainTabNavigator() {
           headerTitle: t.calendar.title,
           headerStyle: { backgroundColor: theme.backgroundRoot },
           headerTintColor: theme.text,
-          headerTransparent: true,
-          headerBlurEffect: isDark ? "dark" : "light",
           tabBarIcon: ({ color, size }) => (
             <Feather name="calendar" size={size} color={color} />
           ),
