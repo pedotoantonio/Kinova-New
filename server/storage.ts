@@ -5,6 +5,8 @@ import {
   type InsertFamily, 
   type FamilyInvite,
   type UserRole,
+  type DbPlace,
+  type PlaceCategory,
   type DbEvent,
   type DbEventRecurrence,
   type DbTask,
@@ -23,6 +25,7 @@ import {
   type EventCategory,
   users, 
   families,
+  places,
   familyInvites,
   events,
   eventRecurrences,
@@ -90,6 +93,12 @@ export interface IStorage {
   deleteSession(token: string): Promise<boolean>;
   deleteSessionsByUser(userId: string): Promise<boolean>;
   cleanExpiredSessions(): Promise<number>;
+  
+  getPlaces(familyId: string, category?: PlaceCategory): Promise<DbPlace[]>;
+  getPlace(id: string, familyId: string): Promise<DbPlace | undefined>;
+  createPlace(data: Omit<DbPlace, "id" | "createdAt" | "updatedAt">): Promise<DbPlace>;
+  updatePlace(id: string, familyId: string, data: Partial<DbPlace>): Promise<DbPlace | undefined>;
+  deletePlace(id: string, familyId: string): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -823,6 +832,48 @@ export class DatabaseStorage implements IStorage {
 
   async deletePushToken(userId: string): Promise<boolean> {
     await db.delete(pushTokens).where(eq(pushTokens.userId, userId));
+    return true;
+  }
+
+  async getPlaces(familyId: string, category?: PlaceCategory): Promise<DbPlace[]> {
+    const conditions = [eq(places.familyId, familyId)];
+    if (category) {
+      conditions.push(eq(places.category, category));
+    }
+    return db
+      .select()
+      .from(places)
+      .where(and(...conditions))
+      .orderBy(places.name);
+  }
+
+  async getPlace(id: string, familyId: string): Promise<DbPlace | undefined> {
+    const [place] = await db
+      .select()
+      .from(places)
+      .where(and(eq(places.id, id), eq(places.familyId, familyId)));
+    return place;
+  }
+
+  async createPlace(data: Omit<DbPlace, "id" | "createdAt" | "updatedAt">): Promise<DbPlace> {
+    const [place] = await db
+      .insert(places)
+      .values(data)
+      .returning();
+    return place;
+  }
+
+  async updatePlace(id: string, familyId: string, data: Partial<DbPlace>): Promise<DbPlace | undefined> {
+    const [place] = await db
+      .update(places)
+      .set({ ...data, updatedAt: new Date() })
+      .where(and(eq(places.id, id), eq(places.familyId, familyId)))
+      .returning();
+    return place;
+  }
+
+  async deletePlace(id: string, familyId: string): Promise<boolean> {
+    await db.delete(places).where(and(eq(places.id, id), eq(places.familyId, familyId)));
     return true;
   }
 }

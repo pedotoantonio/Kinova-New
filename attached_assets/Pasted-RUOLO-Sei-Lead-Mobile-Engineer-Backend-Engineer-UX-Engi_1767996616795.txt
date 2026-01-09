@@ -1,0 +1,178 @@
+RUOLO
+Sei Lead Mobile Engineer + Backend Engineer + UX Engineer + QA Lead.
+Sei responsabile del sistema “Luoghi” di Kinova.
+Expo è il banco di test principale.
+
+REGOLE NON NEGOZIABILI
+1) Nessun luogo fake o di esempio.
+2) Ogni luogo appartiene a una famiglia reale (familyId).
+3) Coordinate GPS sempre valide.
+4) Nessuna dipendenza obbligatoria da servizi a pagamento.
+5) Nessuna stringa hardcoded (i18n IT/EN obbligatorio).
+6) Output SOLO nel formato richiesto.
+
+OBIETTIVO DEL GATE
+Implementare un sistema Luoghi che:
+- arricchisca eventi e task
+- migliori l’organizzazione quotidiana
+- permetta navigazione immediata
+- sia sfruttabile dall’Assistente AI
+- sia gestibile dal pannello admin
+
+---
+
+## A) MODELLO LUOGO (CORE)
+
+Definire entità Place con:
+- id
+- name
+- description (opzionale)
+- latitude
+- longitude
+- address (opzionale)
+- category (scuola, lavoro, casa, svago, altro)
+- familyId
+- createdBy
+- createdAt / updatedAt
+
+Validazioni:
+- latitude ∈ [-90, 90]
+- longitude ∈ [-180, 180]
+
+Test:
+T7T.1 Creazione luogo → DB persist
+
+---
+
+## B) CREAZIONE & RIUSO LUOGHI (UI)
+
+Permettere:
+- inserimento nome
+- inserimento indirizzo
+- inserimento coordinate (manuale o automatico)
+- selezione categoria
+- riutilizzo luogo esistente
+
+Test:
+T7T.2 Luogo creato e riutilizzabile
+
+---
+
+## C) ASSOCIAZIONE A EVENTI E TASK
+
+Consentire:
+- selezione luogo in creazione/modifica evento
+- visualizzazione luogo nel dettaglio evento/task
+
+Test:
+T7T.3 Evento con luogo → luogo visibile
+
+---
+
+## D) AVVIO NAVIGAZIONE (GOOGLE MAPS)
+
+Implementare:
+- tap su luogo → apertura Google Maps
+- deep link:
+  - Mobile: geo:lat,lng?q=lat,lng(label)
+  - Fallback web:
+    https://www.google.com/maps/dir/?api=1&destination=lat,lng
+
+Test:
+T7T.4 Tap → Google Maps aperto correttamente
+
+---
+
+## E) INTEGRAZIONE HOME & CALENDARIO
+
+Verificare:
+- Home mostra luogo evento odierno
+- Calendar mostra indicatore luogo
+
+Test:
+T7T.5 Luogo visibile in Home e Calendar
+
+---
+
+## F) INTEGRAZIONE ASSISTENTE AI
+
+Consentire all’AI di:
+- rispondere a domande tipo:
+  “Dove devo andare oggi?”
+  “Come arrivo al prossimo evento?”
+- suggerire orario di partenza
+
+Regola:
+- AI NON apre Maps senza conferma esplicita
+
+Test:
+T7T.6 AI riconosce luogo e propone navigazione
+
+---
+
+## G) MULTILINGUA (IT / EN)
+
+Verificare:
+- categorie tradotte
+- messaggi UI localizzati
+- fallback IT
+
+Test:
+T7T.7 Cambio lingua → UI aggiornata
+
+---
+
+## H) SICUREZZA & PRIVACY
+
+- familyId enforcement
+- nessun luogo cross-family
+- coordinate non esposte inutilmente
+
+Test:
+T7T.8 Accesso non autorizzato → 403
+
+---
+
+## I) PERFORMANCE
+
+Verificare:
+- lista luoghi fluida
+- nessun lag con 30+ luoghi
+
+Test:
+T7T.9 Performance UI OK
+
+---
+
+## OUTPUT OBBLIGATORIO (FORMATO RIGIDO)
+
+1) GATE 7 TER STATUS
+- Stato: PASS / FAIL
+- Bloccanti (se FAIL)
+
+2) MATRICE LUOGHI
+[Test-ID] [Funzione] [Stato Iniziale] [Fix] [Stato Finale PASS/FAIL]
+
+3) REPORT TEST DETTAGLIATO
+Per T7T.1 – T7T.9:
+- Steps
+- API evidence
+- DB evidence (WHERE familyId)
+- UI evidence
+- Esito PASS/FAIL
+
+4) CHECKLIST GATE 7 TER
+- CRUD luoghi: SI/NO
+- Associazione eventi/task: SI/NO
+- Google Maps launch: SI/NO
+- AI integration: SI/NO
+- Multilingua: SI/NO
+- Sicurezza: SI/NO
+
+5) VERDETTO FINALE
+Scrivi ESATTAMENTE una sola riga:
+- “GATE 7 TER COMPLETATO: PASS”
+oppure
+- “GATE 7 TER COMPLETATO: FAIL”
+
+STOP

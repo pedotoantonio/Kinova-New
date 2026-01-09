@@ -1196,6 +1196,168 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/places", authMiddleware, async (req: AuthRequest, res: Response) => {
+    try {
+      const category = req.query.category as string | undefined;
+      const placesList = await storage.getPlaces(req.auth!.familyId, category as any);
+      
+      res.json(placesList.map(p => ({
+        id: p.id,
+        familyId: p.familyId,
+        name: p.name,
+        description: p.description,
+        latitude: parseFloat(p.latitude),
+        longitude: parseFloat(p.longitude),
+        address: p.address,
+        category: p.category,
+        createdBy: p.createdBy,
+        createdAt: p.createdAt.toISOString(),
+        updatedAt: p.updatedAt.toISOString(),
+      })));
+    } catch (error) {
+      console.error("Get places error:", error);
+      res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Internal server error" } });
+    }
+  });
+
+  app.get("/api/places/:id", authMiddleware, async (req: AuthRequest, res: Response) => {
+    try {
+      const { id } = req.params;
+      const place = await storage.getPlace(id, req.auth!.familyId);
+      
+      if (!place) {
+        return res.status(404).json({ error: { code: "NOT_FOUND", message: "Place not found" } });
+      }
+      
+      res.json({
+        id: place.id,
+        familyId: place.familyId,
+        name: place.name,
+        description: place.description,
+        latitude: parseFloat(place.latitude),
+        longitude: parseFloat(place.longitude),
+        address: place.address,
+        category: place.category,
+        createdBy: place.createdBy,
+        createdAt: place.createdAt.toISOString(),
+        updatedAt: place.updatedAt.toISOString(),
+      });
+    } catch (error) {
+      console.error("Get place error:", error);
+      res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Internal server error" } });
+    }
+  });
+
+  app.post("/api/places", authMiddleware, async (req: AuthRequest, res: Response) => {
+    try {
+      const { name, description, latitude, longitude, address, category } = req.body;
+      
+      if (!name || latitude === undefined || longitude === undefined) {
+        return res.status(400).json({ error: { code: "INVALID_INPUT", message: "Name, latitude, and longitude are required" } });
+      }
+      
+      if (latitude < -90 || latitude > 90) {
+        return res.status(400).json({ error: { code: "INVALID_INPUT", message: "Latitude must be between -90 and 90" } });
+      }
+      
+      if (longitude < -180 || longitude > 180) {
+        return res.status(400).json({ error: { code: "INVALID_INPUT", message: "Longitude must be between -180 and 180" } });
+      }
+      
+      const place = await storage.createPlace({
+        familyId: req.auth!.familyId,
+        name,
+        description: description || null,
+        latitude: latitude.toString(),
+        longitude: longitude.toString(),
+        address: address || null,
+        category: category || "other",
+        createdBy: req.auth!.userId,
+      });
+      
+      res.status(201).json({
+        id: place.id,
+        familyId: place.familyId,
+        name: place.name,
+        description: place.description,
+        latitude: parseFloat(place.latitude),
+        longitude: parseFloat(place.longitude),
+        address: place.address,
+        category: place.category,
+        createdBy: place.createdBy,
+        createdAt: place.createdAt.toISOString(),
+        updatedAt: place.updatedAt.toISOString(),
+      });
+    } catch (error) {
+      console.error("Create place error:", error);
+      res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Internal server error" } });
+    }
+  });
+
+  app.put("/api/places/:id", authMiddleware, async (req: AuthRequest, res: Response) => {
+    try {
+      const { id } = req.params;
+      const { name, description, latitude, longitude, address, category } = req.body;
+      
+      const existing = await storage.getPlace(id, req.auth!.familyId);
+      if (!existing) {
+        return res.status(404).json({ error: { code: "NOT_FOUND", message: "Place not found" } });
+      }
+      
+      if (latitude !== undefined && (latitude < -90 || latitude > 90)) {
+        return res.status(400).json({ error: { code: "INVALID_INPUT", message: "Latitude must be between -90 and 90" } });
+      }
+      
+      if (longitude !== undefined && (longitude < -180 || longitude > 180)) {
+        return res.status(400).json({ error: { code: "INVALID_INPUT", message: "Longitude must be between -180 and 180" } });
+      }
+      
+      const updateData: Record<string, any> = {};
+      if (name !== undefined) updateData.name = name;
+      if (description !== undefined) updateData.description = description;
+      if (latitude !== undefined) updateData.latitude = latitude.toString();
+      if (longitude !== undefined) updateData.longitude = longitude.toString();
+      if (address !== undefined) updateData.address = address;
+      if (category !== undefined) updateData.category = category;
+      
+      const place = await storage.updatePlace(id, req.auth!.familyId, updateData);
+      
+      res.json({
+        id: place!.id,
+        familyId: place!.familyId,
+        name: place!.name,
+        description: place!.description,
+        latitude: parseFloat(place!.latitude),
+        longitude: parseFloat(place!.longitude),
+        address: place!.address,
+        category: place!.category,
+        createdBy: place!.createdBy,
+        createdAt: place!.createdAt.toISOString(),
+        updatedAt: place!.updatedAt.toISOString(),
+      });
+    } catch (error) {
+      console.error("Update place error:", error);
+      res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Internal server error" } });
+    }
+  });
+
+  app.delete("/api/places/:id", authMiddleware, requireRoles("admin", "member"), async (req: AuthRequest, res: Response) => {
+    try {
+      const { id } = req.params;
+      
+      const existing = await storage.getPlace(id, req.auth!.familyId);
+      if (!existing) {
+        return res.status(404).json({ error: { code: "NOT_FOUND", message: "Place not found" } });
+      }
+      
+      await storage.deletePlace(id, req.auth!.familyId);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Delete place error:", error);
+      res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Internal server error" } });
+    }
+  });
+
   app.get("/api/notifications", authMiddleware, async (req: AuthRequest, res: Response) => {
     try {
       const unreadOnly = req.query.unreadOnly === "true";

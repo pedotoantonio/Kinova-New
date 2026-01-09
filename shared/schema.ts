@@ -5,6 +5,13 @@ import { z } from "zod";
 
 export const userRoleEnum = pgEnum("user_role", ["admin", "member", "child"]);
 export const priorityEnum = pgEnum("priority", ["low", "medium", "high"]);
+export const placeCategoryEnum = pgEnum("place_category", [
+  "home",
+  "work",
+  "school",
+  "leisure",
+  "other"
+]);
 export const eventCategoryEnum = pgEnum("event_category", [
   "family",
   "course",
@@ -28,6 +35,22 @@ export const families = pgTable("families", {
   cityLat: numeric("city_lat"),
   cityLon: numeric("city_lon"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const places = pgTable("places", {
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  familyId: varchar("family_id").references(() => families.id, { onDelete: "cascade" }).notNull(),
+  name: text("name").notNull(),
+  description: text("description"),
+  latitude: numeric("latitude", { precision: 10, scale: 7 }).notNull(),
+  longitude: numeric("longitude", { precision: 11, scale: 7 }).notNull(),
+  address: text("address"),
+  category: placeCategoryEnum("category").default("other").notNull(),
+  createdBy: varchar("created_by").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
 export const users = pgTable("users", {
@@ -72,6 +95,7 @@ export const events = pgTable("events", {
   color: text("color"),
   category: eventCategoryEnum("category").default("family").notNull(),
   assignedTo: varchar("assigned_to").references(() => users.id),
+  placeId: varchar("place_id").references(() => places.id, { onDelete: "set null" }),
   isHoliday: boolean("is_holiday").default(false).notNull(),
   createdBy: varchar("created_by").references(() => users.id).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -100,6 +124,7 @@ export const tasks = pgTable("tasks", {
   completed: boolean("completed").default(false).notNull(),
   dueDate: timestamp("due_date"),
   assignedTo: varchar("assigned_to").references(() => users.id),
+  placeId: varchar("place_id").references(() => places.id, { onDelete: "set null" }),
   priority: priorityEnum("priority").default("medium").notNull(),
   createdBy: varchar("created_by").references(() => users.id).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -194,8 +219,10 @@ export const insertFamilySchema = createInsertSchema(families).pick({
 
 export type UserRole = "admin" | "member" | "child";
 export type Priority = "low" | "medium" | "high";
+export type PlaceCategory = "home" | "work" | "school" | "leisure" | "other";
 export type EventCategory = "family" | "course" | "shift" | "vacation" | "holiday" | "other";
 export type RecurrenceFrequency = "daily" | "weekly" | "monthly";
+export type DbPlace = typeof places.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type InsertFamily = z.infer<typeof insertFamilySchema>;
