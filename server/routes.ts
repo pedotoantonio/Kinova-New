@@ -563,6 +563,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           color: e.color,
           category: e.category,
           assignedTo: e.assignedTo,
+          placeId: e.placeId,
           isHoliday: e.isHoliday,
           createdBy: e.createdBy,
           createdAt: e.createdAt.toISOString(),
@@ -585,7 +586,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/events", authMiddleware, async (req: AuthRequest, res: Response) => {
     try {
-      const { title, shortCode, description, startDate, endDate, allDay, color, category, assignedTo, isHoliday, recurrence } = req.body;
+      const { title, shortCode, description, startDate, endDate, allDay, color, category, assignedTo, placeId, isHoliday, recurrence } = req.body;
       
       if (!title || !startDate) {
         return res.status(400).json({ error: { code: "VALIDATION_ERROR", message: "Title and startDate are required" } });
@@ -605,6 +606,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         color: color || null,
         category: eventCategory,
         assignedTo: assignedTo || null,
+        placeId: placeId || null,
         isHoliday: isHoliday ?? false,
         createdBy: req.auth!.userId,
       });
@@ -655,6 +657,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         color: event.color,
         category: event.category,
         assignedTo: event.assignedTo,
+        placeId: event.placeId,
         isHoliday: event.isHoliday,
         createdBy: event.createdBy,
         createdAt: event.createdAt.toISOString(),
@@ -675,7 +678,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/events/:id", authMiddleware, async (req: AuthRequest, res: Response) => {
     try {
       const { id } = req.params;
-      const { title, shortCode, description, startDate, endDate, allDay, color, category, assignedTo, isHoliday, recurrence } = req.body;
+      const { title, shortCode, description, startDate, endDate, allDay, color, category, assignedTo, placeId, isHoliday, recurrence } = req.body;
       
       const existing = await storage.getEvent(id, req.auth!.familyId);
       if (!existing) {
@@ -695,6 +698,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         updates.category = validCategories.includes(category) ? category : "family";
       }
       if (assignedTo !== undefined) updates.assignedTo = assignedTo || null;
+      if (placeId !== undefined) updates.placeId = placeId || null;
       if (isHoliday !== undefined) updates.isHoliday = isHoliday;
       
       const event = await storage.updateEvent(id, req.auth!.familyId, updates);
@@ -742,6 +746,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         color: event.color,
         category: event.category,
         assignedTo: event.assignedTo,
+        placeId: event.placeId,
         isHoliday: event.isHoliday,
         createdBy: event.createdBy,
         createdAt: event.createdAt.toISOString(),
@@ -792,6 +797,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         completed: t.completed,
         dueDate: t.dueDate?.toISOString() || null,
         assignedTo: t.assignedTo,
+        placeId: t.placeId,
         priority: t.priority,
         createdBy: t.createdBy,
         createdAt: t.createdAt.toISOString(),
@@ -805,7 +811,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/tasks", authMiddleware, async (req: AuthRequest, res: Response) => {
     try {
-      const { title, description, dueDate, assignedTo, priority } = req.body;
+      const { title, description, dueDate, assignedTo, placeId, priority } = req.body;
       
       if (!title) {
         return res.status(400).json({ error: { code: "VALIDATION_ERROR", message: "Title is required" } });
@@ -818,6 +824,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         completed: false,
         dueDate: dueDate ? new Date(dueDate) : null,
         assignedTo: assignedTo || null,
+        placeId: placeId || null,
         priority: priority || "medium",
         createdBy: req.auth!.userId,
       });
@@ -862,6 +869,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         completed: task.completed,
         dueDate: task.dueDate?.toISOString() || null,
         assignedTo: task.assignedTo,
+        placeId: task.placeId,
         priority: task.priority,
         createdBy: task.createdBy,
         createdAt: task.createdAt.toISOString(),
@@ -876,7 +884,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/tasks/:id", authMiddleware, async (req: AuthRequest, res: Response) => {
     try {
       const { id } = req.params;
-      const { title, description, completed, dueDate, assignedTo, priority } = req.body;
+      const { title, description, completed, dueDate, assignedTo, placeId, priority } = req.body;
       
       const existing = await storage.getTask(id, req.auth!.familyId);
       if (!existing) {
@@ -889,6 +897,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (completed !== undefined) updates.completed = completed;
       if (dueDate !== undefined) updates.dueDate = dueDate ? new Date(dueDate) : null;
       if (assignedTo !== undefined) updates.assignedTo = assignedTo;
+      if (placeId !== undefined) updates.placeId = placeId || null;
       if (priority !== undefined) updates.priority = priority;
       
       const task = await storage.updateTask(id, req.auth!.familyId, updates);
@@ -904,6 +913,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         completed: task.completed,
         dueDate: task.dueDate?.toISOString() || null,
         assignedTo: task.assignedTo,
+        placeId: task.placeId,
         priority: task.priority,
         createdBy: task.createdBy,
         createdAt: task.createdAt.toISOString(),

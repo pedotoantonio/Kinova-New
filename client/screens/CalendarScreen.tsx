@@ -23,7 +23,8 @@ import { Colors, Spacing, BorderRadius, Typography } from "@/constants/theme";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { Card } from "@/components/Card";
-import type { Event, EventCategory, RecurrenceFrequency, EventRecurrence } from "@shared/types";
+import type { Event, EventCategory, RecurrenceFrequency, EventRecurrence, Place } from "@shared/types";
+import { PlacePickerModal } from "@/components/PlacePickerModal";
 
 const EVENT_COLORS = [
   "#2F7F6D",
@@ -156,6 +157,7 @@ interface EventFormData {
   allDay: boolean;
   color: string;
   category: EventCategory;
+  placeId: string | null;
   recurrenceFrequency: RecurrenceFrequency | "none";
   recurrenceInterval: number;
   recurrenceEndDate: Date | null;
@@ -195,10 +197,12 @@ export default function CalendarScreen() {
     allDay: false,
     color: EVENT_COLORS[0],
     category: "family",
+    placeId: null,
     recurrenceFrequency: "none",
     recurrenceInterval: 1,
     recurrenceEndDate: null,
   });
+  const [showPlacePicker, setShowPlacePicker] = useState(false);
 
   const { dateRangeStartIso, dateRangeEndIso } = useMemo(() => {
     if (viewMode === "month") {
@@ -230,6 +234,11 @@ export default function CalendarScreen() {
       const url = `/api/events?from=${dateRangeStartIso}&to=${dateRangeEndIso}`;
       return apiRequest<Event[]>("GET", url);
     },
+    enabled: isAuthenticated,
+  });
+
+  const { data: places } = useQuery<Place[]>({
+    queryKey: ["/api/places"],
     enabled: isAuthenticated,
   });
 
@@ -278,6 +287,7 @@ export default function CalendarScreen() {
       allDay: false,
       color: EVENT_COLORS[0],
       category: "family",
+      placeId: null,
       recurrenceFrequency: "none",
       recurrenceInterval: 1,
       recurrenceEndDate: null,
@@ -368,6 +378,7 @@ export default function CalendarScreen() {
       allDay: false,
       color: EVENT_COLORS[0],
       category: "family",
+      placeId: null,
       recurrenceFrequency: "none",
       recurrenceInterval: 1,
       recurrenceEndDate: null,
@@ -386,6 +397,7 @@ export default function CalendarScreen() {
       allDay: event.allDay,
       color: event.color || CATEGORY_COLORS[event.category] || EVENT_COLORS[0],
       category: event.category || "family",
+      placeId: event.placeId || null,
       recurrenceFrequency: event.recurrence?.frequency || "none",
       recurrenceInterval: event.recurrence?.interval || 1,
       recurrenceEndDate: event.recurrence?.endDate ? new Date(event.recurrence.endDate) : null,
@@ -427,6 +439,7 @@ export default function CalendarScreen() {
       allDay: formData.allDay,
       color: formData.color,
       category: formData.category,
+      placeId: formData.placeId,
       recurrence,
       isHoliday: formData.category === "holiday",
     };
@@ -907,6 +920,27 @@ export default function CalendarScreen() {
               </View>
 
               <ThemedText style={[styles.inputLabel, { color: colors.textSecondary }]}>
+                {t.places.place}
+              </ThemedText>
+              <Pressable
+                style={[styles.placeSelector, { backgroundColor: theme.backgroundRoot, borderColor: colors.border }]}
+                onPress={() => setShowPlacePicker(true)}
+                testID="button-select-place"
+              >
+                <Feather name="map-pin" size={18} color={formData.placeId ? colors.primary : colors.textSecondary} />
+                <ThemedText style={[styles.placeSelectorText, { color: formData.placeId ? colors.text : colors.textSecondary }]}>
+                  {formData.placeId ? places?.find(p => p.id === formData.placeId)?.name || t.places.selectPlace : t.places.selectPlace}
+                </ThemedText>
+                {formData.placeId ? (
+                  <Pressable onPress={() => setFormData({ ...formData, placeId: null })} hitSlop={10}>
+                    <Feather name="x" size={18} color={colors.textSecondary} />
+                  </Pressable>
+                ) : (
+                  <Feather name="chevron-right" size={18} color={colors.textSecondary} />
+                )}
+              </Pressable>
+
+              <ThemedText style={[styles.inputLabel, { color: colors.textSecondary }]}>
                 {t.calendar.recurrence.title}
               </ThemedText>
               <View style={styles.recurrencePicker}>
@@ -1053,6 +1087,16 @@ export default function CalendarScreen() {
           </View>
         </View>
       </Modal>
+
+      <PlacePickerModal
+        visible={showPlacePicker}
+        onClose={() => setShowPlacePicker(false)}
+        onSelect={(place) => {
+          setFormData({ ...formData, placeId: place.id });
+          setShowPlacePicker(false);
+        }}
+        selectedPlaceId={formData.placeId}
+      />
     </ThemedView>
   );
 }
@@ -1269,6 +1313,19 @@ const styles = StyleSheet.create({
   categoryOptionText: {
     ...Typography.small,
     fontWeight: "500",
+  },
+  placeSelector: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.md,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    gap: Spacing.sm,
+  },
+  placeSelectorText: {
+    ...Typography.body,
+    flex: 1,
   },
   recurrencePicker: {
     flexDirection: "row",

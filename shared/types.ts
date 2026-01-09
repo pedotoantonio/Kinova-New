@@ -72,6 +72,7 @@ export interface Event {
   color?: string | null;
   category: EventCategory;
   assignedTo?: string | null;
+  placeId?: string | null;
   isHoliday: boolean;
   createdBy: string;
   createdAt: string;
@@ -89,6 +90,7 @@ export interface CreateEventRequest {
   color?: string;
   category?: EventCategory;
   assignedTo?: string;
+  placeId?: string;
   isHoliday?: boolean;
   recurrence?: EventRecurrence;
 }
@@ -103,6 +105,7 @@ export interface UpdateEventRequest {
   color?: string;
   category?: EventCategory;
   assignedTo?: string;
+  placeId?: string | null;
   isHoliday?: boolean;
   recurrence?: EventRecurrence | null;
 }
@@ -115,6 +118,7 @@ export interface Task {
   completed: boolean;
   dueDate?: string | null;
   assignedTo?: string | null;
+  placeId?: string | null;
   priority: "low" | "medium" | "high";
   createdBy: string;
   createdAt: string;
@@ -126,6 +130,7 @@ export interface CreateTaskRequest {
   description?: string;
   dueDate?: string;
   assignedTo?: string;
+  placeId?: string;
   priority?: "low" | "medium" | "high";
 }
 
@@ -135,6 +140,7 @@ export interface UpdateTaskRequest {
   completed?: boolean;
   dueDate?: string;
   assignedTo?: string;
+  placeId?: string | null;
   priority?: "low" | "medium" | "high";
 }
 

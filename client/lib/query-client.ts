@@ -33,6 +33,11 @@ export const queryKeys = {
     list: (filters?: { from?: string; to?: string; category?: string; paidBy?: string }) =>
       ["/api/expenses", filters] as const,
   },
+  places: {
+    all: ["/api/places"] as const,
+    list: (category?: string) => ["/api/places", { category }] as const,
+    detail: (id: string) => ["/api/places", id] as const,
+  },
 };
 
 type UnauthorizedBehavior = "returnNull" | "throw";
