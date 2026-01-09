@@ -42,7 +42,17 @@ export default function ListsScreen() {
   const { t } = useI18n();
   const queryClient = useQueryClient();
 
-  const [activeTab, setActiveTab] = useState<TabType>("shopping");
+  const permissions = user?.permissions ?? {
+    canViewCalendar: true,
+    canViewTasks: true,
+    canViewShopping: true,
+    canViewBudget: false,
+    canViewPlaces: true,
+    canModifyItems: true,
+  };
+
+  const defaultTab: TabType = permissions.canViewShopping ? "shopping" : "tasks";
+  const [activeTab, setActiveTab] = useState<TabType>(defaultTab);
   const [shoppingFilter, setShoppingFilter] = useState<ShoppingFilter>("all");
   const [taskFilter, setTaskFilter] = useState<TaskFilter>("all");
   const [newItemName, setNewItemName] = useState("");
@@ -68,7 +78,7 @@ export default function ListsScreen() {
     isRefetching: shoppingRefetching,
   } = useQuery<ShoppingItem[]>({
     queryKey: ["/api/shopping"],
-    enabled: isAuthenticated,
+    enabled: isAuthenticated && permissions.canViewShopping,
   });
 
   const {
@@ -78,7 +88,7 @@ export default function ListsScreen() {
     isRefetching: tasksRefetching,
   } = useQuery<Task[]>({
     queryKey: ["/api/tasks"],
-    enabled: isAuthenticated,
+    enabled: isAuthenticated && permissions.canViewTasks,
   });
 
   const createShoppingMutation = useMutation({
@@ -259,9 +269,11 @@ export default function ListsScreen() {
               </ThemedText>
             ) : null}
           </View>
-          <Pressable onPress={handleDelete} hitSlop={8} testID={`shopping-delete-${item.id}`}>
-            <Feather name="trash-2" size={18} color={colors.textSecondary} />
-          </Pressable>
+          {permissions.canModifyItems ? (
+            <Pressable onPress={handleDelete} hitSlop={8} testID={`shopping-delete-${item.id}`}>
+              <Feather name="trash-2" size={18} color={colors.textSecondary} />
+            </Pressable>
+          ) : null}
         </Card>
       </Animated.View>
     );
@@ -330,7 +342,7 @@ export default function ListsScreen() {
               ) : null}
             </View>
           </View>
-          {user?.role !== "child" ? (
+          {permissions.canModifyItems ? (
             <Pressable onPress={handleDelete} hitSlop={8} testID={`task-delete-${item.id}`}>
               <Feather name="trash-2" size={18} color={colors.textSecondary} />
             </Pressable>
@@ -340,58 +352,63 @@ export default function ListsScreen() {
     );
   };
 
-  const renderTabSelector = () => (
-    <View style={[styles.tabContainer, { backgroundColor: colors.backgroundSecondary }]}>
-      <Pressable
-        style={[
-          styles.tabButton,
-          activeTab === "shopping" && { backgroundColor: colors.primary },
-        ]}
-        onPress={() => setActiveTab("shopping")}
-        testID="tab-shopping"
-        accessibilityLabel={t.lists.shopping}
-        accessibilityRole="tab"
-      >
-        <Feather
-          name="shopping-cart"
-          size={16}
-          color={activeTab === "shopping" ? colors.buttonText : colors.textSecondary}
-        />
-        <ThemedText
+  const renderTabSelector = () => {
+    const showBothTabs = permissions.canViewShopping && permissions.canViewTasks;
+    if (!showBothTabs) return null;
+    
+    return (
+      <View style={[styles.tabContainer, { backgroundColor: colors.backgroundSecondary }]}>
+        <Pressable
           style={[
-            styles.tabText,
-            { color: activeTab === "shopping" ? colors.buttonText : colors.textSecondary },
+            styles.tabButton,
+            activeTab === "shopping" && { backgroundColor: colors.primary },
           ]}
+          onPress={() => setActiveTab("shopping")}
+          testID="tab-shopping"
+          accessibilityLabel={t.lists.shopping}
+          accessibilityRole="tab"
         >
-          {t.lists.shopping}
-        </ThemedText>
-      </Pressable>
-      <Pressable
-        style={[
-          styles.tabButton,
-          activeTab === "tasks" && { backgroundColor: colors.primary },
-        ]}
-        onPress={() => setActiveTab("tasks")}
-        testID="tab-tasks"
-        accessibilityLabel={t.lists.tasks}
-        accessibilityRole="tab"
-      >
-        <Feather
-          name="check-square"
-          size={16}
-          color={activeTab === "tasks" ? colors.buttonText : colors.textSecondary}
-        />
-        <ThemedText
+          <Feather
+            name="shopping-cart"
+            size={16}
+            color={activeTab === "shopping" ? colors.buttonText : colors.textSecondary}
+          />
+          <ThemedText
+            style={[
+              styles.tabText,
+              { color: activeTab === "shopping" ? colors.buttonText : colors.textSecondary },
+            ]}
+          >
+            {t.lists.shopping}
+          </ThemedText>
+        </Pressable>
+        <Pressable
           style={[
-            styles.tabText,
-            { color: activeTab === "tasks" ? colors.buttonText : colors.textSecondary },
+            styles.tabButton,
+            activeTab === "tasks" && { backgroundColor: colors.primary },
           ]}
+          onPress={() => setActiveTab("tasks")}
+          testID="tab-tasks"
+          accessibilityLabel={t.lists.tasks}
+          accessibilityRole="tab"
         >
-          {t.lists.tasks}
-        </ThemedText>
-      </Pressable>
-    </View>
-  );
+          <Feather
+            name="check-square"
+            size={16}
+            color={activeTab === "tasks" ? colors.buttonText : colors.textSecondary}
+          />
+          <ThemedText
+            style={[
+              styles.tabText,
+              { color: activeTab === "tasks" ? colors.buttonText : colors.textSecondary },
+            ]}
+          >
+            {t.lists.tasks}
+          </ThemedText>
+        </Pressable>
+      </View>
+    );
+  };
 
   const renderShoppingFilters = () => (
     <View style={styles.filterRow}>
@@ -459,30 +476,34 @@ export default function ListsScreen() {
     </View>
   );
 
-  const renderAddInput = () => (
-    <View style={[styles.addInputContainer, { backgroundColor: colors.backgroundSecondary }]}>
-      <TextInput
-        style={[styles.addInput, { color: colors.text, borderColor: colors.border }]}
-        placeholder={activeTab === "shopping" ? t.shopping.itemName : t.tasks.taskTitle}
-        placeholderTextColor={colors.textSecondary}
-        value={newItemName}
-        onChangeText={setNewItemName}
-        onSubmitEditing={handleAddItem}
-        returnKeyType="done"
-        testID="input-new-item"
-      />
-      <Pressable
-        style={[styles.addButton, { backgroundColor: colors.primary }]}
-        onPress={handleAddItem}
-        disabled={!newItemName.trim()}
-        testID="button-add-item"
-        accessibilityLabel={activeTab === "shopping" ? t.shopping.addItem : t.tasks.addTask}
-        accessibilityRole="button"
-      >
-        <Feather name="plus" size={20} color={colors.buttonText} />
-      </Pressable>
-    </View>
-  );
+  const renderAddInput = () => {
+    if (!permissions.canModifyItems) return null;
+    
+    return (
+      <View style={[styles.addInputContainer, { backgroundColor: colors.backgroundSecondary }]}>
+        <TextInput
+          style={[styles.addInput, { color: colors.text, borderColor: colors.border }]}
+          placeholder={activeTab === "shopping" ? t.shopping.itemName : t.tasks.taskTitle}
+          placeholderTextColor={colors.textSecondary}
+          value={newItemName}
+          onChangeText={setNewItemName}
+          onSubmitEditing={handleAddItem}
+          returnKeyType="done"
+          testID="input-new-item"
+        />
+        <Pressable
+          style={[styles.addButton, { backgroundColor: colors.primary }]}
+          onPress={handleAddItem}
+          disabled={!newItemName.trim()}
+          testID="button-add-item"
+          accessibilityLabel={activeTab === "shopping" ? t.shopping.addItem : t.tasks.addTask}
+          accessibilityRole="button"
+        >
+          <Feather name="plus" size={20} color={colors.buttonText} />
+        </Pressable>
+      </View>
+    );
+  };
 
   const renderEmptyState = () => (
     <View style={styles.emptyState}>

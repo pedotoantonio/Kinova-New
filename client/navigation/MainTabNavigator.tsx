@@ -11,6 +11,7 @@ import BudgetScreen from "@/screens/BudgetScreen";
 import AssistantScreen from "@/screens/AssistantScreen";
 import { useTheme } from "@/hooks/useTheme";
 import { useI18n } from "@/lib/i18n";
+import { useAuth } from "@/lib/auth";
 
 export type MainTabParamList = {
   HomeTab: undefined;
@@ -26,6 +27,18 @@ const Tab = createBottomTabNavigator<MainTabParamList>();
 export default function MainTabNavigator() {
   const { theme, isDark } = useTheme();
   const { t } = useI18n();
+  const { user } = useAuth();
+  
+  const permissions = user?.permissions ?? {
+    canViewCalendar: true,
+    canViewTasks: true,
+    canViewShopping: true,
+    canViewBudget: false,
+    canViewPlaces: true,
+    canModifyItems: true,
+  };
+  
+  const showListsTab = permissions.canViewTasks || permissions.canViewShopping;
 
   return (
     <Tab.Navigator
@@ -77,34 +90,38 @@ export default function MainTabNavigator() {
           ),
         }}
       />
-      <Tab.Screen
-        name="ListsTab"
-        component={ListsScreen}
-        options={{
-          title: t.lists.title,
-          headerShown: true,
-          headerTitle: t.lists.title,
-          headerStyle: { backgroundColor: theme.backgroundRoot },
-          headerTintColor: theme.text,
-          tabBarIcon: ({ color, size }) => (
-            <Feather name="list" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="BudgetTab"
-        component={BudgetScreen}
-        options={{
-          title: t.budget.title,
-          headerShown: true,
-          headerTitle: t.budget.title,
-          headerStyle: { backgroundColor: theme.backgroundRoot },
-          headerTintColor: theme.text,
-          tabBarIcon: ({ color, size }) => (
-            <Feather name="dollar-sign" size={size} color={color} />
-          ),
-        }}
-      />
+      {showListsTab ? (
+        <Tab.Screen
+          name="ListsTab"
+          component={ListsScreen}
+          options={{
+            title: t.lists.title,
+            headerShown: true,
+            headerTitle: t.lists.title,
+            headerStyle: { backgroundColor: theme.backgroundRoot },
+            headerTintColor: theme.text,
+            tabBarIcon: ({ color, size }) => (
+              <Feather name="list" size={size} color={color} />
+            ),
+          }}
+        />
+      ) : null}
+      {permissions.canViewBudget ? (
+        <Tab.Screen
+          name="BudgetTab"
+          component={BudgetScreen}
+          options={{
+            title: t.budget.title,
+            headerShown: true,
+            headerTitle: t.budget.title,
+            headerStyle: { backgroundColor: theme.backgroundRoot },
+            headerTintColor: theme.text,
+            tabBarIcon: ({ color, size }) => (
+              <Feather name="dollar-sign" size={size} color={color} />
+            ),
+          }}
+        />
+      ) : null}
       <Tab.Screen
         name="AssistantTab"
         component={AssistantScreen}

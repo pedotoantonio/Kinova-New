@@ -827,6 +827,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/tasks", authMiddleware, async (req: AuthRequest, res: Response) => {
     try {
+      const user = await storage.getUser(req.auth!.userId);
+      if (!user || !user.canModifyItems) {
+        return res.status(403).json({ error: { code: "FORBIDDEN", message: "Access denied" } });
+      }
+      
       const { title, description, dueDate, assignedTo, placeId, priority } = req.body;
       
       if (!title) {
@@ -899,6 +904,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put("/api/tasks/:id", authMiddleware, async (req: AuthRequest, res: Response) => {
     try {
+      const user = await storage.getUser(req.auth!.userId);
+      if (!user || !user.canModifyItems) {
+        return res.status(403).json({ error: { code: "FORBIDDEN", message: "Access denied" } });
+      }
+      
       const { id } = req.params;
       const { title, description, completed, dueDate, assignedTo, placeId, priority } = req.body;
       
@@ -943,6 +953,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete("/api/tasks/:id", authMiddleware, requireRoles("admin", "member"), async (req: AuthRequest, res: Response) => {
     try {
+      const user = await storage.getUser(req.auth!.userId);
+      if (!user || !user.canModifyItems) {
+        return res.status(403).json({ error: { code: "FORBIDDEN", message: "Access denied" } });
+      }
+      
       const { id } = req.params;
       
       const existing = await storage.getTask(id, req.auth!.familyId);
@@ -991,6 +1006,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/shopping", authMiddleware, async (req: AuthRequest, res: Response) => {
     try {
+      const user = await storage.getUser(req.auth!.userId);
+      if (!user || !user.canViewShopping || !user.canModifyItems) {
+        return res.status(403).json({ error: { code: "FORBIDDEN", message: "Access denied" } });
+      }
+      
       const { name, quantity, unit, category } = req.body;
       
       if (!name) {
@@ -1045,6 +1065,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put("/api/shopping/:id", authMiddleware, async (req: AuthRequest, res: Response) => {
     try {
+      const user = await storage.getUser(req.auth!.userId);
+      if (!user || !user.canViewShopping || !user.canModifyItems) {
+        return res.status(403).json({ error: { code: "FORBIDDEN", message: "Access denied" } });
+      }
+      
       const { id } = req.params;
       const { name, quantity, unit, category, purchased } = req.body;
       
@@ -1085,6 +1110,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete("/api/shopping/:id", authMiddleware, async (req: AuthRequest, res: Response) => {
     try {
+      const user = await storage.getUser(req.auth!.userId);
+      if (!user || !user.canViewShopping || !user.canModifyItems) {
+        return res.status(403).json({ error: { code: "FORBIDDEN", message: "Access denied" } });
+      }
+      
       const { id } = req.params;
       
       const existing = await storage.getShoppingItem(id, req.auth!.familyId);
@@ -1135,6 +1165,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/expenses", authMiddleware, async (req: AuthRequest, res: Response) => {
     try {
+      const user = await storage.getUser(req.auth!.userId);
+      if (!user || !user.canViewBudget) {
+        return res.status(403).json({ error: { code: "FORBIDDEN", message: "Access denied" } });
+      }
+      
       const { amount, description, category, paidBy, date } = req.body;
       
       if (amount === undefined || !description || !paidBy || !date) {
@@ -1176,6 +1211,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put("/api/expenses/:id", authMiddleware, async (req: AuthRequest, res: Response) => {
     try {
+      const user = await storage.getUser(req.auth!.userId);
+      if (!user || !user.canViewBudget) {
+        return res.status(403).json({ error: { code: "FORBIDDEN", message: "Access denied" } });
+      }
+      
       const { id } = req.params;
       const { amount, description, category, paidBy, date } = req.body;
       
@@ -1222,6 +1262,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete("/api/expenses/:id", authMiddleware, requireRoles("admin", "member"), async (req: AuthRequest, res: Response) => {
     try {
+      const user = await storage.getUser(req.auth!.userId);
+      if (!user || !user.canViewBudget) {
+        return res.status(403).json({ error: { code: "FORBIDDEN", message: "Access denied" } });
+      }
+      
       const { id } = req.params;
       
       const existing = await storage.getExpense(id, req.auth!.familyId);
