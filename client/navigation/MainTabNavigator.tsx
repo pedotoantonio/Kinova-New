@@ -7,6 +7,7 @@ import HomeStackNavigator from "@/navigation/HomeStackNavigator";
 import ProfileStackNavigator from "@/navigation/ProfileStackNavigator";
 import CalendarScreen from "@/screens/CalendarScreen";
 import ListsScreen from "@/screens/ListsScreen";
+import BudgetScreen from "@/screens/BudgetScreen";
 import { useTheme } from "@/hooks/useTheme";
 import { useI18n } from "@/lib/i18n";
 
@@ -14,6 +15,7 @@ export type MainTabParamList = {
   HomeTab: undefined;
   CalendarTab: undefined;
   ListsTab: undefined;
+  BudgetTab: undefined;
   ProfileTab: undefined;
 };
 
@@ -84,6 +86,20 @@ export default function MainTabNavigator() {
           headerTintColor: theme.text,
           tabBarIcon: ({ color, size }) => (
             <Feather name="list" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="BudgetTab"
+        component={BudgetScreen}
+        options={{
+          title: t.budget.title,
+          headerShown: true,
+          headerTitle: t.budget.title,
+          headerStyle: { backgroundColor: theme.backgroundRoot },
+          headerTintColor: theme.text,
+          tabBarIcon: ({ color, size }) => (
+            <Feather name="dollar-sign" size={size} color={color} />
           ),
         }}
       />

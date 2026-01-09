@@ -46,6 +46,8 @@ const translations = {
       viewTasks: "Vedi attività",
       overdue: "scaduta",
       overdueCount: "{count} scadute",
+      monthlyBudget: "Budget mensile",
+      viewBudget: "Vedi budget",
     },
     calendar: {
       title: "Calendario",
@@ -276,6 +278,8 @@ const translations = {
       viewTasks: "View tasks",
       overdue: "overdue",
       overdueCount: "{count} overdue",
+      monthlyBudget: "Monthly budget",
+      viewBudget: "View budget",
     },
     calendar: {
       title: "Calendar",

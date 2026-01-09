@@ -15,7 +15,7 @@ import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { Card } from "@/components/Card";
 import { WeatherWidget } from "@/components/WeatherWidget";
-import type { Event, Task, ShoppingItem } from "@shared/types";
+import type { Event, Task, ShoppingItem, Expense } from "@shared/types";
 
 interface Family {
   id: string;
@@ -98,6 +98,24 @@ export default function HomeScreen() {
     enabled: isAuthenticated,
   });
 
+  const currentMonth = React.useMemo(() => {
+    const now = new Date();
+    return {
+      from: new Date(now.getFullYear(), now.getMonth(), 1).toISOString(),
+      to: new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59).toISOString(),
+    };
+  }, []);
+
+  const { data: monthlyExpenses } = useQuery<Expense[]>({
+    queryKey: ["/api/expenses", { from: currentMonth.from, to: currentMonth.to }],
+    enabled: isAuthenticated,
+  });
+
+  const monthlyTotal = React.useMemo(() => {
+    if (!monthlyExpenses) return 0;
+    return monthlyExpenses.reduce((sum, e) => sum + e.amount, 0);
+  }, [monthlyExpenses]);
+
   const pendingShoppingItems = React.useMemo(() => {
     if (!shoppingItems) return [];
     return shoppingItems.filter((i) => !i.purchased).slice(0, 5);
@@ -136,6 +154,17 @@ export default function HomeScreen() {
 
   const navigateToProfile = () => {
     (navigation as any).navigate("ProfileTab");
+  };
+
+  const navigateToBudget = () => {
+    (navigation as any).navigate("BudgetTab");
+  };
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat(language === "it" ? "it-IT" : "en-US", {
+      style: "currency",
+      currency: "EUR",
+    }).format(amount);
   };
 
   const renderHeader = () => (
@@ -303,6 +332,34 @@ export default function HomeScreen() {
         )}
       </View>
 
+      <View style={styles.todaySection}>
+        <View style={styles.sectionHeader}>
+          <ThemedText style={[styles.sectionTitle, { color: colors.text }]}>
+            {t.home.monthlyBudget}
+          </ThemedText>
+          <Pressable onPress={navigateToBudget} hitSlop={8}>
+            <ThemedText style={[styles.viewAllLink, { color: colors.primary }]}>
+              {t.home.viewBudget}
+            </ThemedText>
+          </Pressable>
+        </View>
+
+        <Pressable onPress={navigateToBudget} testID="home-budget-widget">
+          <Card style={styles.budgetCard}>
+            <Feather name="dollar-sign" size={24} color={colors.primary} />
+            <View style={styles.budgetInfo}>
+              <ThemedText style={[styles.budgetAmount, { color: colors.text }]}>
+                {formatCurrency(monthlyTotal)}
+              </ThemedText>
+              <ThemedText style={[styles.budgetLabel, { color: colors.textSecondary }]}>
+                {t.budget.monthlySpent}
+              </ThemedText>
+            </View>
+            <Feather name="chevron-right" size={20} color={colors.textSecondary} />
+          </Card>
+        </Pressable>
+      </View>
+
     </View>
   );
 
@@ -328,6 +385,7 @@ export default function HomeScreen() {
     queryClient.invalidateQueries({ queryKey: ["/api/shopping"] });
     queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
     queryClient.invalidateQueries({ queryKey: ["weather"] });
+    queryClient.invalidateQueries({ queryKey: ["/api/expenses"] });
   };
 
   return (
@@ -450,5 +508,22 @@ const styles = StyleSheet.create({
   },
   listItemMeta: {
     ...Typography.small,
+  },
+  budgetCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: Spacing.lg,
+    gap: Spacing.md,
+  },
+  budgetInfo: {
+    flex: 1,
+  },
+  budgetAmount: {
+    ...Typography.subtitle,
+    fontWeight: "700",
+  },
+  budgetLabel: {
+    ...Typography.small,
+    marginTop: 2,
   },
 });
