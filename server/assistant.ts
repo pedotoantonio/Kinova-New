@@ -189,19 +189,45 @@ CURRENT FAMILY CONTEXT:
 REGOLE IMPORTANTI:
 1. Rispondi SEMPRE in italiano
 2. Usa un tono amichevole e familiare
-3. Se l'utente chiede di MODIFICARE dati (aggiungere evento, completare task, aggiungere spesa, ecc.), NON eseguire mai l'azione direttamente
-4. Invece, descrivi cosa vorresti fare e chiedi conferma esplicita con "Confermi?" o simile
-5. Aspetta che l'utente risponda "sì", "conferma", "ok" prima di procedere
-6. Per le azioni, indica chiaramente: [AZIONE_PROPOSTA: tipo_azione | dettagli JSON]
+3. Se l'utente chiede di MODIFICARE dati (aggiungere evento, completare task, aggiungere spesa, aggiungere alla lista, ecc.), NON eseguire mai l'azione direttamente
+4. Proponi l'azione con il formato specifico e chiedi conferma
+5. DEVI SEMPRE usare questo formato ESATTO per proporre azioni:
+
+   [AZIONE_PROPOSTA: tipo_azione | {"campo1":"valore1","campo2":"valore2"}]
+
+6. Tipi di azione disponibili:
+   - add_shopping_item: {"name":"nome prodotto","quantity":1,"category":"categoria"}
+   - create_event: {"title":"titolo","startDate":"2026-01-10T10:00:00","description":"desc"}
+   - create_task: {"title":"titolo","dueDate":"2026-01-15","priority":"medium"}
+   - create_expense: {"amount":50.00,"description":"desc","category":"food"}
+   - complete_task: {"id":"task-uuid"}
+
+7. ESEMPIO CORRETTO per lista spesa:
+   "Vuoi che aggiunga 'completino' alla lista della spesa? [AZIONE_PROPOSTA: add_shopping_item | {"name":"completino","quantity":1}] Confermi?"
+
+8. Mai dire "Ho fatto" o "Ho aggiunto" senza che l'utente abbia confermato prima!
 `
     : `
 IMPORTANT RULES:
 1. ALWAYS respond in English
 2. Use a friendly, familiar tone
-3. If the user asks to MODIFY data (add event, complete task, add expense, etc.), NEVER execute the action directly
-4. Instead, describe what you'd like to do and ask for explicit confirmation like "Do you confirm?"
-5. Wait for the user to respond "yes", "confirm", "ok" before proceeding
-6. For actions, clearly indicate: [PROPOSED_ACTION: action_type | JSON details]
+3. If the user asks to MODIFY data (add event, complete task, add expense, add to list, etc.), NEVER execute the action directly
+4. Propose the action with the specific format and ask for confirmation
+5. You MUST ALWAYS use this EXACT format to propose actions:
+
+   [PROPOSED_ACTION: action_type | {"field1":"value1","field2":"value2"}]
+
+6. Available action types:
+   - add_shopping_item: {"name":"product name","quantity":1,"category":"category"}
+   - create_event: {"title":"title","startDate":"2026-01-10T10:00:00","description":"desc"}
+   - create_task: {"title":"title","dueDate":"2026-01-15","priority":"medium"}
+   - create_expense: {"amount":50.00,"description":"desc","category":"food"}
+   - complete_task: {"id":"task-uuid"}
+
+7. CORRECT EXAMPLE for shopping list:
+   "Would you like me to add 'milk' to the shopping list? [PROPOSED_ACTION: add_shopping_item | {"name":"milk","quantity":1}] Do you confirm?"
+
+8. Never say "Done" or "I've added" without the user confirming first!
 `;
 
   if (isChild) {
@@ -357,7 +383,8 @@ export function registerAssistantRoutes(app: Express, authMiddleware: (req: Auth
         await storage.updateAssistantConversation(conversationId, { title: titleContent });
       }
 
-      res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
+      const proposedAction = extractProposedAction(fullResponse);
+      res.write(`data: ${JSON.stringify({ done: true, proposedAction })}\n\n`);
       res.end();
     } catch (error) {
       console.error("Chat error:", error);
