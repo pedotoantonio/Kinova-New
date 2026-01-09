@@ -24,6 +24,9 @@ export const families = pgTable("families", {
     .primaryKey()
     .default(sql`gen_random_uuid()`),
   name: text("name").notNull(),
+  city: text("city"),
+  cityLat: numeric("city_lat"),
+  cityLon: numeric("city_lon"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

@@ -14,6 +14,7 @@ import { Colors, Spacing, BorderRadius, Typography } from "@/constants/theme";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { Card } from "@/components/Card";
+import { WeatherWidget } from "@/components/WeatherWidget";
 import type { Event, Task, ShoppingItem } from "@shared/types";
 
 interface FamilyMember {
@@ -27,6 +28,9 @@ interface FamilyMember {
 interface Family {
   id: string;
   name: string;
+  city?: string | null;
+  cityLat?: string | null;
+  cityLon?: string | null;
   createdAt: string;
 }
 
@@ -176,6 +180,10 @@ export default function HomeScreen() {
     (navigation as any).navigate("ListsTab");
   };
 
+  const navigateToProfile = () => {
+    (navigation as any).navigate("ProfileTab");
+  };
+
   const renderHeader = () => (
     <View style={styles.headerContent}>
       <ThemedText style={[styles.welcomeText, { color: colors.textSecondary }]}>
@@ -184,6 +192,13 @@ export default function HomeScreen() {
       <ThemedText style={[styles.familyName, { color: colors.text }]}>
         {family?.name || t.home.yourFamily}
       </ThemedText>
+
+      <WeatherWidget
+        city={family?.city}
+        cityLat={family?.cityLat ? parseFloat(family.cityLat) : null}
+        cityLon={family?.cityLon ? parseFloat(family.cityLon) : null}
+        onSetCity={navigateToProfile}
+      />
 
       <View style={styles.todaySection}>
         <View style={styles.sectionHeader}>

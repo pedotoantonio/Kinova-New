@@ -33,6 +33,7 @@ export interface IStorage {
   deleteUser(id: string): Promise<boolean>;
   getFamily(id: string): Promise<Family | undefined>;
   createFamily(family: InsertFamily): Promise<Family>;
+  updateFamily(id: string, data: Partial<Family>): Promise<Family | undefined>;
   getFamilyMembers(familyId: string): Promise<User[]>;
   createInvite(data: { familyId: string; code: string; role: UserRole; expiresAt: Date; createdBy: string; email?: string }): Promise<FamilyInvite>;
   getInviteByCode(code: string): Promise<FamilyInvite | undefined>;
@@ -125,6 +126,15 @@ export class DatabaseStorage implements IStorage {
       .values({
         name: insertFamily.name,
       })
+      .returning();
+    return family;
+  }
+
+  async updateFamily(id: string, data: Partial<Family>): Promise<Family | undefined> {
+    const [family] = await db
+      .update(families)
+      .set(data)
+      .where(eq(families.id, id))
       .returning();
     return family;
   }

@@ -351,6 +351,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.put("/api/family", authMiddleware, requireRoles("admin"), async (req: AuthRequest, res: Response) => {
+    try {
+      const { name, city, cityLat, cityLon } = req.body;
+
+      const updateData: Record<string, unknown> = {};
+      if (name !== undefined) updateData.name = name;
+      if (city !== undefined) updateData.city = city;
+      if (cityLat !== undefined) updateData.cityLat = cityLat;
+      if (cityLon !== undefined) updateData.cityLon = cityLon;
+
+      if (Object.keys(updateData).length === 0) {
+        return res.status(400).json({ error: "No valid fields to update" });
+      }
+
+      const updated = await storage.updateFamily(req.auth!.familyId, updateData as any);
+      if (!updated) {
+        return res.status(404).json({ error: "Family not found" });
+      }
+
+      res.json(updated);
+    } catch (error) {
+      console.error("Update family error:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   app.get("/api/family/members", authMiddleware, async (req: AuthRequest, res: Response) => {
     try {
       const members = await storage.getFamilyMembers(req.auth!.familyId);
