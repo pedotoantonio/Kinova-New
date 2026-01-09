@@ -65,7 +65,7 @@ interface Attachment {
   uploading?: boolean;
 }
 
-const AUTH_TOKEN_KEY = "@kinova/token";
+const AUTH_TOKEN_KEY = "@kinova/auth_token";
 
 export default function AssistantScreen() {
   const insets = useSafeAreaInsets();
@@ -98,8 +98,7 @@ export default function AssistantScreen() {
 
   const createConversationMutation = useMutation({
     mutationFn: async () => {
-      const res = await apiRequest("POST", "/api/assistant/conversations", {});
-      return (res as Response).json();
+      return await apiRequest<Conversation>("POST", "/api/assistant/conversations", {});
     },
     onSuccess: (data: Conversation) => {
       setActiveConversationId(data.id);
@@ -217,26 +216,31 @@ export default function AssistantScreen() {
     if (!pendingAction) return;
     Haptics.impactAsync(approved ? Haptics.ImpactFeedbackStyle.Medium : Haptics.ImpactFeedbackStyle.Light);
     
+    if (!approved) {
+      setPendingAction(null);
+      return;
+    }
+    
     try {
       const token = await AsyncStorage.getItem(AUTH_TOKEN_KEY);
-      await fetch(new URL("/api/assistant/action", getApiUrl()).toString(), {
+      await fetch(new URL("/api/assistant/confirm", getApiUrl()).toString(), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          messageId: pendingAction.messageId,
-          approved,
+          actionType: pendingAction.action.type,
+          actionData: pendingAction.action.data,
+          conversationId: activeConversationId,
+          language,
         }),
       });
       
-      if (approved) {
-        queryClient.invalidateQueries({ queryKey: ["/api/events"] });
-        queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
-        queryClient.invalidateQueries({ queryKey: ["/api/shopping"] });
-        queryClient.invalidateQueries({ queryKey: ["/api/expenses"] });
-      }
+      queryClient.invalidateQueries({ queryKey: ["/api/events"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/shopping"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/expenses"] });
     } catch {
       Alert.alert(t.common.error, t.errors.networkError);
     } finally {
