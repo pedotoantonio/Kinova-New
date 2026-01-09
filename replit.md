@@ -60,7 +60,7 @@ Preferred communication style: Simple, everyday language.
 
 **Schema** (defined in `shared/schema.ts`):
 - `families` table: id (UUID), name, createdAt
-- `users` table: id (UUID), username (unique), password, displayName, avatarUrl, familyId (FK), role, createdAt
+- `users` table: id (UUID), username (unique), password, displayName, avatarUrl, familyId (FK), role, createdAt, canViewCalendar, canViewTasks, canViewShopping, canViewBudget, canViewPlaces, canModifyItems (permission flags)
 - `sessions` table: id (UUID), token (unique), userId (FK), familyId (FK), role, type (access/refresh), expiresAt, createdAt
 - `events` table: id (UUID), familyId (FK), title, description, startDate, endDate, allDay, color, createdBy (FK), createdAt, updatedAt
 - `tasks` table: id (UUID), familyId (FK), title, description, completed, dueDate, assignedTo (FK), priority, createdBy (FK), createdAt, updatedAt
@@ -109,3 +109,35 @@ Preferred communication style: Simple, everyday language.
 **Database**: drizzle-orm, drizzle-zod, pg (node-postgres)
 
 **Validation**: zod, zod-validation-error
+
+## Recent Changes
+
+### GATE 1 BIS - Role-Based Permission System (January 2026)
+
+**Permission Model**:
+- Three user roles: `admin`, `member`, `child`
+- Six granular permissions: canViewCalendar, canViewTasks, canViewShopping, canViewBudget, canViewPlaces, canModifyItems
+- Permissions stored in database, applied at user creation based on role
+
+**Role Defaults**:
+- **Admin**: All permissions true
+- **Member**: All permissions true except canViewBudget=false
+- **Child**: canViewCalendar/Tasks/Places=true, canViewShopping/Budget=false, canModifyItems=false
+
+**Backend Enforcement**:
+- All shopping/expenses/tasks mutation endpoints check canModifyItems
+- Budget endpoints (expenses) check canViewBudget
+- Shopping endpoints check canViewShopping
+- Child role automatically filters events/tasks to only show assignedTo items
+- All unauthorized attempts return 403 FORBIDDEN
+
+**Frontend Adaptation**:
+- MainTabNavigator hides Budget tab if canViewBudget=false
+- MainTabNavigator hides Lists tab if both canViewShopping and canViewTasks are false
+- ListsScreen hides add input and delete buttons if canModifyItems=false
+- Tab selector hidden when user only has access to one list type
+
+**Key Files**:
+- `server/permissions.ts`: Role defaults and permission utilities
+- `shared/types.ts`: UserPermissions interface
+- `client/lib/auth.tsx`: AuthContext with permissions
