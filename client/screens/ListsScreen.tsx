@@ -27,6 +27,7 @@ import { Colors, Spacing, BorderRadius, Typography } from "@/constants/theme";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { Card } from "@/components/Card";
+import { PlacePickerModal, Place } from "@/components/PlacePickerModal";
 import type { Task, ShoppingItem, FamilyMember } from "@shared/types";
 
 type TabType = "shopping" | "tasks";
@@ -57,6 +58,8 @@ export default function ListsScreen() {
   const [taskFilter, setTaskFilter] = useState<TaskFilter>("all");
   const [newItemName, setNewItemName] = useState("");
   const [isAddingItem, setIsAddingItem] = useState(false);
+  const [selectedPlaceId, setSelectedPlaceId] = useState<string | null>(null);
+  const [showPlacePicker, setShowPlacePicker] = useState(false);
 
   const colors = isDark ? Colors.dark : Colors.light;
 
@@ -91,6 +94,17 @@ export default function ListsScreen() {
     enabled: isAuthenticated && permissions.canViewTasks,
   });
 
+  const { data: places } = useQuery<Place[]>({
+    queryKey: ["/api/places"],
+    enabled: isAuthenticated && permissions.canViewPlaces,
+  });
+
+  const getPlaceName = useCallback((placeId: string | null | undefined) => {
+    if (!placeId) return null;
+    const place = places?.find((p) => p.id === placeId);
+    return place?.name || null;
+  }, [places]);
+
   const createShoppingMutation = useMutation({
     mutationFn: async (name: string) => {
       return apiRequest("POST", "/api/shopping", { name });
@@ -121,12 +135,13 @@ export default function ListsScreen() {
   });
 
   const createTaskMutation = useMutation({
-    mutationFn: async (title: string) => {
-      return apiRequest("POST", "/api/tasks", { title });
+    mutationFn: async (data: { title: string; placeId?: string | null }) => {
+      return apiRequest("POST", "/api/tasks", { title: data.title, placeId: data.placeId || undefined });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
       setNewItemName("");
+      setSelectedPlaceId(null);
       setIsAddingItem(false);
     },
   });
@@ -188,7 +203,7 @@ export default function ListsScreen() {
     if (activeTab === "shopping") {
       createShoppingMutation.mutate(newItemName.trim());
     } else {
-      createTaskMutation.mutate(newItemName.trim());
+      createTaskMutation.mutate({ title: newItemName.trim(), placeId: selectedPlaceId });
     }
   };
 
@@ -340,6 +355,11 @@ export default function ListsScreen() {
                   <Feather name="user" size={12} /> {getMemberName(item.assignedTo)}
                 </ThemedText>
               ) : null}
+              {item.placeId ? (
+                <ThemedText style={[styles.placeText, { color: colors.textSecondary }]}>
+                  <Feather name="map-pin" size={12} /> {getPlaceName(item.placeId)}
+                </ThemedText>
+              ) : null}
             </View>
           </View>
           {permissions.canModifyItems ? (
@@ -481,26 +501,58 @@ export default function ListsScreen() {
     
     return (
       <View style={[styles.addInputContainer, { backgroundColor: colors.backgroundSecondary }]}>
-        <TextInput
-          style={[styles.addInput, { color: colors.text, borderColor: colors.border }]}
-          placeholder={activeTab === "shopping" ? t.shopping.itemName : t.tasks.taskTitle}
-          placeholderTextColor={colors.textSecondary}
-          value={newItemName}
-          onChangeText={setNewItemName}
-          onSubmitEditing={handleAddItem}
-          returnKeyType="done"
-          testID="input-new-item"
-        />
-        <Pressable
-          style={[styles.addButton, { backgroundColor: colors.primary }]}
-          onPress={handleAddItem}
-          disabled={!newItemName.trim()}
-          testID="button-add-item"
-          accessibilityLabel={activeTab === "shopping" ? t.shopping.addItem : t.tasks.addTask}
-          accessibilityRole="button"
-        >
-          <Feather name="plus" size={20} color={colors.buttonText} />
-        </Pressable>
+        <View style={styles.addInputRow}>
+          <TextInput
+            style={[styles.addInput, { color: colors.text, borderColor: colors.border }]}
+            placeholder={activeTab === "shopping" ? t.shopping.itemName : t.tasks.taskTitle}
+            placeholderTextColor={colors.textSecondary}
+            value={newItemName}
+            onChangeText={setNewItemName}
+            onSubmitEditing={handleAddItem}
+            returnKeyType="done"
+            testID="input-new-item"
+          />
+          {activeTab === "tasks" && permissions.canViewPlaces ? (
+            <Pressable
+              style={[
+                styles.placeButton,
+                { 
+                  backgroundColor: selectedPlaceId ? colors.primary : colors.backgroundSecondary,
+                  borderColor: colors.border,
+                },
+              ]}
+              onPress={() => setShowPlacePicker(true)}
+              testID="button-select-place"
+            >
+              <Feather 
+                name="map-pin" 
+                size={18} 
+                color={selectedPlaceId ? colors.buttonText : colors.textSecondary} 
+              />
+            </Pressable>
+          ) : null}
+          <Pressable
+            style={[styles.addButton, { backgroundColor: colors.primary }]}
+            onPress={handleAddItem}
+            disabled={!newItemName.trim()}
+            testID="button-add-item"
+            accessibilityLabel={activeTab === "shopping" ? t.shopping.addItem : t.tasks.addTask}
+            accessibilityRole="button"
+          >
+            <Feather name="plus" size={20} color={colors.buttonText} />
+          </Pressable>
+        </View>
+        {activeTab === "tasks" && selectedPlaceId ? (
+          <View style={styles.selectedPlaceRow}>
+            <Feather name="map-pin" size={14} color={colors.primary} />
+            <ThemedText style={[styles.selectedPlaceText, { color: colors.text }]}>
+              {getPlaceName(selectedPlaceId)}
+            </ThemedText>
+            <Pressable onPress={() => setSelectedPlaceId(null)} hitSlop={8}>
+              <Feather name="x" size={16} color={colors.textSecondary} />
+            </Pressable>
+          </View>
+        ) : null}
       </View>
     );
   };
@@ -581,6 +633,16 @@ export default function ListsScreen() {
 
         {renderAddInput()}
       </View>
+
+      <PlacePickerModal
+        visible={showPlacePicker}
+        onClose={() => setShowPlacePicker(false)}
+        onSelect={(place) => {
+          setSelectedPlaceId(place.id);
+          setShowPlacePicker(false);
+        }}
+        selectedPlaceId={selectedPlaceId}
+      />
     </KeyboardAvoidingView>
   );
 }
@@ -681,11 +743,16 @@ const styles = StyleSheet.create({
   assigneeText: {
     ...Typography.small,
   },
+  placeText: {
+    ...Typography.small,
+  },
   addInputContainer: {
-    flexDirection: "row",
-    alignItems: "center",
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.md,
+  },
+  addInputRow: {
+    flexDirection: "row",
+    alignItems: "center",
     gap: Spacing.sm,
   },
   addInput: {
@@ -696,12 +763,30 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.md,
     ...Typography.body,
   },
+  placeButton: {
+    width: 44,
+    height: 44,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
   addButton: {
     width: 44,
     height: 44,
     borderRadius: BorderRadius.md,
     justifyContent: "center",
     alignItems: "center",
+  },
+  selectedPlaceRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: Spacing.sm,
+    gap: Spacing.xs,
+  },
+  selectedPlaceText: {
+    ...Typography.small,
+    flex: 1,
   },
   emptyState: {
     flex: 1,
