@@ -54,12 +54,24 @@ export function useNotifications(userId: string | undefined, onNotificationRecei
 
     try {
       const projectId = Constants.expoConfig?.extra?.eas?.projectId;
+      if (!projectId) {
+        // In Expo Go, push notifications are not fully supported
+        // This is expected behavior, not an error
+        console.log("Push notifications: projectId not available (Expo Go limitation)");
+        return null;
+      }
       const tokenData = await Notifications.getExpoPushTokenAsync({
-        projectId: projectId || undefined,
+        projectId,
       });
       return tokenData.data;
     } catch (error) {
-      console.error("Error getting push token:", error);
+      // Silently handle errors in Expo Go - push notifications have limitations
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      if (errorMessage.includes("projectId") || errorMessage.includes("Expo Go")) {
+        console.log("Push notifications not available in Expo Go");
+      } else {
+        console.warn("Push notification setup issue:", errorMessage);
+      }
       return null;
     }
   }, []);
