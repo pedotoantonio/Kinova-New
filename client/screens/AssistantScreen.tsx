@@ -12,6 +12,7 @@ import {
   KeyboardAvoidingView,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
@@ -50,6 +51,7 @@ const AUTH_TOKEN_KEY = "@kinova/token";
 
 export default function AssistantScreen() {
   const insets = useSafeAreaInsets();
+  const tabBarHeight = useBottomTabBarHeight();
   const { t, language } = useI18n();
   const { user } = useAuth();
   const { theme, isDark } = useTheme();
@@ -275,7 +277,7 @@ export default function AssistantScreen() {
         data={messages}
         keyExtractor={(item) => item.id}
         renderItem={renderMessage}
-        contentContainerStyle={[styles.messagesList, { paddingBottom: insets.bottom + 80 }]}
+        contentContainerStyle={[styles.messagesList, { paddingBottom: tabBarHeight + 70 }]}
         ListEmptyComponent={!isStreaming && !streamingContent ? renderEmptyState : null}
         ListFooterComponent={renderStreamingMessage}
         onScroll={handleScroll}
@@ -283,7 +285,7 @@ export default function AssistantScreen() {
       />
 
       {showScrollButton ? (
-        <Animated.View style={[styles.scrollButton, animatedScrollButtonStyle]}>
+        <Animated.View style={[styles.scrollButton, { bottom: tabBarHeight + 70 }, animatedScrollButtonStyle]}>
           <Pressable
             style={[styles.scrollButtonInner, { backgroundColor: theme.surface }]}
             onPress={scrollToBottom}
@@ -293,7 +295,7 @@ export default function AssistantScreen() {
         </Animated.View>
       ) : null}
 
-      <View style={[styles.inputContainer, { backgroundColor: theme.surface, paddingBottom: insets.bottom + Spacing.sm }]}>
+      <View style={[styles.inputContainer, { backgroundColor: theme.surface, bottom: tabBarHeight }]}>
         <TextInput
           style={[styles.input, { backgroundColor: theme.backgroundRoot, color: theme.text }]}
           placeholder={t.assistant.placeholder}
@@ -403,7 +405,6 @@ const styles = StyleSheet.create({
   },
   scrollButton: {
     position: "absolute",
-    bottom: 100,
     alignSelf: "center",
   },
   scrollButtonInner: {
@@ -419,6 +420,9 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   inputContainer: {
+    position: "absolute",
+    left: 0,
+    right: 0,
     flexDirection: "row",
     alignItems: "flex-end",
     padding: Spacing.sm,
