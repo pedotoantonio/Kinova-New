@@ -11,6 +11,9 @@ import {
   type DbShoppingItem,
   type DbExpense,
   type DbSession,
+  type DbAssistantConversation,
+  type DbAssistantMessage,
+  type DbAssistantUpload,
   type EventCategory,
   users, 
   families,
@@ -20,7 +23,10 @@ import {
   tasks,
   shoppingItems,
   expenses,
-  sessions
+  sessions,
+  assistantConversations,
+  assistantMessages,
+  assistantUploads
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, isNull, gt, gte, lte, desc, lt, or } from "drizzle-orm";
@@ -467,6 +473,101 @@ export class DatabaseStorage implements IStorage {
       .where(lt(sessions.expiresAt, new Date()))
       .returning();
     return result.length;
+  }
+
+  async getAssistantConversations(familyId: string, userId: string): Promise<DbAssistantConversation[]> {
+    return db
+      .select()
+      .from(assistantConversations)
+      .where(and(eq(assistantConversations.familyId, familyId), eq(assistantConversations.userId, userId)))
+      .orderBy(desc(assistantConversations.updatedAt));
+  }
+
+  async getAssistantConversation(id: string, familyId: string): Promise<DbAssistantConversation | undefined> {
+    const [conversation] = await db
+      .select()
+      .from(assistantConversations)
+      .where(and(eq(assistantConversations.id, id), eq(assistantConversations.familyId, familyId)));
+    return conversation;
+  }
+
+  async createAssistantConversation(data: { familyId: string; userId: string; title?: string | null }): Promise<DbAssistantConversation> {
+    const [conversation] = await db
+      .insert(assistantConversations)
+      .values({
+        familyId: data.familyId,
+        userId: data.userId,
+        title: data.title || null,
+      })
+      .returning();
+    return conversation;
+  }
+
+  async updateAssistantConversation(id: string, data: Partial<DbAssistantConversation>): Promise<DbAssistantConversation | undefined> {
+    const [conversation] = await db
+      .update(assistantConversations)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(assistantConversations.id, id))
+      .returning();
+    return conversation;
+  }
+
+  async deleteAssistantConversation(id: string): Promise<boolean> {
+    await db.delete(assistantConversations).where(eq(assistantConversations.id, id));
+    return true;
+  }
+
+  async getAssistantMessages(conversationId: string): Promise<DbAssistantMessage[]> {
+    return db
+      .select()
+      .from(assistantMessages)
+      .where(eq(assistantMessages.conversationId, conversationId))
+      .orderBy(assistantMessages.createdAt);
+  }
+
+  async createAssistantMessage(data: { conversationId: string; role: string; content: string; attachments?: string | null }): Promise<DbAssistantMessage> {
+    const [message] = await db
+      .insert(assistantMessages)
+      .values({
+        conversationId: data.conversationId,
+        role: data.role,
+        content: data.content,
+        attachments: data.attachments || null,
+      })
+      .returning();
+    return message;
+  }
+
+  async getAssistantUpload(id: string, familyId: string): Promise<DbAssistantUpload | undefined> {
+    const [upload] = await db
+      .select()
+      .from(assistantUploads)
+      .where(and(eq(assistantUploads.id, id), eq(assistantUploads.familyId, familyId)));
+    return upload;
+  }
+
+  async createAssistantUpload(data: {
+    familyId: string;
+    userId: string;
+    filename: string;
+    originalName: string;
+    mimeType: string;
+    size: number;
+    extractedText?: string | null;
+  }): Promise<DbAssistantUpload> {
+    const [upload] = await db
+      .insert(assistantUploads)
+      .values({
+        familyId: data.familyId,
+        userId: data.userId,
+        filename: data.filename,
+        originalName: data.originalName,
+        mimeType: data.mimeType,
+        size: data.size,
+        extractedText: data.extractedText || null,
+      })
+      .returning();
+    return upload;
   }
 }
 

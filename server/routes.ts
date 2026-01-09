@@ -1130,23 +1130,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/assistant", authMiddleware, async (req: AuthRequest, res: Response) => {
-    try {
-      const { message } = req.body;
-      
-      if (!message) {
-        return res.status(400).json({ error: { code: "VALIDATION_ERROR", message: "Message is required" } });
-      }
-      
-      res.json({
-        message: "AI Assistant is not yet implemented. This is a placeholder response.",
-        suggestions: ["Create a task", "Add an event", "Check shopping list"],
-      });
-    } catch (error) {
-      console.error("Assistant error:", error);
-      res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Internal server error" } });
-    }
-  });
+  const { registerAssistantRoutes } = await import("./assistant");
+  registerAssistantRoutes(app, authMiddleware);
 
   const httpServer = createServer(app);
   return httpServer;

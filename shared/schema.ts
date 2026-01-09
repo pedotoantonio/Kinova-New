@@ -176,3 +176,43 @@ export type DbTask = typeof tasks.$inferSelect;
 export type DbShoppingItem = typeof shoppingItems.$inferSelect;
 export type DbExpense = typeof expenses.$inferSelect;
 export type DbSession = typeof sessions.$inferSelect;
+
+export const assistantConversations = pgTable("assistant_conversations", {
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  familyId: varchar("family_id").references(() => families.id, { onDelete: "cascade" }).notNull(),
+  userId: varchar("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  title: text("title"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const assistantMessages = pgTable("assistant_messages", {
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  conversationId: varchar("conversation_id").references(() => assistantConversations.id, { onDelete: "cascade" }).notNull(),
+  role: text("role").notNull(),
+  content: text("content").notNull(),
+  attachments: text("attachments"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const assistantUploads = pgTable("assistant_uploads", {
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  familyId: varchar("family_id").references(() => families.id, { onDelete: "cascade" }).notNull(),
+  userId: varchar("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  filename: text("filename").notNull(),
+  originalName: text("original_name").notNull(),
+  mimeType: text("mime_type").notNull(),
+  size: integer("size").notNull(),
+  extractedText: text("extracted_text"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type DbAssistantConversation = typeof assistantConversations.$inferSelect;
+export type DbAssistantMessage = typeof assistantMessages.$inferSelect;
+export type DbAssistantUpload = typeof assistantUploads.$inferSelect;
