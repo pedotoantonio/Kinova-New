@@ -198,6 +198,7 @@ REGOLE IMPORTANTI:
 
 7. Tipi di azione disponibili:
    - add_shopping_item: {"name":"nome prodotto","quantity":1,"category":"categoria"}
+   - add_shopping_items: {"items":[{"name":"prodotto1","quantity":1},{"name":"prodotto2","quantity":2}]} - PER MULTIPLI PRODOTTI
    - create_event: {"title":"titolo","startDate":"2026-01-10T10:00:00","description":"desc"}
    - create_task: {"title":"titolo","dueDate":"2026-01-15","priority":"medium"}
    - create_expense: {"amount":50.00,"description":"desc","category":"food"}
@@ -228,6 +229,7 @@ IMPORTANT RULES:
 
 7. Available action types:
    - add_shopping_item: {"name":"product name","quantity":1,"category":"category"}
+   - add_shopping_items: {"items":[{"name":"product1","quantity":1},{"name":"product2","quantity":2}]} - FOR MULTIPLE ITEMS
    - create_event: {"title":"title","startDate":"2026-01-10T10:00:00","description":"desc"}
    - create_task: {"title":"title","dueDate":"2026-01-15","priority":"medium"}
    - create_expense: {"amount":50.00,"description":"desc","category":"food"}
@@ -554,6 +556,35 @@ export function registerAssistantRoutes(app: Express, authMiddleware: (req: Auth
             createdBy: req.auth!.userId,
           });
           result = { success: true, message: language === "it" ? "Prodotto aggiunto alla lista" : "Item added to list", data: item };
+          break;
+        }
+
+        case "add_shopping_items": {
+          const items = actionData.items as Array<{ name: string; quantity?: number; unit?: string; category?: string }>;
+          if (!items || !Array.isArray(items) || items.length === 0) {
+            result = { success: false, message: language === "it" ? "Nessun prodotto specificato" : "No items specified" };
+            break;
+          }
+          const createdItems = [];
+          for (const item of items) {
+            const created = await storage.createShoppingItem({
+              familyId: req.auth!.familyId,
+              name: item.name,
+              quantity: item.quantity || 1,
+              unit: item.unit || null,
+              category: item.category || null,
+              purchased: false,
+              createdBy: req.auth!.userId,
+            });
+            createdItems.push(created);
+          }
+          result = { 
+            success: true, 
+            message: language === "it" 
+              ? `${createdItems.length} prodotti aggiunti alla lista` 
+              : `${createdItems.length} items added to list`, 
+            data: createdItems 
+          };
           break;
         }
 

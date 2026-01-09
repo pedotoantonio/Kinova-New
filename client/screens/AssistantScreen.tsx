@@ -529,6 +529,7 @@ export default function AssistantScreen() {
       delete_task: t.assistant.confirmDeleteTask,
       add_shopping: t.assistant.confirmAddShopping,
       add_shopping_item: t.assistant.confirmAddShopping,
+      add_shopping_items: language === "it" ? "Aggiungere prodotti alla lista?" : "Add items to shopping list?",
       remove_shopping: t.assistant.confirmRemoveShopping,
       add_expense: t.assistant.confirmAddExpense,
       create_expense: t.assistant.confirmAddExpense,
@@ -537,13 +538,19 @@ export default function AssistantScreen() {
     const actionData = pendingAction.action.data;
     const summaryLines: string[] = [];
     
-    if (actionData.title) summaryLines.push(`${language === "it" ? "Titolo" : "Title"}: ${actionData.title}`);
-    if (actionData.name) summaryLines.push(`${language === "it" ? "Nome" : "Name"}: ${actionData.name}`);
-    if (actionData.amount) summaryLines.push(`${language === "it" ? "Importo" : "Amount"}: €${actionData.amount}`);
-    if (actionData.description) summaryLines.push(`${language === "it" ? "Descrizione" : "Description"}: ${actionData.description}`);
-    if (actionData.startDate) summaryLines.push(`${language === "it" ? "Data" : "Date"}: ${new Date(actionData.startDate as string).toLocaleDateString(language === "it" ? "it-IT" : "en-US")}`);
-    if (actionData.dueDate) summaryLines.push(`${language === "it" ? "Scadenza" : "Due"}: ${new Date(actionData.dueDate as string).toLocaleDateString(language === "it" ? "it-IT" : "en-US")}`);
-    if (actionData.category) summaryLines.push(`${language === "it" ? "Categoria" : "Category"}: ${actionData.category}`);
+    if (actionData.items && Array.isArray(actionData.items)) {
+      (actionData.items as Array<{ name: string; quantity?: number }>).forEach((item, idx) => {
+        summaryLines.push(`${idx + 1}. ${item.name}${item.quantity ? ` (${item.quantity})` : ""}`);
+      });
+    } else {
+      if (actionData.title) summaryLines.push(`${language === "it" ? "Titolo" : "Title"}: ${actionData.title}`);
+      if (actionData.name) summaryLines.push(`${language === "it" ? "Nome" : "Name"}: ${actionData.name}`);
+      if (actionData.amount) summaryLines.push(`${language === "it" ? "Importo" : "Amount"}: €${actionData.amount}`);
+      if (actionData.description) summaryLines.push(`${language === "it" ? "Descrizione" : "Description"}: ${actionData.description}`);
+      if (actionData.startDate) summaryLines.push(`${language === "it" ? "Data" : "Date"}: ${new Date(actionData.startDate as string).toLocaleDateString(language === "it" ? "it-IT" : "en-US")}`);
+      if (actionData.dueDate) summaryLines.push(`${language === "it" ? "Scadenza" : "Due"}: ${new Date(actionData.dueDate as string).toLocaleDateString(language === "it" ? "it-IT" : "en-US")}`);
+      if (actionData.category) summaryLines.push(`${language === "it" ? "Categoria" : "Category"}: ${actionData.category}`);
+    }
 
     return (
       <Animated.View entering={FadeIn} style={[styles.actionConfirmation, { backgroundColor: theme.surface, bottom: tabBarHeight + 70 }]}>
