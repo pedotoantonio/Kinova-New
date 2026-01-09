@@ -355,9 +355,9 @@ export default function ListsScreen() {
                   <Feather name="user" size={12} /> {getMemberName(item.assignedTo)}
                 </ThemedText>
               ) : null}
-              {item.placeId ? (
+              {permissions.canViewPlaces && item.placeId ? (
                 <ThemedText style={[styles.placeText, { color: colors.textSecondary }]}>
-                  <Feather name="map-pin" size={12} /> {getPlaceName(item.placeId)}
+                  <Feather name="map-pin" size={12} /> {getPlaceName(item.placeId) || ""}
                 </ThemedText>
               ) : null}
             </View>
