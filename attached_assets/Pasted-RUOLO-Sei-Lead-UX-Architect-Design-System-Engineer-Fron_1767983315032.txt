@@ -1,0 +1,175 @@
+RUOLO
+Sei Lead UX Architect + Design System Engineer + Frontend Engineer + QA Lead.
+Hai la responsabilità di portare Kinova da “app funzionante” a
+“prodotto professionale pronto per utenti reali e store”.
+Questo gate NON introduce nuove funzionalità, ma consolida TUTTE quelle già esistenti.
+
+REGOLE NON NEGOZIABILI
+1) Nessuna nuova feature funzionale può essere introdotta in questo gate.
+2) Nessuna regressione su gate precedenti (0–6).
+3) Nessuna incoerenza visiva tollerata.
+4) Nessuna stringa hardcoded (i18n IT/EN obbligatorio).
+5) Accessibilità minima obbligatoria.
+6) Output SOLO nel formato richiesto.
+
+OBIETTIVO DEL GATE 7
+Rendere Kinova:
+- coerente visivamente
+- intuitiva nell’uso quotidiano
+- accessibile
+- stabile nel layout
+- pronta per store review
+- coerente tra Mobile, Web (PWA futura) e Admin Console
+
+---
+
+## SCOPE OBBLIGATORIO
+
+### A) DESIGN SYSTEM KINOVA (BLOCCANTE)
+Verificare e applicare in TUTTA l’app:
+- palette Kinova ufficiale
+- tipografia unica (titoli, body, caption)
+- spacing scale coerente
+- radius coerenti
+- elevation coerente
+
+Requisiti:
+- nessuna eccezione non documentata
+- nessun colore o font “one-off”
+
+Test:
+T7.1 Tutte le schermate rispettano theme.ts
+
+---
+
+### B) COERENZA COMPONENTI (BLOCCANTE)
+Verificare che:
+- bottoni primari/secondari siano identici ovunque
+- modali abbiano stessa struttura (header, body, actions)
+- liste condividano pattern comuni
+- FAB e CTA siano coerenti
+
+Nessuna duplicazione inutile di componenti.
+
+Test:
+T7.2 Componenti condivisi correttamente
+
+---
+
+### C) MICRO-UX & FEEDBACK UTENTE
+Ogni azione utente deve avere:
+- feedback immediato (loading/success/error)
+- stato visibile e comprensibile
+- messaggi localizzati
+
+Nessuna azione “silenziosa”.
+
+Test:
+T7.3 Ogni azione ha feedback visivo
+
+---
+
+### D) ACCESSIBILITÀ (WCAG BASE)
+Verificare:
+- contrasto colori sufficiente
+- font leggibili
+- touch target ≥ 44px
+- focus visibili
+- label accessibili (screen reader)
+
+Test:
+T7.4 Contrasto e leggibilità OK
+T7.5 Touch target OK
+
+---
+
+### E) MULTILINGUA & STABILITÀ LAYOUT
+Verificare:
+- nessun overflow con stringhe lunghe
+- layout stabile in IT ed EN
+- fallback corretto su IT
+
+Test:
+T7.6 Switch lingua → layout stabile
+
+---
+
+### F) PERFORMANCE UI
+Verificare:
+- scroll fluido
+- nessun layout jump
+- rendering stabile con dataset reali
+
+Test:
+T7.7 Performance UI OK
+
+---
+
+### G) ONBOARDING & FIRST IMPRESSION
+Verificare:
+- WelcomeScreen chiara
+- CTA comprensibili
+- nessun overload informativo
+- branding Kinova chiaro
+
+Test:
+T7.8 Primo utilizzo → percorso chiaro
+
+---
+
+### H) CONSISTENZA CROSS-MODULO
+Verificare coerenza visiva e UX tra:
+- Calendario
+- Task/Liste
+- Budget
+- Assistente AI
+- Notifiche
+- Luoghi
+
+Test:
+T7.9 Nessuna discrepanza cross-modulo
+
+---
+
+## OUTPUT OBBLIGATORIO (FORMATO RIGIDO)
+
+1) GATE 7 STATUS
+- Stato: PASS / FAIL
+- Bloccanti (se FAIL)
+
+2) MATRICE UI/UX
+Tabella:
+[Test-ID] [Area] [Problema] [Fix] [Stato Finale PASS/FAIL]
+
+3) REPORT TEST DETTAGLIATO
+Per T7.1 – T7.9:
+- Steps
+- Evidenza UI
+- Esito PASS/FAIL
+- Se FAIL: root cause + fix + retest
+
+4) ACCESSIBILITY CHECK
+- Contrasto: OK/NO
+- Touch target: OK/NO
+- Screen reader: OK/NO
+
+5) DESIGN SYSTEM CHECK
+- Palette rispettata: SI/NO
+- Tipografia coerente: SI/NO
+- Spacing coerente: SI/NO
+
+6) CHECKLIST GATE 7
+- UI coerente: SI/NO
+- UX fluida: SI/NO
+- Accessibile: SI/NO
+- Multilingua stabile: SI/NO
+- Performance OK: SI/NO
+
+7) VERDETTO FINALE
+Scrivi ESATTAMENTE una sola riga:
+- “GATE 7 COMPLETATO: PASS”
+oppure
+- “GATE 7 COMPLETATO: FAIL”
+
+STOP
+Non scrivere altro.
