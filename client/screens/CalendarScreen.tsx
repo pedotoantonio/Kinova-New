@@ -23,7 +23,7 @@ import { Colors, Spacing, BorderRadius, Typography } from "@/constants/theme";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { Card } from "@/components/Card";
-import type { Event } from "@shared/types";
+import type { Event, EventCategory, RecurrenceFrequency, EventRecurrence } from "@shared/types";
 
 const EVENT_COLORS = [
   "#2F7F6D",
@@ -35,6 +35,19 @@ const EVENT_COLORS = [
   "#4DB6AC",
   "#FF8A65",
 ];
+
+const CATEGORY_COLORS: Record<EventCategory, string> = {
+  family: "#2F7F6D",
+  course: "#64B5F6",
+  shift: "#FFB74D",
+  vacation: "#BA68C8",
+  holiday: "#E57373",
+  other: "#9E9E9E",
+};
+
+const CATEGORIES: EventCategory[] = ["family", "course", "shift", "vacation", "holiday", "other"];
+const RECURRENCE_FREQUENCIES: (RecurrenceFrequency | "none")[] = ["none", "daily", "weekly", "monthly"];
+const MAX_VISIBLE_EVENTS = 3;
 
 function getStartOfWeek(date: Date): Date {
   const d = new Date(date);
@@ -78,19 +91,48 @@ function isEventOnDay(event: Event, day: Date): boolean {
     eventDayStart.setHours(0, 0, 0, 0);
     const eventDayEnd = new Date(end);
     eventDayEnd.setHours(0, 0, 0, 0);
-    return dayStart >= eventDayStart && dayStart < eventDayEnd;
+    return dayStart >= eventDayStart && dayStart <= eventDayEnd;
   }
 
   return start <= dayEnd && end >= dayStart;
 }
 
+function isWeekend(day: Date): boolean {
+  const dayOfWeek = day.getDay();
+  return dayOfWeek === 0 || dayOfWeek === 6;
+}
+
+function isMultiDayEvent(event: Event): boolean {
+  if (!event.endDate) return false;
+  const start = new Date(event.startDate);
+  const end = new Date(event.endDate);
+  start.setHours(0, 0, 0, 0);
+  end.setHours(0, 0, 0, 0);
+  return end.getTime() > start.getTime();
+}
+
+function getEventColor(event: Event): string {
+  if (event.color) return event.color;
+  return CATEGORY_COLORS[event.category] || CATEGORY_COLORS.family;
+}
+
 interface EventFormData {
   title: string;
+  shortCode: string;
   description: string;
   startDate: Date;
   endDate: Date;
   allDay: boolean;
   color: string;
+  category: EventCategory;
+  recurrenceFrequency: RecurrenceFrequency | "none";
+  recurrenceInterval: number;
+  recurrenceEndDate: Date | null;
+}
+
+interface FilterState {
+  category: EventCategory | null;
+  assignedTo: string | null;
 }
 
 export default function CalendarScreen() {
@@ -106,14 +148,23 @@ export default function CalendarScreen() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [currentWeekStart, setCurrentWeekStart] = useState(getStartOfWeek(new Date()));
   const [showEventModal, setShowEventModal] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
+  const [showDayEventsModal, setShowDayEventsModal] = useState(false);
+  const [dayEventsDate, setDayEventsDate] = useState<Date | null>(null);
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
+  const [filters, setFilters] = useState<FilterState>({ category: null, assignedTo: null });
   const [formData, setFormData] = useState<EventFormData>({
     title: "",
+    shortCode: "",
     description: "",
     startDate: new Date(),
     endDate: new Date(),
     allDay: false,
     color: EVENT_COLORS[0],
+    category: "family",
+    recurrenceFrequency: "none",
+    recurrenceInterval: 1,
+    recurrenceEndDate: null,
   });
 
   const { weekStartIso, weekEndIso, weekEnd } = useMemo(() => {
@@ -175,13 +226,42 @@ export default function CalendarScreen() {
   const resetForm = useCallback(() => {
     setFormData({
       title: "",
+      shortCode: "",
       description: "",
       startDate: selectedDate,
       endDate: selectedDate,
       allDay: false,
       color: EVENT_COLORS[0],
+      category: "family",
+      recurrenceFrequency: "none",
+      recurrenceInterval: 1,
+      recurrenceEndDate: null,
     });
   }, [selectedDate]);
+
+  const filteredEvents = useMemo(() => {
+    if (!events) return [];
+    return events.filter((e) => {
+      if (filters.category && e.category !== filters.category) return false;
+      if (filters.assignedTo && e.assignedTo !== filters.assignedTo) return false;
+      return true;
+    });
+  }, [events, filters]);
+
+  const hasActiveFilters = filters.category !== null || filters.assignedTo !== null;
+
+  const getEventsForDay = useCallback(
+    (day: Date) => {
+      return filteredEvents
+        .filter((e) => isEventOnDay(e, day))
+        .sort((a, b) => {
+          if (a.allDay && !b.allDay) return -1;
+          if (!a.allDay && b.allDay) return 1;
+          return new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
+        });
+    },
+    [filteredEvents]
+  );
 
   const weekDays = useMemo(() => {
     const days: Date[] = [];
@@ -194,11 +274,8 @@ export default function CalendarScreen() {
   }, [currentWeekStart]);
 
   const selectedDayEvents = useMemo(() => {
-    if (!events) return [];
-    return events
-      .filter((e) => isEventOnDay(e, selectedDate))
-      .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
-  }, [events, selectedDate]);
+    return getEventsForDay(selectedDate);
+  }, [getEventsForDay, selectedDate]);
 
   const goToPrevWeek = () => {
     const newStart = new Date(currentWeekStart);
@@ -222,11 +299,16 @@ export default function CalendarScreen() {
     setEditingEvent(null);
     setFormData({
       title: "",
+      shortCode: "",
       description: "",
       startDate: selectedDate,
       endDate: selectedDate,
       allDay: false,
       color: EVENT_COLORS[0],
+      category: "family",
+      recurrenceFrequency: "none",
+      recurrenceInterval: 1,
+      recurrenceEndDate: null,
     });
     setShowEventModal(true);
   };
@@ -235,13 +317,25 @@ export default function CalendarScreen() {
     setEditingEvent(event);
     setFormData({
       title: event.title,
+      shortCode: event.shortCode || "",
       description: event.description || "",
       startDate: new Date(event.startDate),
       endDate: event.endDate ? new Date(event.endDate) : new Date(event.startDate),
       allDay: event.allDay,
-      color: event.color || EVENT_COLORS[0],
+      color: event.color || CATEGORY_COLORS[event.category] || EVENT_COLORS[0],
+      category: event.category || "family",
+      recurrenceFrequency: event.recurrence?.frequency || "none",
+      recurrenceInterval: event.recurrence?.interval || 1,
+      recurrenceEndDate: event.recurrence?.endDate ? new Date(event.recurrence.endDate) : null,
     });
     setShowEventModal(true);
+  };
+
+  const openDayEvents = (day: Date, dayEvents: Event[]) => {
+    if (dayEvents.length > MAX_VISIBLE_EVENTS) {
+      setDayEventsDate(day);
+      setShowDayEventsModal(true);
+    }
   };
 
   const handleSaveEvent = () => {
@@ -250,8 +344,19 @@ export default function CalendarScreen() {
       return;
     }
 
+    const recurrence =
+      formData.recurrenceFrequency !== "none"
+        ? {
+            frequency: formData.recurrenceFrequency as RecurrenceFrequency,
+            interval: formData.recurrenceInterval,
+            endDate: formData.recurrenceEndDate?.toISOString() || null,
+            byWeekday: null,
+          }
+        : null;
+
     const eventData = {
       title: formData.title.trim(),
+      shortCode: formData.shortCode.trim() || null,
       description: formData.description.trim() || null,
       startDate: formData.startDate.toISOString(),
       endDate: formData.allDay
@@ -259,6 +364,8 @@ export default function CalendarScreen() {
         : formData.endDate.toISOString(),
       allDay: formData.allDay,
       color: formData.color,
+      category: formData.category,
+      recurrence,
     };
 
     if (editingEvent) {
@@ -350,17 +457,31 @@ export default function CalendarScreen() {
           </Pressable>
         </View>
 
+        {hasActiveFilters ? (
+          <View style={[styles.filterBadge, { backgroundColor: colors.primary + "20" }]}>
+            <ThemedText style={[styles.filterBadgeText, { color: colors.primary }]}>
+              {t.calendar.filters.active}
+            </ThemedText>
+            <Pressable onPress={() => setFilters({ category: null, assignedTo: null })}>
+              <Feather name="x" size={16} color={colors.primary} />
+            </Pressable>
+          </View>
+        ) : null}
+
         <View style={styles.weekRow}>
           {weekDays.map((day, index) => {
             const isSelected = isSameDay(day, selectedDate);
             const isToday = isSameDay(day, new Date());
-            const hasEvents = events?.some((e) => isEventOnDay(e, day));
+            const dayEvents = getEventsForDay(day);
+            const eventCount = dayEvents.length;
+            const isWeekendDay = isWeekend(day);
 
             return (
               <Pressable
                 key={index}
                 style={[
                   styles.dayCell,
+                  isWeekendDay && { backgroundColor: isDark ? "#1a2a25" : "#f5f9f8" },
                   isSelected && { backgroundColor: colors.primary },
                   isToday && !isSelected && { borderColor: colors.primary, borderWidth: 2 },
                 ]}
@@ -370,7 +491,7 @@ export default function CalendarScreen() {
                 <ThemedText
                   style={[
                     styles.dayAbbr,
-                    { color: isSelected ? "#FFF" : colors.textSecondary },
+                    { color: isSelected ? "#FFF" : isWeekendDay ? colors.primary : colors.textSecondary },
                   ]}
                 >
                   {dayAbbreviations[day.getDay()]}
@@ -383,13 +504,26 @@ export default function CalendarScreen() {
                 >
                   {day.getDate()}
                 </ThemedText>
-                {hasEvents ? (
-                  <View
-                    style={[
-                      styles.eventDot,
-                      { backgroundColor: isSelected ? "#FFF" : colors.primary },
-                    ]}
-                  />
+                {eventCount > 0 ? (
+                  <View style={styles.eventCountContainer}>
+                    {eventCount <= MAX_VISIBLE_EVENTS ? (
+                      dayEvents.slice(0, MAX_VISIBLE_EVENTS).map((e, i) => (
+                        <View
+                          key={e.id}
+                          style={[
+                            styles.eventDot,
+                            { backgroundColor: isSelected ? "#FFF" : getEventColor(e), marginLeft: i > 0 ? 2 : 0 },
+                          ]}
+                        />
+                      ))
+                    ) : (
+                      <View style={[styles.eventCountBadge, { backgroundColor: isSelected ? "#FFF" : colors.primary }]}>
+                        <ThemedText style={[styles.eventCountText, { color: isSelected ? colors.primary : "#FFF" }]}>
+                          {eventCount}
+                        </ThemedText>
+                      </View>
+                    )}
+                  </View>
                 ) : null}
               </Pressable>
             );
@@ -406,14 +540,24 @@ export default function CalendarScreen() {
                     day: "numeric",
                     month: "long",
                   })}
+              {isWeekend(selectedDate) ? ` (${t.calendar.weekend})` : ""}
             </ThemedText>
-            <Pressable
-              style={[styles.addButton, { backgroundColor: colors.primary }]}
-              onPress={openCreateEvent}
-              testID="button-add-event"
-            >
-              <Feather name="plus" size={20} color="#FFF" />
-            </Pressable>
+            <View style={styles.headerButtons}>
+              <Pressable
+                style={[styles.filterButton, { backgroundColor: hasActiveFilters ? colors.primary : colors.card }]}
+                onPress={() => setShowFilters(true)}
+                testID="button-filter"
+              >
+                <Feather name="filter" size={18} color={hasActiveFilters ? "#FFF" : colors.text} />
+              </Pressable>
+              <Pressable
+                style={[styles.addButton, { backgroundColor: colors.primary }]}
+                onPress={openCreateEvent}
+                testID="button-add-event"
+              >
+                <Feather name="plus" size={20} color="#FFF" />
+              </Pressable>
+            </View>
           </View>
 
           {selectedDayEvents.length === 0 ? (
@@ -424,44 +568,71 @@ export default function CalendarScreen() {
               </ThemedText>
             </View>
           ) : (
-            selectedDayEvents.map((event) => (
-              <Pressable
-                key={event.id}
-                onPress={() => openEditEvent(event)}
-                testID={`event-card-${event.id}`}
-              >
-                <Card style={styles.eventCard}>
-                  <View
-                    style={[
-                      styles.eventColorBar,
-                      { backgroundColor: event.color || colors.primary },
-                    ]}
-                  />
-                  <View style={styles.eventContent}>
-                    <ThemedText style={[styles.eventTitle, { color: colors.text }]}>
-                      {event.title}
-                    </ThemedText>
-                    <ThemedText style={[styles.eventTime, { color: colors.textSecondary }]}>
-                      {event.allDay
-                        ? t.calendar.allDay
-                        : `${formatTime(new Date(event.startDate))}${
-                            event.endDate
-                              ? ` - ${formatTime(new Date(event.endDate))}`
-                              : ""
-                          }`}
-                    </ThemedText>
-                    {event.description ? (
-                      <ThemedText
-                        style={[styles.eventDescription, { color: colors.textSecondary }]}
-                        numberOfLines={2}
-                      >
-                        {event.description}
-                      </ThemedText>
-                    ) : null}
-                  </View>
-                </Card>
-              </Pressable>
-            ))
+            selectedDayEvents.map((event) => {
+              const categoryKey = event.category as keyof typeof t.calendar.categories;
+              const categoryLabel = t.calendar.categories[categoryKey] || t.calendar.categories.other;
+              const eventColor = getEventColor(event);
+              const isMultiDay = isMultiDayEvent(event);
+              
+              return (
+                <Pressable
+                  key={event.id}
+                  onPress={() => openEditEvent(event)}
+                  testID={`event-card-${event.id}`}
+                >
+                  <Card style={[styles.eventCard, isMultiDay && styles.multiDayCard]}>
+                    <View
+                      style={[
+                        styles.eventColorBar,
+                        { backgroundColor: eventColor },
+                        isMultiDay && styles.multiDayBar,
+                      ]}
+                    />
+                    <View style={styles.eventContent}>
+                      <View style={styles.eventHeader}>
+                        {event.shortCode ? (
+                          <View style={[styles.shortCodeBadge, { backgroundColor: eventColor + "20" }]}>
+                            <ThemedText style={[styles.shortCodeText, { color: eventColor }]}>
+                              {event.shortCode}
+                            </ThemedText>
+                          </View>
+                        ) : null}
+                        <ThemedText style={[styles.eventTitle, { color: colors.text, flex: 1 }]}>
+                          {event.title}
+                        </ThemedText>
+                        {event.recurrence ? (
+                          <Feather name="repeat" size={14} color={colors.textSecondary} />
+                        ) : null}
+                      </View>
+                      <View style={styles.eventMeta}>
+                        <ThemedText style={[styles.eventTime, { color: colors.textSecondary }]}>
+                          {event.allDay
+                            ? t.calendar.allDay
+                            : `${formatTime(new Date(event.startDate))}${
+                                event.endDate
+                                  ? ` - ${formatTime(new Date(event.endDate))}`
+                                  : ""
+                              }`}
+                        </ThemedText>
+                        <View style={[styles.categoryBadge, { backgroundColor: eventColor + "15" }]}>
+                          <ThemedText style={[styles.categoryText, { color: eventColor }]}>
+                            {categoryLabel}
+                          </ThemedText>
+                        </View>
+                      </View>
+                      {event.description ? (
+                        <ThemedText
+                          style={[styles.eventDescription, { color: colors.textSecondary }]}
+                          numberOfLines={2}
+                        >
+                          {event.description}
+                        </ThemedText>
+                      ) : null}
+                    </View>
+                  </Card>
+                </Pressable>
+              );
+            })
           )}
         </View>
       </ScrollView>
@@ -479,20 +650,71 @@ export default function CalendarScreen() {
             </View>
 
             <ScrollView style={styles.modalBody}>
+              <View style={styles.formRow}>
+                <View style={{ flex: 2 }}>
+                  <ThemedText style={[styles.inputLabel, { color: colors.textSecondary }]}>
+                    {t.calendar.eventTitle}
+                  </ThemedText>
+                  <TextInput
+                    style={[
+                      styles.textInput,
+                      { backgroundColor: theme.backgroundRoot, color: colors.text },
+                    ]}
+                    value={formData.title}
+                    onChangeText={(text) => setFormData({ ...formData, title: text })}
+                    placeholder={t.calendar.eventTitle}
+                    placeholderTextColor={colors.textSecondary}
+                    testID="input-event-title"
+                  />
+                </View>
+                <View style={{ flex: 1, marginLeft: Spacing.sm }}>
+                  <ThemedText style={[styles.inputLabel, { color: colors.textSecondary }]}>
+                    {t.calendar.shortCode}
+                  </ThemedText>
+                  <TextInput
+                    style={[
+                      styles.textInput,
+                      { backgroundColor: theme.backgroundRoot, color: colors.text },
+                    ]}
+                    value={formData.shortCode}
+                    onChangeText={(text) => setFormData({ ...formData, shortCode: text.toUpperCase().slice(0, 4) })}
+                    placeholder={t.calendar.shortCodeHint}
+                    placeholderTextColor={colors.textSecondary}
+                    maxLength={4}
+                    testID="input-event-shortcode"
+                  />
+                </View>
+              </View>
+
               <ThemedText style={[styles.inputLabel, { color: colors.textSecondary }]}>
-                {t.calendar.eventTitle}
+                {t.calendar.category}
               </ThemedText>
-              <TextInput
-                style={[
-                  styles.textInput,
-                  { backgroundColor: theme.backgroundRoot, color: colors.text },
-                ]}
-                value={formData.title}
-                onChangeText={(text) => setFormData({ ...formData, title: text })}
-                placeholder={t.calendar.eventTitle}
-                placeholderTextColor={colors.textSecondary}
-                testID="input-event-title"
-              />
+              <View style={styles.categoryPicker}>
+                {CATEGORIES.map((cat) => {
+                  const catKey = cat as keyof typeof t.calendar.categories;
+                  return (
+                    <Pressable
+                      key={cat}
+                      style={[
+                        styles.categoryOption,
+                        { backgroundColor: CATEGORY_COLORS[cat] + "15", borderColor: CATEGORY_COLORS[cat] },
+                        formData.category === cat && { backgroundColor: CATEGORY_COLORS[cat] },
+                      ]}
+                      onPress={() => setFormData({ ...formData, category: cat, color: CATEGORY_COLORS[cat] })}
+                      testID={`category-option-${cat}`}
+                    >
+                      <ThemedText
+                        style={[
+                          styles.categoryOptionText,
+                          { color: formData.category === cat ? "#FFF" : CATEGORY_COLORS[cat] },
+                        ]}
+                      >
+                        {t.calendar.categories[catKey]}
+                      </ThemedText>
+                    </Pressable>
+                  );
+                })}
+              </View>
 
               <ThemedText style={[styles.inputLabel, { color: colors.textSecondary }]}>
                 {t.calendar.eventDescription}
@@ -522,6 +744,36 @@ export default function CalendarScreen() {
                   trackColor={{ false: colors.border, true: colors.primary }}
                   testID="switch-all-day"
                 />
+              </View>
+
+              <ThemedText style={[styles.inputLabel, { color: colors.textSecondary }]}>
+                {t.calendar.recurrence.title}
+              </ThemedText>
+              <View style={styles.recurrencePicker}>
+                {RECURRENCE_FREQUENCIES.map((freq) => {
+                  const freqKey = freq as keyof typeof t.calendar.recurrence;
+                  return (
+                    <Pressable
+                      key={freq}
+                      style={[
+                        styles.recurrenceOption,
+                        { backgroundColor: theme.backgroundRoot },
+                        formData.recurrenceFrequency === freq && { backgroundColor: colors.primary },
+                      ]}
+                      onPress={() => setFormData({ ...formData, recurrenceFrequency: freq })}
+                      testID={`recurrence-option-${freq}`}
+                    >
+                      <ThemedText
+                        style={[
+                          styles.recurrenceOptionText,
+                          { color: formData.recurrenceFrequency === freq ? "#FFF" : colors.text },
+                        ]}
+                      >
+                        {t.calendar.recurrence[freqKey]}
+                      </ThemedText>
+                    </Pressable>
+                  );
+                })}
               </View>
 
               <ThemedText style={[styles.inputLabel, { color: colors.textSecondary }]}>
@@ -566,6 +818,76 @@ export default function CalendarScreen() {
                 testID="button-save-event"
               >
                 <ThemedText style={{ color: "#FFF" }}>{t.common.save}</ThemedText>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal visible={showFilters} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: theme.backgroundSecondary }]}>
+            <View style={styles.modalHeader}>
+              <ThemedText style={[styles.modalTitle, { color: colors.text }]}>
+                {t.calendar.filters.title}
+              </ThemedText>
+              <Pressable onPress={() => setShowFilters(false)}>
+                <Feather name="x" size={24} color={colors.text} />
+              </Pressable>
+            </View>
+
+            <ScrollView style={styles.modalBody}>
+              <ThemedText style={[styles.inputLabel, { color: colors.textSecondary }]}>
+                {t.calendar.filters.byCategory}
+              </ThemedText>
+              <View style={styles.filterOptions}>
+                <Pressable
+                  style={[
+                    styles.filterOption,
+                    { backgroundColor: filters.category === null ? colors.primary : theme.backgroundRoot },
+                  ]}
+                  onPress={() => setFilters({ ...filters, category: null })}
+                >
+                  <ThemedText style={{ color: filters.category === null ? "#FFF" : colors.text }}>
+                    {t.calendar.filters.all}
+                  </ThemedText>
+                </Pressable>
+                {CATEGORIES.map((cat) => {
+                  const catKey = cat as keyof typeof t.calendar.categories;
+                  const isActive = filters.category === cat;
+                  return (
+                    <Pressable
+                      key={cat}
+                      style={[
+                        styles.filterOption,
+                        { backgroundColor: isActive ? CATEGORY_COLORS[cat] : CATEGORY_COLORS[cat] + "15" },
+                      ]}
+                      onPress={() => setFilters({ ...filters, category: cat })}
+                    >
+                      <ThemedText style={{ color: isActive ? "#FFF" : CATEGORY_COLORS[cat] }}>
+                        {t.calendar.categories[catKey]}
+                      </ThemedText>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </ScrollView>
+
+            <View style={styles.modalActions}>
+              <Pressable
+                style={[styles.cancelButton, { borderColor: colors.border, flex: 1 }]}
+                onPress={() => {
+                  setFilters({ category: null, assignedTo: null });
+                  setShowFilters(false);
+                }}
+              >
+                <ThemedText style={{ color: colors.text }}>{t.calendar.filters.reset}</ThemedText>
+              </Pressable>
+              <Pressable
+                style={[styles.saveButton, { backgroundColor: colors.primary, flex: 1 }]}
+                onPress={() => setShowFilters(false)}
+              >
+                <ThemedText style={{ color: "#FFF" }}>{t.common.confirm}</ThemedText>
               </Pressable>
             </View>
           </View>
@@ -767,6 +1089,129 @@ const styles = StyleSheet.create({
   saveButton: {
     paddingHorizontal: Spacing.xl,
     paddingVertical: Spacing.md,
+    borderRadius: BorderRadius.md,
+    alignItems: "center",
+  },
+  formRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+  },
+  categoryPicker: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: Spacing.xs,
+  },
+  categoryOption: {
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+  },
+  categoryOptionText: {
+    ...Typography.small,
+    fontWeight: "500",
+  },
+  recurrencePicker: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: Spacing.xs,
+  },
+  recurrenceOption: {
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.md,
+  },
+  recurrenceOptionText: {
+    ...Typography.small,
+  },
+  eventCountContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: Spacing.xs,
+  },
+  eventCountBadge: {
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 4,
+  },
+  eventCountText: {
+    fontSize: 10,
+    fontWeight: "600",
+  },
+  filterBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-start",
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.xs,
+    borderRadius: BorderRadius.full,
+    marginBottom: Spacing.md,
+    gap: Spacing.xs,
+  },
+  filterBadgeText: {
+    ...Typography.small,
+    fontWeight: "500",
+  },
+  headerButtons: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+  },
+  filterButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  eventHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+  },
+  shortCodeBadge: {
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 2,
+    borderRadius: BorderRadius.sm,
+  },
+  shortCodeText: {
+    fontSize: 10,
+    fontWeight: "700",
+    letterSpacing: 0.5,
+  },
+  eventMeta: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+    marginTop: Spacing.xs,
+  },
+  categoryBadge: {
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 2,
+    borderRadius: BorderRadius.sm,
+  },
+  categoryText: {
+    fontSize: 10,
+    fontWeight: "500",
+  },
+  multiDayCard: {
+    borderLeftWidth: 0,
+  },
+  multiDayBar: {
+    width: 8,
+  },
+  filterOptions: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: Spacing.xs,
+    marginTop: Spacing.sm,
+  },
+  filterOption: {
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
     borderRadius: BorderRadius.md,
   },
 });

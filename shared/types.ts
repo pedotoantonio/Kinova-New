@@ -50,36 +50,61 @@ export interface FamilyInviteResponse {
   createdAt?: string;
 }
 
+export type EventCategory = "family" | "course" | "shift" | "vacation" | "holiday" | "other";
+export type RecurrenceFrequency = "daily" | "weekly" | "monthly";
+
+export interface EventRecurrence {
+  frequency: RecurrenceFrequency;
+  interval: number;
+  endDate?: string | null;
+  byWeekday?: string | null;
+}
+
 export interface Event {
   id: string;
   familyId: string;
   title: string;
+  shortCode?: string | null;
   description?: string | null;
   startDate: string;
   endDate?: string | null;
   allDay: boolean;
   color?: string | null;
+  category: EventCategory;
+  assignedTo?: string | null;
+  isHoliday: boolean;
   createdBy: string;
   createdAt: string;
   updatedAt: string;
+  recurrence?: EventRecurrence | null;
 }
 
 export interface CreateEventRequest {
   title: string;
+  shortCode?: string;
   description?: string;
   startDate: string;
   endDate?: string;
   allDay?: boolean;
   color?: string;
+  category?: EventCategory;
+  assignedTo?: string;
+  isHoliday?: boolean;
+  recurrence?: EventRecurrence;
 }
 
 export interface UpdateEventRequest {
   title?: string;
+  shortCode?: string;
   description?: string;
   startDate?: string;
   endDate?: string;
   allDay?: boolean;
   color?: string;
+  category?: EventCategory;
+  assignedTo?: string;
+  isHoliday?: boolean;
+  recurrence?: EventRecurrence | null;
 }
 
 export interface Task {
