@@ -213,6 +213,19 @@ export const assistantUploads = pgTable("assistant_uploads", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+export const auditLogs = pgTable("audit_logs", {
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  familyId: varchar("family_id").references(() => families.id, { onDelete: "cascade" }).notNull(),
+  userId: varchar("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  action: text("action").notNull(),
+  details: text("details"),
+  source: text("source").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 export type DbAssistantConversation = typeof assistantConversations.$inferSelect;
 export type DbAssistantMessage = typeof assistantMessages.$inferSelect;
 export type DbAssistantUpload = typeof assistantUploads.$inferSelect;
+export type DbAuditLog = typeof auditLogs.$inferSelect;

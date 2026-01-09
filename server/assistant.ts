@@ -370,7 +370,7 @@ export function registerAssistantRoutes(app: Express, authMiddleware: (req: Auth
     }
   });
 
-  app.post("/api/assistant/confirm-action", authMiddleware, async (req: AuthRequest, res: Response) => {
+  const handleConfirmAction = async (req: AuthRequest, res: Response) => {
     try {
       const { actionType, actionData, conversationId, language = "it" } = req.body;
 
@@ -379,7 +379,7 @@ export function registerAssistantRoutes(app: Express, authMiddleware: (req: Auth
       }
 
       if (req.auth!.role === "child") {
-        const destructiveActions = ["delete_event", "delete_task", "delete_expense", "delete_shopping"];
+        const destructiveActions = ["delete_event", "delete_task", "delete_expense", "delete_shopping", "remove_shopping"];
         if (destructiveActions.includes(actionType)) {
           return res.status(403).json({ error: language === "it" ? "Azione non permessa per il tuo ruolo" : "Action not allowed for your role" });
         }
@@ -388,7 +388,7 @@ export function registerAssistantRoutes(app: Express, authMiddleware: (req: Auth
       let result: { success: boolean; message: string; data?: unknown } = { success: false, message: "" };
 
       switch (actionType) {
-        case "create_event":
+        case "create_event": {
           const event = await storage.createEvent({
             familyId: req.auth!.familyId,
             title: actionData.title,
@@ -405,39 +405,35 @@ export function registerAssistantRoutes(app: Express, authMiddleware: (req: Auth
           });
           result = { success: true, message: language === "it" ? "Evento creato" : "Event created", data: event };
           break;
+        }
 
-        case "complete_task":
-          const updatedTask = await storage.updateTask(actionData.taskId, req.auth!.familyId, { completed: true });
+        case "update_event": {
+          const updated = await storage.updateEvent(actionData.id, req.auth!.familyId, {
+            title: actionData.title,
+            description: actionData.description,
+            startDate: actionData.startDate ? new Date(actionData.startDate) : undefined,
+            endDate: actionData.endDate ? new Date(actionData.endDate) : undefined,
+            allDay: actionData.allDay,
+            color: actionData.color,
+            category: actionData.category,
+          });
+          result = { success: !!updated, message: language === "it" ? "Evento aggiornato" : "Event updated", data: updated };
+          break;
+        }
+
+        case "delete_event": {
+          const deleted = await storage.deleteEvent(actionData.id, req.auth!.familyId);
+          result = { success: deleted, message: language === "it" ? "Evento eliminato" : "Event deleted" };
+          break;
+        }
+
+        case "complete_task": {
+          const updatedTask = await storage.updateTask(actionData.taskId || actionData.id, req.auth!.familyId, { completed: true });
           result = { success: !!updatedTask, message: language === "it" ? "Attività completata" : "Task completed", data: updatedTask };
           break;
+        }
 
-        case "create_expense":
-          const expense = await storage.createExpense({
-            familyId: req.auth!.familyId,
-            amount: actionData.amount,
-            description: actionData.description,
-            category: actionData.category || "other",
-            paidBy: actionData.paidBy || req.auth!.userId,
-            date: new Date(actionData.date || Date.now()),
-            createdBy: req.auth!.userId,
-          });
-          result = { success: true, message: language === "it" ? "Spesa aggiunta" : "Expense added", data: expense };
-          break;
-
-        case "add_shopping_item":
-          const item = await storage.createShoppingItem({
-            familyId: req.auth!.familyId,
-            name: actionData.name,
-            quantity: actionData.quantity || 1,
-            unit: actionData.unit || null,
-            category: actionData.category || null,
-            purchased: false,
-            createdBy: req.auth!.userId,
-          });
-          result = { success: true, message: language === "it" ? "Prodotto aggiunto alla lista" : "Item added to list", data: item };
-          break;
-
-        case "create_task":
+        case "create_task": {
           const task = await storage.createTask({
             familyId: req.auth!.familyId,
             title: actionData.title,
@@ -450,9 +446,110 @@ export function registerAssistantRoutes(app: Express, authMiddleware: (req: Auth
           });
           result = { success: true, message: language === "it" ? "Attività creata" : "Task created", data: task };
           break;
+        }
+
+        case "update_task": {
+          const updated = await storage.updateTask(actionData.id, req.auth!.familyId, {
+            title: actionData.title,
+            description: actionData.description,
+            dueDate: actionData.dueDate ? new Date(actionData.dueDate) : undefined,
+            assignedTo: actionData.assignedTo,
+            priority: actionData.priority,
+            completed: actionData.completed,
+          });
+          result = { success: !!updated, message: language === "it" ? "Attività aggiornata" : "Task updated", data: updated };
+          break;
+        }
+
+        case "delete_task": {
+          const deleted = await storage.deleteTask(actionData.id, req.auth!.familyId);
+          result = { success: deleted, message: language === "it" ? "Attività eliminata" : "Task deleted" };
+          break;
+        }
+
+        case "create_expense":
+        case "add_expense": {
+          const expense = await storage.createExpense({
+            familyId: req.auth!.familyId,
+            amount: actionData.amount,
+            description: actionData.description,
+            category: actionData.category || "other",
+            paidBy: actionData.paidBy || req.auth!.userId,
+            date: new Date(actionData.date || Date.now()),
+            createdBy: req.auth!.userId,
+          });
+          result = { success: true, message: language === "it" ? "Spesa aggiunta" : "Expense added", data: expense };
+          break;
+        }
+
+        case "update_expense": {
+          const updated = await storage.updateExpense(actionData.id, req.auth!.familyId, {
+            amount: actionData.amount,
+            description: actionData.description,
+            category: actionData.category,
+            date: actionData.date ? new Date(actionData.date) : undefined,
+          });
+          result = { success: !!updated, message: language === "it" ? "Spesa aggiornata" : "Expense updated", data: updated };
+          break;
+        }
+
+        case "delete_expense": {
+          const deleted = await storage.deleteExpense(actionData.id, req.auth!.familyId);
+          result = { success: deleted, message: language === "it" ? "Spesa eliminata" : "Expense deleted" };
+          break;
+        }
+
+        case "add_shopping_item":
+        case "add_shopping": {
+          const item = await storage.createShoppingItem({
+            familyId: req.auth!.familyId,
+            name: actionData.name,
+            quantity: actionData.quantity || 1,
+            unit: actionData.unit || null,
+            category: actionData.category || null,
+            purchased: false,
+            createdBy: req.auth!.userId,
+          });
+          result = { success: true, message: language === "it" ? "Prodotto aggiunto alla lista" : "Item added to list", data: item };
+          break;
+        }
+
+        case "update_shopping":
+        case "update_shopping_item": {
+          const updated = await storage.updateShoppingItem(actionData.id, req.auth!.familyId, {
+            name: actionData.name,
+            quantity: actionData.quantity,
+            unit: actionData.unit,
+            category: actionData.category,
+            purchased: actionData.purchased,
+          });
+          result = { success: !!updated, message: language === "it" ? "Prodotto aggiornato" : "Item updated", data: updated };
+          break;
+        }
+
+        case "delete_shopping":
+        case "delete_shopping_item":
+        case "remove_shopping": {
+          const deleted = await storage.deleteShoppingItem(actionData.id, req.auth!.familyId);
+          result = { success: deleted, message: language === "it" ? "Prodotto rimosso dalla lista" : "Item removed from list" };
+          break;
+        }
 
         default:
           result = { success: false, message: language === "it" ? "Azione non supportata" : "Action not supported" };
+      }
+
+      try {
+        const detailsStr = JSON.stringify({ actionData, success: result.success }).slice(0, 5000);
+        await storage.createAuditLog({
+          familyId: req.auth!.familyId,
+          userId: req.auth!.userId,
+          action: actionType,
+          details: detailsStr,
+          source: "assistant",
+        });
+      } catch (auditErr) {
+        console.error("Audit log error:", auditErr);
       }
 
       if (conversationId && result.success) {
@@ -469,7 +566,10 @@ export function registerAssistantRoutes(app: Express, authMiddleware: (req: Auth
       console.error("Confirm action error:", error);
       res.status(500).json({ error: "Failed to execute action" });
     }
-  });
+  };
+
+  app.post("/api/assistant/confirm-action", authMiddleware, handleConfirmAction);
+  app.post("/api/assistant/confirm", authMiddleware, handleConfirmAction);
 
   app.post("/api/assistant/uploads", authMiddleware, async (req: AuthRequest, res: Response) => {
     try {
@@ -526,8 +626,59 @@ export function registerAssistantRoutes(app: Express, authMiddleware: (req: Auth
       fs.writeFileSync(filePath, fileData);
 
       let extractedText: string | null = null;
+      let analysisResult: { type: string; data: Record<string, unknown>; suggestedActions: string[] } | null = null;
+
       if (mimeType === "text/plain" || mimeType === "text/csv") {
         extractedText = fileData.toString("utf-8").slice(0, 10000);
+      }
+
+      if (mimeType.startsWith("image/")) {
+        try {
+          const base64Image = fileData.toString("base64");
+          const imageUrl = `data:${mimeType};base64,${base64Image}`;
+          
+          const visionResponse = await openai.chat.completions.create({
+            model: "gpt-4.1-mini",
+            max_completion_tokens: 1024,
+            messages: [
+              {
+                role: "system",
+                content: `Sei un assistente specializzato nell'analisi di documenti per un'app familiare. Analizza l'immagine e restituisci SOLO un JSON valido con questa struttura:
+{
+  "type": "receipt|invoice|school_document|fine|generic_document|photo",
+  "data": {
+    "title": "titolo o descrizione",
+    "amount": numero o null,
+    "date": "YYYY-MM-DD" o null,
+    "category": "food|transport|health|education|utilities|entertainment|shopping|other",
+    "items": ["lista prodotti se scontrino"],
+    "vendor": "nome negozio/ente",
+    "notes": "note aggiuntive"
+  },
+  "suggestedActions": ["create_expense", "create_event", "create_task"]
+}
+
+Analizza scontrini, fatture, bollette, documenti scolastici, multe. Per ogni tipo suggerisci le azioni appropriate.`
+              },
+              {
+                role: "user",
+                content: [
+                  { type: "image_url", image_url: { url: imageUrl } },
+                  { type: "text", text: "Analizza questo documento e estrai le informazioni strutturate." }
+                ]
+              }
+            ],
+          });
+
+          const visionContent = visionResponse.choices[0]?.message?.content || "";
+          const jsonMatch = visionContent.match(/\{[\s\S]*\}/);
+          if (jsonMatch) {
+            analysisResult = JSON.parse(jsonMatch[0]);
+            extractedText = JSON.stringify(analysisResult, null, 2);
+          }
+        } catch (visionError) {
+          console.error("Vision analysis error:", visionError);
+        }
       }
 
       const upload = await storage.createAssistantUpload({
@@ -546,6 +697,7 @@ export function registerAssistantRoutes(app: Express, authMiddleware: (req: Auth
         mimeType: upload.mimeType,
         size: upload.size,
         hasExtractedText: !!upload.extractedText,
+        analysis: analysisResult,
       });
     } catch (error) {
       console.error("Upload error:", error);

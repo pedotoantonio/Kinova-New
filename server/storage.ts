@@ -14,6 +14,7 @@ import {
   type DbAssistantConversation,
   type DbAssistantMessage,
   type DbAssistantUpload,
+  type DbAuditLog,
   type EventCategory,
   users, 
   families,
@@ -26,7 +27,8 @@ import {
   sessions,
   assistantConversations,
   assistantMessages,
-  assistantUploads
+  assistantUploads,
+  auditLogs
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, isNull, gt, gte, lte, desc, lt, or } from "drizzle-orm";
@@ -568,6 +570,35 @@ export class DatabaseStorage implements IStorage {
       })
       .returning();
     return upload;
+  }
+
+  async createAuditLog(data: {
+    familyId: string;
+    userId: string;
+    action: string;
+    details?: string | null;
+    source: string;
+  }): Promise<DbAuditLog> {
+    const [log] = await db
+      .insert(auditLogs)
+      .values({
+        familyId: data.familyId,
+        userId: data.userId,
+        action: data.action,
+        details: data.details || null,
+        source: data.source,
+      })
+      .returning();
+    return log;
+  }
+
+  async getAuditLogs(familyId: string, limit: number = 50): Promise<DbAuditLog[]> {
+    return db
+      .select()
+      .from(auditLogs)
+      .where(eq(auditLogs.familyId, familyId))
+      .orderBy(desc(auditLogs.createdAt))
+      .limit(limit);
   }
 }
 
