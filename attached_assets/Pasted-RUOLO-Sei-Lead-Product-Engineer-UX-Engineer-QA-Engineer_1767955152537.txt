@@ -1,0 +1,208 @@
+RUOLO
+Sei Lead Product Engineer + UX Engineer + QA Engineer.
+Devi estendere il modulo Calendario di Kinova introducendo funzionalità avanzate tipiche di un calendario scolastico e professionale, ispirate allo screenshot fornito, ma integrate coerentemente con:
+- architettura Kinova
+- familyId
+- multilingua IT/EN (default IT)
+- performance mobile Expo
+- futura integrazione AI
+
+REGOLE NON NEGOZIABILI
+1) Nessuna regressione sul Calendario Core (GATE 3).
+2) Nessuna feature solo “grafica”: ogni elemento deve avere logica dati.
+3) Nessuna stringa hardcoded (i18n obbligatorio).
+4) Nessun evento fake o demo.
+5) Tutte le funzionalità devono essere testate.
+6) Output SOLO nel formato richiesto.
+
+OBIETTIVO DEL GATE 3 BIS
+Portare il calendario Kinova a livello:
+- **scolastico/professionale**
+- **multi-evento complesso**
+- **multi-ruolo**
+- **multi-giorno visivamente chiaro**
+rendendolo adatto a:
+- scuole
+- corsi
+- turni
+- ferie
+- pianificazioni familiari complesse
+
+---
+
+## SCOPE FUNZIONALE (ISPIRATO ALLO SCREENSHOT)
+
+### A) EVENTI MULTI-GIORNO A BARRA CONTINUA
+Implementare eventi multi-giorno visualizzati come:
+- **barre orizzontali continue**
+- che attraversano più giorni
+- spezzate automaticamente per settimana
+
+Requisiti:
+- titolo visibile sulla barra
+- colore coerente
+- continuità visiva tra settimane
+
+Test:
+T3B.1 Evento 3–7 gennaio → barra continua su più giorni
+T3B.2 Evento attraversa due settimane → spezzato correttamente
+
+---
+
+### B) CATEGORIE EVENTO (SCUOLA / LAVORO / FERIE / CORSI)
+Aggiungere **categorie evento professionali**, ispirate allo screenshot:
+- Corso / Lezione
+- Turno
+- Ferie / Leave
+- Festività
+- Weekend
+- Evento familiare
+
+Ogni categoria ha:
+- colore dedicato
+- opzionale icona
+- label visibile sulla barra
+
+Test:
+T3B.3 Cambio categoria → colore e label coerenti
+
+---
+
+### C) WEEKEND & FESTIVITÀ EVIDENZIATE
+Implementare:
+- **evidenziazione visiva weekend** (sab/dom)
+- supporto festività nazionali (manuali o preconfigurate)
+
+Requisiti:
+- weekend riconoscibili visivamente
+- festività come eventi speciali (es. “Epifania”)
+
+Test:
+T3B.4 Weekend evidenziati correttamente
+T3B.5 Festività visibile come evento speciale
+
+---
+
+### D) EVENTI PARALLELI E SOVRAPPOSIZIONI
+Gestire più eventi nello stesso giorno:
+- stacking verticale
+- limite visivo (es. max 3)
+- indicatore “+N” per eventi extra
+
+Tap su “+N”:
+- apre lista eventi del giorno
+
+Test:
+T3B.6 5 eventi nello stesso giorno → +N visibile e funzionante
+
+---
+
+### E) EVENTI RICORRENTI (SCUOLA / TURNI)
+Implementare ricorrenze base:
+- giornaliera
+- settimanale
+- mensile
+- con data fine
+
+Requisiti:
+- una singola definizione
+- occorrenze visibili nel calendario
+- modifica serie (non singola occorrenza, per ora)
+
+Test:
+T3B.7 Evento settimanale → occorrenze corrette
+
+---
+
+### F) NOMI BREVI + CODICI (STILE PROFESSIONALE)
+Ispirandosi allo screenshot:
+- supportare **codici evento brevi** (es. “MM”, “CF”, “AP”)
+- titolo lungo visibile nel dettaglio
+
+Utilizzo:
+- barra mostra codice
+- tap → dettaglio completo
+
+Test:
+T3B.8 Codice evento visibile + titolo completo nel dettaglio
+
+---
+
+### G) FILTRI CALENDARIO
+Aggiungere filtri:
+- per categoria
+- per membro famiglia
+- per tipo (corso, ferie, evento)
+
+Requisiti:
+- filtro persistente nella sessione
+- reset disponibile
+
+Test:
+T3B.9 Filtro attivo → solo eventi coerenti
+
+---
+
+### H) MULTILINGUA (IT / EN)
+Verificare:
+- categorie tradotte
+- etichette weekend/festività
+- messaggi UI calendario
+
+Test:
+T3B.10 Switch lingua → calendario aggiornato
+
+---
+
+### I) PERFORMANCE & USABILITÀ
+Verificare:
+- scrolling fluido
+- nessun layout jump
+- rendering efficiente anche con molti eventi
+
+Test:
+T3B.11 Mese con 50+ eventi → UI fluida
+
+---
+
+## OUTPUT OBBLIGATORIO (FORMATO RIGIDO)
+
+1) GATE 3 BIS STATUS
+- Stato: PASS / FAIL
+- Bloccanti (se FAIL)
+
+2) MATRICE FUNZIONALITÀ AVANZATE
+Tabella:
+[Test-ID] [Feature] [Stato Iniziale] [Fix] [Stato Finale PASS/FAIL]
+
+3) REPORT TEST DETTAGLIATO
+Per T3B.1 – T3B.11:
+- Steps
+- API evidence
+- DB evidence (familyId)
+- UI evidence
+- Esito PASS/FAIL
+
+4) UX & VISUAL CHECK
+- Barre multi-giorno: OK/NO
+- Weekend evidenti: OK/NO
+- Overlap gestito: OK/NO
+- Leggibilità: OK/NO
+
+5) CHECKLIST GATE 3 BIS
+- Multi-day bars: SI/NO
+- Categorie evento: SI/NO
+- Weekend/festività: SI/NO
+- Overlap gestito: SI/NO
+- Ricorrenze base: SI/NO
+- Filtri: SI/NO
+- Multilingua: SI/NO
+
+6) VERDETTO FINALE
+Scrivi ESATTAMENTE una sola riga:
+- “GATE 3 BIS COMPLETATO: PASS”
+oppure
+- “GATE 3 BIS COMPLETATO: FAIL”
+
+STOP
+Non scrivere altro.

@@ -5,6 +5,19 @@ import { z } from "zod";
 
 export const userRoleEnum = pgEnum("user_role", ["admin", "member", "child"]);
 export const priorityEnum = pgEnum("priority", ["low", "medium", "high"]);
+export const eventCategoryEnum = pgEnum("event_category", [
+  "family",
+  "course",
+  "shift",
+  "vacation",
+  "holiday",
+  "other"
+]);
+export const recurrenceFrequencyEnum = pgEnum("recurrence_frequency", [
+  "daily",
+  "weekly",
+  "monthly"
+]);
 
 export const families = pgTable("families", {
   id: varchar("id")
@@ -48,14 +61,30 @@ export const events = pgTable("events", {
     .default(sql`gen_random_uuid()`),
   familyId: varchar("family_id").references(() => families.id).notNull(),
   title: text("title").notNull(),
+  shortCode: text("short_code"),
   description: text("description"),
   startDate: timestamp("start_date").notNull(),
   endDate: timestamp("end_date"),
   allDay: boolean("all_day").default(false).notNull(),
   color: text("color"),
+  category: eventCategoryEnum("category").default("family").notNull(),
+  assignedTo: varchar("assigned_to").references(() => users.id),
+  isHoliday: boolean("is_holiday").default(false).notNull(),
   createdBy: varchar("created_by").references(() => users.id).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const eventRecurrences = pgTable("event_recurrences", {
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  eventId: varchar("event_id").references(() => events.id, { onDelete: "cascade" }).notNull(),
+  frequency: recurrenceFrequencyEnum("frequency").notNull(),
+  interval: integer("interval").default(1).notNull(),
+  endDate: timestamp("end_date"),
+  byWeekday: text("by_weekday"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 export const tasks = pgTable("tasks", {
@@ -131,12 +160,15 @@ export const insertFamilySchema = createInsertSchema(families).pick({
 
 export type UserRole = "admin" | "member" | "child";
 export type Priority = "low" | "medium" | "high";
+export type EventCategory = "family" | "course" | "shift" | "vacation" | "holiday" | "other";
+export type RecurrenceFrequency = "daily" | "weekly" | "monthly";
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type InsertFamily = z.infer<typeof insertFamilySchema>;
 export type Family = typeof families.$inferSelect;
 export type FamilyInvite = typeof familyInvites.$inferSelect;
 export type DbEvent = typeof events.$inferSelect;
+export type DbEventRecurrence = typeof eventRecurrences.$inferSelect;
 export type DbTask = typeof tasks.$inferSelect;
 export type DbShoppingItem = typeof shoppingItems.$inferSelect;
 export type DbExpense = typeof expenses.$inferSelect;

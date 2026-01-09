@@ -509,24 +509,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/events", authMiddleware, async (req: AuthRequest, res: Response) => {
     try {
-      const { from, to } = req.query;
+      const { from, to, category, assignedTo } = req.query;
       const fromDate = from ? new Date(from as string) : undefined;
       const toDate = to ? new Date(to as string) : undefined;
+      const filters: { category?: "family" | "course" | "shift" | "vacation" | "holiday" | "other"; assignedTo?: string } = {};
+      if (category && ["family", "course", "shift", "vacation", "holiday", "other"].includes(category as string)) {
+        filters.category = category as "family" | "course" | "shift" | "vacation" | "holiday" | "other";
+      }
+      if (assignedTo) {
+        filters.assignedTo = assignedTo as string;
+      }
       
-      const events = await storage.getEvents(req.auth!.familyId, fromDate, toDate);
-      res.json(events.map(e => ({
-        id: e.id,
-        familyId: e.familyId,
-        title: e.title,
-        description: e.description,
-        startDate: e.startDate.toISOString(),
-        endDate: e.endDate?.toISOString() || null,
-        allDay: e.allDay,
-        color: e.color,
-        createdBy: e.createdBy,
-        createdAt: e.createdAt.toISOString(),
-        updatedAt: e.updatedAt.toISOString(),
-      })));
+      const events = await storage.getEvents(req.auth!.familyId, fromDate, toDate, Object.keys(filters).length > 0 ? filters : undefined);
+      
+      const eventsWithRecurrence = await Promise.all(events.map(async (e) => {
+        const recurrence = await storage.getEventRecurrence(e.id);
+        return {
+          id: e.id,
+          familyId: e.familyId,
+          title: e.title,
+          shortCode: e.shortCode,
+          description: e.description,
+          startDate: e.startDate.toISOString(),
+          endDate: e.endDate?.toISOString() || null,
+          allDay: e.allDay,
+          color: e.color,
+          category: e.category,
+          assignedTo: e.assignedTo,
+          isHoliday: e.isHoliday,
+          createdBy: e.createdBy,
+          createdAt: e.createdAt.toISOString(),
+          updatedAt: e.updatedAt.toISOString(),
+          recurrence: recurrence ? {
+            frequency: recurrence.frequency,
+            interval: recurrence.interval,
+            endDate: recurrence.endDate?.toISOString() || null,
+            byWeekday: recurrence.byWeekday,
+          } : null,
+        };
+      }));
+      
+      res.json(eventsWithRecurrence);
     } catch (error) {
       console.error("Get events error:", error);
       res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Internal server error" } });
@@ -535,35 +558,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/events", authMiddleware, async (req: AuthRequest, res: Response) => {
     try {
-      const { title, description, startDate, endDate, allDay, color } = req.body;
+      const { title, shortCode, description, startDate, endDate, allDay, color, category, assignedTo, isHoliday, recurrence } = req.body;
       
       if (!title || !startDate) {
         return res.status(400).json({ error: { code: "VALIDATION_ERROR", message: "Title and startDate are required" } });
       }
       
+      const validCategories = ["family", "course", "shift", "vacation", "holiday", "other"];
+      const eventCategory = validCategories.includes(category) ? category : "family";
+      
       const event = await storage.createEvent({
         familyId: req.auth!.familyId,
         title,
+        shortCode: shortCode || null,
         description: description || null,
         startDate: new Date(startDate),
         endDate: endDate ? new Date(endDate) : null,
         allDay: allDay ?? false,
         color: color || null,
+        category: eventCategory,
+        assignedTo: assignedTo || null,
+        isHoliday: isHoliday ?? false,
         createdBy: req.auth!.userId,
       });
+      
+      let eventRecurrence = null;
+      if (recurrence && recurrence.frequency) {
+        const validFrequencies = ["daily", "weekly", "monthly"];
+        if (validFrequencies.includes(recurrence.frequency)) {
+          eventRecurrence = await storage.createEventRecurrence({
+            eventId: event.id,
+            frequency: recurrence.frequency,
+            interval: recurrence.interval || 1,
+            endDate: recurrence.endDate ? new Date(recurrence.endDate) : null,
+            byWeekday: recurrence.byWeekday || null,
+          });
+        }
+      }
       
       res.status(201).json({
         id: event.id,
         familyId: event.familyId,
         title: event.title,
+        shortCode: event.shortCode,
         description: event.description,
         startDate: event.startDate.toISOString(),
         endDate: event.endDate?.toISOString() || null,
         allDay: event.allDay,
         color: event.color,
+        category: event.category,
+        assignedTo: event.assignedTo,
+        isHoliday: event.isHoliday,
         createdBy: event.createdBy,
         createdAt: event.createdAt.toISOString(),
         updatedAt: event.updatedAt.toISOString(),
+        recurrence: eventRecurrence ? {
+          frequency: eventRecurrence.frequency,
+          interval: eventRecurrence.interval,
+          endDate: eventRecurrence.endDate?.toISOString() || null,
+          byWeekday: eventRecurrence.byWeekday,
+        } : null,
       });
     } catch (error) {
       console.error("Create event error:", error);
@@ -574,7 +628,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/events/:id", authMiddleware, async (req: AuthRequest, res: Response) => {
     try {
       const { id } = req.params;
-      const { title, description, startDate, endDate, allDay, color } = req.body;
+      const { title, shortCode, description, startDate, endDate, allDay, color, category, assignedTo, isHoliday, recurrence } = req.body;
       
       const existing = await storage.getEvent(id, req.auth!.familyId);
       if (!existing) {
@@ -583,29 +637,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const updates: Record<string, unknown> = {};
       if (title !== undefined) updates.title = title;
+      if (shortCode !== undefined) updates.shortCode = shortCode || null;
       if (description !== undefined) updates.description = description;
       if (startDate !== undefined) updates.startDate = new Date(startDate);
       if (endDate !== undefined) updates.endDate = endDate ? new Date(endDate) : null;
       if (allDay !== undefined) updates.allDay = allDay;
       if (color !== undefined) updates.color = color;
+      if (category !== undefined) {
+        const validCategories = ["family", "course", "shift", "vacation", "holiday", "other"];
+        updates.category = validCategories.includes(category) ? category : "family";
+      }
+      if (assignedTo !== undefined) updates.assignedTo = assignedTo || null;
+      if (isHoliday !== undefined) updates.isHoliday = isHoliday;
       
       const event = await storage.updateEvent(id, req.auth!.familyId, updates);
       if (!event) {
         return res.status(404).json({ error: { code: "NOT_FOUND", message: "Event not found" } });
       }
       
+      let eventRecurrence = await storage.getEventRecurrence(id);
+      if (recurrence !== undefined) {
+        if (recurrence === null) {
+          await storage.deleteEventRecurrence(id);
+          eventRecurrence = undefined;
+        } else if (recurrence.frequency) {
+          const validFrequencies = ["daily", "weekly", "monthly"];
+          if (validFrequencies.includes(recurrence.frequency)) {
+            if (eventRecurrence) {
+              eventRecurrence = await storage.updateEventRecurrence(id, {
+                frequency: recurrence.frequency,
+                interval: recurrence.interval || 1,
+                endDate: recurrence.endDate ? new Date(recurrence.endDate) : null,
+                byWeekday: recurrence.byWeekday || null,
+              });
+            } else {
+              eventRecurrence = await storage.createEventRecurrence({
+                eventId: id,
+                frequency: recurrence.frequency,
+                interval: recurrence.interval || 1,
+                endDate: recurrence.endDate ? new Date(recurrence.endDate) : null,
+                byWeekday: recurrence.byWeekday || null,
+              });
+            }
+          }
+        }
+      }
+      
       res.json({
         id: event.id,
         familyId: event.familyId,
         title: event.title,
+        shortCode: event.shortCode,
         description: event.description,
         startDate: event.startDate.toISOString(),
         endDate: event.endDate?.toISOString() || null,
         allDay: event.allDay,
         color: event.color,
+        category: event.category,
+        assignedTo: event.assignedTo,
+        isHoliday: event.isHoliday,
         createdBy: event.createdBy,
         createdAt: event.createdAt.toISOString(),
         updatedAt: event.updatedAt.toISOString(),
+        recurrence: eventRecurrence ? {
+          frequency: eventRecurrence.frequency,
+          interval: eventRecurrence.interval,
+          endDate: eventRecurrence.endDate?.toISOString() || null,
+          byWeekday: eventRecurrence.byWeekday,
+        } : null,
       });
     } catch (error) {
       console.error("Update event error:", error);

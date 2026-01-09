@@ -6,14 +6,17 @@ import {
   type FamilyInvite,
   type UserRole,
   type DbEvent,
+  type DbEventRecurrence,
   type DbTask,
   type DbShoppingItem,
   type DbExpense,
   type DbSession,
+  type EventCategory,
   users, 
   families,
   familyInvites,
   events,
+  eventRecurrences,
   tasks,
   shoppingItems,
   expenses,
@@ -36,11 +39,16 @@ export interface IStorage {
   acceptInvite(inviteId: string, userId: string): Promise<FamilyInvite | undefined>;
   getActiveInvitesByFamily(familyId: string): Promise<FamilyInvite[]>;
   
-  getEvents(familyId: string, from?: Date, to?: Date): Promise<DbEvent[]>;
+  getEvents(familyId: string, from?: Date, to?: Date, filters?: { category?: EventCategory; assignedTo?: string }): Promise<DbEvent[]>;
   getEvent(id: string, familyId: string): Promise<DbEvent | undefined>;
   createEvent(data: Omit<DbEvent, "id" | "createdAt" | "updatedAt">): Promise<DbEvent>;
   updateEvent(id: string, familyId: string, data: Partial<DbEvent>): Promise<DbEvent | undefined>;
   deleteEvent(id: string, familyId: string): Promise<boolean>;
+  
+  getEventRecurrence(eventId: string): Promise<DbEventRecurrence | undefined>;
+  createEventRecurrence(data: Omit<DbEventRecurrence, "id" | "createdAt">): Promise<DbEventRecurrence>;
+  updateEventRecurrence(eventId: string, data: Partial<DbEventRecurrence>): Promise<DbEventRecurrence | undefined>;
+  deleteEventRecurrence(eventId: string): Promise<boolean>;
   
   getTasks(familyId: string, filters?: { completed?: boolean; assignedTo?: string }): Promise<DbTask[]>;
   getTask(id: string, familyId: string): Promise<DbTask | undefined>;
@@ -186,7 +194,7 @@ export class DatabaseStorage implements IStorage {
       );
   }
 
-  async getEvents(familyId: string, from?: Date, to?: Date): Promise<DbEvent[]> {
+  async getEvents(familyId: string, from?: Date, to?: Date, filters?: { category?: EventCategory; assignedTo?: string }): Promise<DbEvent[]> {
     const conditions = [eq(events.familyId, familyId)];
     
     if (from && to) {
@@ -206,6 +214,13 @@ export class DatabaseStorage implements IStorage {
       );
     } else if (to) {
       conditions.push(lte(events.startDate, to));
+    }
+    
+    if (filters?.category) {
+      conditions.push(eq(events.category, filters.category));
+    }
+    if (filters?.assignedTo) {
+      conditions.push(eq(events.assignedTo, filters.assignedTo));
     }
     
     return db
@@ -242,6 +257,36 @@ export class DatabaseStorage implements IStorage {
 
   async deleteEvent(id: string, familyId: string): Promise<boolean> {
     await db.delete(events).where(and(eq(events.id, id), eq(events.familyId, familyId)));
+    return true;
+  }
+
+  async getEventRecurrence(eventId: string): Promise<DbEventRecurrence | undefined> {
+    const [recurrence] = await db
+      .select()
+      .from(eventRecurrences)
+      .where(eq(eventRecurrences.eventId, eventId));
+    return recurrence;
+  }
+
+  async createEventRecurrence(data: Omit<DbEventRecurrence, "id" | "createdAt">): Promise<DbEventRecurrence> {
+    const [recurrence] = await db
+      .insert(eventRecurrences)
+      .values(data)
+      .returning();
+    return recurrence;
+  }
+
+  async updateEventRecurrence(eventId: string, data: Partial<DbEventRecurrence>): Promise<DbEventRecurrence | undefined> {
+    const [recurrence] = await db
+      .update(eventRecurrences)
+      .set(data)
+      .where(eq(eventRecurrences.eventId, eventId))
+      .returning();
+    return recurrence;
+  }
+
+  async deleteEventRecurrence(eventId: string): Promise<boolean> {
+    await db.delete(eventRecurrences).where(eq(eventRecurrences.eventId, eventId));
     return true;
   }
 
