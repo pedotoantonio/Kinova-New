@@ -15,6 +15,11 @@ import {
   type DbAssistantMessage,
   type DbAssistantUpload,
   type DbAuditLog,
+  type DbNotification,
+  type DbNotificationSettings,
+  type DbPushToken,
+  type NotificationType,
+  type NotificationCategory,
   type EventCategory,
   users, 
   families,
@@ -28,7 +33,10 @@ import {
   assistantConversations,
   assistantMessages,
   assistantUploads,
-  auditLogs
+  auditLogs,
+  notifications,
+  notificationSettings,
+  pushTokens
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, isNull, gt, gte, lte, desc, lt, or } from "drizzle-orm";
@@ -599,6 +607,223 @@ export class DatabaseStorage implements IStorage {
       .where(eq(auditLogs.familyId, familyId))
       .orderBy(desc(auditLogs.createdAt))
       .limit(limit);
+  }
+
+  async getNotifications(userId: string, familyId: string, options?: { unreadOnly?: boolean; limit?: number }): Promise<DbNotification[]> {
+    const conditions = [
+      eq(notifications.targetUserId, userId),
+      eq(notifications.familyId, familyId)
+    ];
+    if (options?.unreadOnly) {
+      conditions.push(eq(notifications.read, false));
+    }
+    return db
+      .select()
+      .from(notifications)
+      .where(and(...conditions))
+      .orderBy(desc(notifications.createdAt))
+      .limit(options?.limit || 50);
+  }
+
+  async getNotification(id: string, userId: string, familyId: string): Promise<DbNotification | undefined> {
+    const [notification] = await db
+      .select()
+      .from(notifications)
+      .where(and(
+        eq(notifications.id, id),
+        eq(notifications.targetUserId, userId),
+        eq(notifications.familyId, familyId)
+      ));
+    return notification;
+  }
+
+  async createNotification(data: {
+    type: NotificationType;
+    category: NotificationCategory;
+    titleKey: string;
+    titleParams?: string | null;
+    messageKey: string;
+    messageParams?: string | null;
+    targetUserId: string;
+    familyId: string;
+    relatedEntityType?: string | null;
+    relatedEntityId?: string | null;
+    scheduledAt?: Date | null;
+  }): Promise<DbNotification> {
+    const [notification] = await db
+      .insert(notifications)
+      .values({
+        type: data.type,
+        category: data.category,
+        titleKey: data.titleKey,
+        titleParams: data.titleParams || null,
+        messageKey: data.messageKey,
+        messageParams: data.messageParams || null,
+        targetUserId: data.targetUserId,
+        familyId: data.familyId,
+        relatedEntityType: data.relatedEntityType || null,
+        relatedEntityId: data.relatedEntityId || null,
+        scheduledAt: data.scheduledAt || null,
+      })
+      .returning();
+    return notification;
+  }
+
+  async markNotificationRead(id: string, userId: string, familyId: string): Promise<DbNotification | undefined> {
+    const [notification] = await db
+      .update(notifications)
+      .set({ read: true })
+      .where(and(
+        eq(notifications.id, id),
+        eq(notifications.targetUserId, userId),
+        eq(notifications.familyId, familyId)
+      ))
+      .returning();
+    return notification;
+  }
+
+  async markAllNotificationsRead(userId: string, familyId: string): Promise<number> {
+    const result = await db
+      .update(notifications)
+      .set({ read: true })
+      .where(and(
+        eq(notifications.targetUserId, userId),
+        eq(notifications.familyId, familyId),
+        eq(notifications.read, false)
+      ));
+    return 1;
+  }
+
+  async deleteNotification(id: string, userId: string, familyId: string): Promise<boolean> {
+    await db
+      .delete(notifications)
+      .where(and(
+        eq(notifications.id, id),
+        eq(notifications.targetUserId, userId),
+        eq(notifications.familyId, familyId)
+      ));
+    return true;
+  }
+
+  async deleteNotificationsByEntity(entityType: string, entityId: string, familyId: string): Promise<boolean> {
+    await db
+      .delete(notifications)
+      .where(and(
+        eq(notifications.relatedEntityType, entityType),
+        eq(notifications.relatedEntityId, entityId),
+        eq(notifications.familyId, familyId)
+      ));
+    return true;
+  }
+
+  async getUnreadNotificationCount(userId: string, familyId: string): Promise<number> {
+    const result = await db
+      .select()
+      .from(notifications)
+      .where(and(
+        eq(notifications.targetUserId, userId),
+        eq(notifications.familyId, familyId),
+        eq(notifications.read, false)
+      ));
+    return result.length;
+  }
+
+  async getScheduledNotifications(before: Date): Promise<DbNotification[]> {
+    return db
+      .select()
+      .from(notifications)
+      .where(and(
+        lte(notifications.scheduledAt, before),
+        isNull(notifications.sentAt)
+      ));
+  }
+
+  async markNotificationSent(id: string): Promise<void> {
+    await db
+      .update(notifications)
+      .set({ sentAt: new Date() })
+      .where(eq(notifications.id, id));
+  }
+
+  async getNotificationSettings(userId: string): Promise<DbNotificationSettings | undefined> {
+    const [settings] = await db
+      .select()
+      .from(notificationSettings)
+      .where(eq(notificationSettings.userId, userId));
+    return settings;
+  }
+
+  async upsertNotificationSettings(userId: string, data: Partial<Omit<DbNotificationSettings, "id" | "userId" | "updatedAt">>): Promise<DbNotificationSettings> {
+    const existing = await this.getNotificationSettings(userId);
+    if (existing) {
+      const [updated] = await db
+        .update(notificationSettings)
+        .set({ ...data, updatedAt: new Date() })
+        .where(eq(notificationSettings.userId, userId))
+        .returning();
+      return updated;
+    } else {
+      const [created] = await db
+        .insert(notificationSettings)
+        .values({
+          userId,
+          enabled: data.enabled ?? true,
+          calendarEnabled: data.calendarEnabled ?? true,
+          tasksEnabled: data.tasksEnabled ?? true,
+          shoppingEnabled: data.shoppingEnabled ?? true,
+          budgetEnabled: data.budgetEnabled ?? true,
+          aiEnabled: data.aiEnabled ?? true,
+          quietHoursStart: data.quietHoursStart || null,
+          quietHoursEnd: data.quietHoursEnd || null,
+          eventReminderMinutes: data.eventReminderMinutes ?? 30,
+        })
+        .returning();
+      return created;
+    }
+  }
+
+  async getPushToken(userId: string): Promise<DbPushToken | undefined> {
+    const [token] = await db
+      .select()
+      .from(pushTokens)
+      .where(eq(pushTokens.userId, userId));
+    return token;
+  }
+
+  async getPushTokensByFamily(familyId: string): Promise<DbPushToken[]> {
+    const familyMembers = await this.getFamilyMembers(familyId);
+    const memberIds = familyMembers.map(m => m.id);
+    if (memberIds.length === 0) return [];
+    
+    const tokens: DbPushToken[] = [];
+    for (const memberId of memberIds) {
+      const token = await this.getPushToken(memberId);
+      if (token) tokens.push(token);
+    }
+    return tokens;
+  }
+
+  async upsertPushToken(userId: string, token: string, platform: string): Promise<DbPushToken> {
+    const existing = await this.getPushToken(userId);
+    if (existing) {
+      const [updated] = await db
+        .update(pushTokens)
+        .set({ token, platform })
+        .where(eq(pushTokens.userId, userId))
+        .returning();
+      return updated;
+    } else {
+      const [created] = await db
+        .insert(pushTokens)
+        .values({ userId, token, platform })
+        .returning();
+      return created;
+    }
+  }
+
+  async deletePushToken(userId: string): Promise<boolean> {
+    await db.delete(pushTokens).where(eq(pushTokens.userId, userId));
+    return true;
   }
 }
 

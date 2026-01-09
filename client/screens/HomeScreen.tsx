@@ -69,15 +69,48 @@ export default function HomeScreen() {
     enabled: isAuthenticated,
   });
 
+  const { data: unreadCount = { count: 0 } } = useQuery<{ count: number }>({
+    queryKey: ["/api/notifications/count"],
+    enabled: isAuthenticated,
+  });
+
+  const navigateToNotifications = () => {
+    (navigation as any).navigate("Notifications");
+  };
+
   useLayoutEffect(() => {
     navigation.setOptions({
       headerRight: () => (
-        <HeaderButton onPress={navigateToProfile}>
-          <Feather name="user" size={22} color={colors.text} />
-        </HeaderButton>
+        <View style={{ flexDirection: "row", alignItems: "center" }}>
+          <HeaderButton onPress={navigateToNotifications}>
+            <View>
+              <Feather name="bell" size={22} color={colors.text} />
+              {unreadCount.count > 0 ? (
+                <View style={{
+                  position: "absolute",
+                  top: -4,
+                  right: -4,
+                  backgroundColor: colors.error,
+                  borderRadius: 8,
+                  minWidth: 16,
+                  height: 16,
+                  justifyContent: "center",
+                  alignItems: "center",
+                }}>
+                  <ThemedText style={{ color: colors.buttonText, fontSize: 10, fontWeight: "700" }}>
+                    {unreadCount.count > 9 ? "9+" : unreadCount.count}
+                  </ThemedText>
+                </View>
+              ) : null}
+            </View>
+          </HeaderButton>
+          <HeaderButton onPress={navigateToProfile}>
+            <Feather name="user" size={22} color={colors.text} />
+          </HeaderButton>
+        </View>
       ),
     });
-  }, [navigation, colors.text]);
+  }, [navigation, colors.text, colors.error, colors.buttonText, unreadCount.count]);
 
   const today = new Date();
   const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());

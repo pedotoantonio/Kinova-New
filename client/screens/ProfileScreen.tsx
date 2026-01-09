@@ -3,6 +3,7 @@ import { View, Pressable, StyleSheet, Alert, ActivityIndicator, Platform, TextIn
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
+import { useNavigation } from "@react-navigation/native";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -32,6 +33,7 @@ export default function ProfileScreen() {
   const { theme, isDark } = useTheme();
   const { user, logout, isLoading, isAuthenticated } = useAuth();
   const { t, language } = useI18n();
+  const navigation = useNavigation();
 
   const colors = isDark ? Colors.dark : Colors.light;
 
@@ -197,32 +199,51 @@ export default function ProfileScreen() {
         </View>
       </Card>
 
-      {user.role === "admin" ? (
-        <Card style={styles.settingsCard}>
-          <ThemedText style={[styles.settingsTitle, { color: colors.text }]}>
-            {t.profile.settings}
-          </ThemedText>
-          
-          <Pressable
-            style={styles.settingsRow}
-            onPress={() => setShowCityModal(true)}
-            testID="button-select-city"
-          >
-            <View style={styles.settingsRowLeft}>
-              <Feather name="map-pin" size={20} color={colors.primary} />
-              <View style={styles.settingsRowContent}>
-                <ThemedText style={[styles.settingsLabel, { color: colors.textSecondary }]}>
-                  {t.profile.city}
-                </ThemedText>
-                <ThemedText style={[styles.settingsValue, { color: colors.text }]}>
-                  {family?.city || t.weather.noCity}
-                </ThemedText>
+      <Card style={styles.settingsCard}>
+        <ThemedText style={[styles.settingsTitle, { color: colors.text }]}>
+          {t.profile.settings}
+        </ThemedText>
+        
+        {user.role === "admin" ? (
+          <>
+            <Pressable
+              style={styles.settingsRow}
+              onPress={() => setShowCityModal(true)}
+              testID="button-select-city"
+            >
+              <View style={styles.settingsRowLeft}>
+                <Feather name="map-pin" size={20} color={colors.primary} />
+                <View style={styles.settingsRowContent}>
+                  <ThemedText style={[styles.settingsLabel, { color: colors.textSecondary }]}>
+                    {t.profile.city}
+                  </ThemedText>
+                  <ThemedText style={[styles.settingsValue, { color: colors.text }]}>
+                    {family?.city || t.weather.noCity}
+                  </ThemedText>
+                </View>
               </View>
+              <Feather name="chevron-right" size={20} color={colors.textSecondary} />
+            </Pressable>
+            <View style={[styles.divider, { backgroundColor: colors.backgroundSecondary }]} />
+          </>
+        ) : null}
+        
+        <Pressable
+          style={styles.settingsRow}
+          onPress={() => (navigation as any).navigate("NotificationSettings")}
+          testID="button-notification-settings"
+        >
+          <View style={styles.settingsRowLeft}>
+            <Feather name="bell" size={20} color={colors.primary} />
+            <View style={styles.settingsRowContent}>
+              <ThemedText style={[styles.settingsLabel, { color: colors.textSecondary }]}>
+                {t.notifications.settings}
+              </ThemedText>
             </View>
-            <Feather name="chevron-right" size={20} color={colors.textSecondary} />
-          </Pressable>
-        </Card>
-      ) : null}
+          </View>
+          <Feather name="chevron-right" size={20} color={colors.textSecondary} />
+        </Pressable>
+      </Card>
 
       <Pressable
         style={({ pressed }) => [

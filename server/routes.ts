@@ -3,6 +3,7 @@ import { createServer, type Server } from "node:http";
 import { storage } from "./storage";
 import { randomUUID, randomBytes, scryptSync, timingSafeEqual } from "crypto";
 import type { UserRole } from "@shared/schema";
+import { createNotification, createFamilyNotification, deleteNotificationsForEntity } from "./notification-service";
 
 const ACCESS_TOKEN_EXPIRY_MS = 15 * 60 * 1000;
 const REFRESH_TOKEN_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000;
@@ -622,6 +623,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
+      const settings = await storage.getNotificationSettings(req.auth!.userId);
+      const reminderMinutes = settings?.eventReminderMinutes || 30;
+      const eventStart = new Date(startDate);
+      const reminderTime = new Date(eventStart.getTime() - reminderMinutes * 60 * 1000);
+      
+      if (reminderTime > new Date()) {
+        const notificationType = event.allDay ? "event_allday" : "event_reminder";
+        await createFamilyNotification({
+          type: notificationType,
+          titleKey: "notifications.event_reminder.title",
+          messageKey: "notifications.event_reminder.message",
+          messageParams: { title: event.title, minutes: String(reminderMinutes) },
+          familyId: req.auth!.familyId,
+          relatedEntityType: "event",
+          relatedEntityId: event.id,
+          scheduledAt: reminderTime,
+          excludeUserId: req.auth!.userId,
+        });
+      }
+      
       res.status(201).json({
         id: event.id,
         familyId: event.familyId,
@@ -801,6 +822,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
         createdBy: req.auth!.userId,
       });
       
+      if (assignedTo && assignedTo !== req.auth!.userId) {
+        await createNotification({
+          type: "task_assigned",
+          titleKey: "notifications.task_assigned.title",
+          messageKey: "notifications.task_assigned.message",
+          messageParams: { title: task.title },
+          targetUserId: assignedTo,
+          familyId: req.auth!.familyId,
+          relatedEntityType: "task",
+          relatedEntityId: task.id,
+          pushTitle: "New Task Assigned",
+          pushBody: task.title,
+        });
+      }
+      
+      if (dueDate) {
+        const dueDateObj = new Date(dueDate);
+        const reminderTime = new Date(dueDateObj.getTime() - 60 * 60 * 1000);
+        if (reminderTime > new Date()) {
+          await createFamilyNotification({
+            type: "task_due",
+            titleKey: "notifications.task_due.title",
+            messageKey: "notifications.task_due.message",
+            messageParams: { title: task.title },
+            familyId: req.auth!.familyId,
+            relatedEntityType: "task",
+            relatedEntityId: task.id,
+            scheduledAt: reminderTime,
+          });
+        }
+      }
+      
       res.status(201).json({
         id: task.id,
         familyId: task.familyId,
@@ -921,6 +974,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         category: category || null,
         purchased: false,
         createdBy: req.auth!.userId,
+      });
+      
+      await createFamilyNotification({
+        type: "shopping_item_added",
+        titleKey: "notifications.shopping_item_added.title",
+        messageKey: "notifications.shopping_item_added.message",
+        messageParams: { name: item.name },
+        familyId: req.auth!.familyId,
+        relatedEntityType: "shopping_item",
+        relatedEntityId: item.id,
+        excludeUserId: req.auth!.userId,
+        pushTitle: "Shopping List Updated",
+        pushBody: `${item.name} added to shopping list`,
       });
       
       res.status(201).json({
@@ -1126,6 +1192,161 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ success: true });
     } catch (error) {
       console.error("Delete expense error:", error);
+      res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Internal server error" } });
+    }
+  });
+
+  app.get("/api/notifications", authMiddleware, async (req: AuthRequest, res: Response) => {
+    try {
+      const unreadOnly = req.query.unreadOnly === "true";
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 50;
+      
+      const notificationsList = await storage.getNotifications(
+        req.auth!.userId,
+        req.auth!.familyId,
+        { unreadOnly, limit }
+      );
+      
+      res.json(notificationsList.map(n => ({
+        id: n.id,
+        type: n.type,
+        category: n.category,
+        titleKey: n.titleKey,
+        titleParams: n.titleParams ? JSON.parse(n.titleParams) : null,
+        messageKey: n.messageKey,
+        messageParams: n.messageParams ? JSON.parse(n.messageParams) : null,
+        relatedEntityType: n.relatedEntityType,
+        relatedEntityId: n.relatedEntityId,
+        read: n.read,
+        createdAt: n.createdAt.toISOString(),
+      })));
+    } catch (error) {
+      console.error("Get notifications error:", error);
+      res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Internal server error" } });
+    }
+  });
+
+  app.get("/api/notifications/count", authMiddleware, async (req: AuthRequest, res: Response) => {
+    try {
+      const count = await storage.getUnreadNotificationCount(req.auth!.userId, req.auth!.familyId);
+      res.json({ count });
+    } catch (error) {
+      console.error("Get notification count error:", error);
+      res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Internal server error" } });
+    }
+  });
+
+  app.put("/api/notifications/:id/read", authMiddleware, async (req: AuthRequest, res: Response) => {
+    try {
+      const { id } = req.params;
+      const notification = await storage.markNotificationRead(id, req.auth!.userId, req.auth!.familyId);
+      if (!notification) {
+        return res.status(404).json({ error: { code: "NOT_FOUND", message: "Notification not found" } });
+      }
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Mark notification read error:", error);
+      res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Internal server error" } });
+    }
+  });
+
+  app.put("/api/notifications/read-all", authMiddleware, async (req: AuthRequest, res: Response) => {
+    try {
+      await storage.markAllNotificationsRead(req.auth!.userId, req.auth!.familyId);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Mark all notifications read error:", error);
+      res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Internal server error" } });
+    }
+  });
+
+  app.delete("/api/notifications/:id", authMiddleware, async (req: AuthRequest, res: Response) => {
+    try {
+      const { id } = req.params;
+      await storage.deleteNotification(id, req.auth!.userId, req.auth!.familyId);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Delete notification error:", error);
+      res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Internal server error" } });
+    }
+  });
+
+  app.get("/api/notification-settings", authMiddleware, async (req: AuthRequest, res: Response) => {
+    try {
+      let settings = await storage.getNotificationSettings(req.auth!.userId);
+      if (!settings) {
+        settings = await storage.upsertNotificationSettings(req.auth!.userId, {});
+      }
+      res.json({
+        enabled: settings.enabled,
+        calendarEnabled: settings.calendarEnabled,
+        tasksEnabled: settings.tasksEnabled,
+        shoppingEnabled: settings.shoppingEnabled,
+        budgetEnabled: settings.budgetEnabled,
+        aiEnabled: settings.aiEnabled,
+        quietHoursStart: settings.quietHoursStart,
+        quietHoursEnd: settings.quietHoursEnd,
+        eventReminderMinutes: settings.eventReminderMinutes,
+      });
+    } catch (error) {
+      console.error("Get notification settings error:", error);
+      res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Internal server error" } });
+    }
+  });
+
+  app.put("/api/notification-settings", authMiddleware, async (req: AuthRequest, res: Response) => {
+    try {
+      const { enabled, calendarEnabled, tasksEnabled, shoppingEnabled, budgetEnabled, aiEnabled, quietHoursStart, quietHoursEnd, eventReminderMinutes } = req.body;
+      
+      const updates: Record<string, unknown> = {};
+      if (enabled !== undefined) updates.enabled = enabled;
+      if (calendarEnabled !== undefined) updates.calendarEnabled = calendarEnabled;
+      if (tasksEnabled !== undefined) updates.tasksEnabled = tasksEnabled;
+      if (shoppingEnabled !== undefined) updates.shoppingEnabled = shoppingEnabled;
+      if (budgetEnabled !== undefined) updates.budgetEnabled = budgetEnabled;
+      if (aiEnabled !== undefined) updates.aiEnabled = aiEnabled;
+      if (quietHoursStart !== undefined) updates.quietHoursStart = quietHoursStart;
+      if (quietHoursEnd !== undefined) updates.quietHoursEnd = quietHoursEnd;
+      if (eventReminderMinutes !== undefined) updates.eventReminderMinutes = eventReminderMinutes;
+      
+      const settings = await storage.upsertNotificationSettings(req.auth!.userId, updates);
+      res.json({
+        enabled: settings.enabled,
+        calendarEnabled: settings.calendarEnabled,
+        tasksEnabled: settings.tasksEnabled,
+        shoppingEnabled: settings.shoppingEnabled,
+        budgetEnabled: settings.budgetEnabled,
+        aiEnabled: settings.aiEnabled,
+        quietHoursStart: settings.quietHoursStart,
+        quietHoursEnd: settings.quietHoursEnd,
+        eventReminderMinutes: settings.eventReminderMinutes,
+      });
+    } catch (error) {
+      console.error("Update notification settings error:", error);
+      res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Internal server error" } });
+    }
+  });
+
+  app.post("/api/push-token", authMiddleware, async (req: AuthRequest, res: Response) => {
+    try {
+      const { token, platform } = req.body;
+      if (!token || !platform) {
+        return res.status(400).json({ error: { code: "VALIDATION_ERROR", message: "Token and platform required" } });
+      }
+      await storage.upsertPushToken(req.auth!.userId, token, platform);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Register push token error:", error);
+      res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Internal server error" } });
+    }
+  });
+
+  app.delete("/api/push-token", authMiddleware, async (req: AuthRequest, res: Response) => {
+    try {
+      await storage.deletePushToken(req.auth!.userId);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Delete push token error:", error);
       res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Internal server error" } });
     }
   });
