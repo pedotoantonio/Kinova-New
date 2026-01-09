@@ -143,6 +143,32 @@ export const expenses = pgTable("expenses", {
 
 export const tokenTypeEnum = pgEnum("token_type", ["access", "refresh"]);
 
+export const notificationTypeEnum = pgEnum("notification_type", [
+  "event_reminder",
+  "event_allday",
+  "event_multiday",
+  "event_modified",
+  "event_cancelled",
+  "task_assigned",
+  "task_due",
+  "task_overdue",
+  "task_completed",
+  "shopping_item_added",
+  "shopping_list_long",
+  "budget_threshold",
+  "expense_high",
+  "ai_suggestion",
+  "ai_alert"
+]);
+
+export const notificationCategoryEnum = pgEnum("notification_category", [
+  "calendar",
+  "tasks",
+  "shopping",
+  "budget",
+  "ai"
+]);
+
 export const sessions = pgTable("sessions", {
   id: varchar("id")
     .primaryKey()
@@ -234,3 +260,56 @@ export type DbAssistantConversation = typeof assistantConversations.$inferSelect
 export type DbAssistantMessage = typeof assistantMessages.$inferSelect;
 export type DbAssistantUpload = typeof assistantUploads.$inferSelect;
 export type DbAuditLog = typeof auditLogs.$inferSelect;
+
+export const notifications = pgTable("notifications", {
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  type: notificationTypeEnum("type").notNull(),
+  category: notificationCategoryEnum("category").notNull(),
+  titleKey: text("title_key").notNull(),
+  titleParams: text("title_params"),
+  messageKey: text("message_key").notNull(),
+  messageParams: text("message_params"),
+  targetUserId: varchar("target_user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  familyId: varchar("family_id").references(() => families.id, { onDelete: "cascade" }).notNull(),
+  relatedEntityType: text("related_entity_type"),
+  relatedEntityId: varchar("related_entity_id"),
+  read: boolean("read").default(false).notNull(),
+  scheduledAt: timestamp("scheduled_at"),
+  sentAt: timestamp("sent_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const notificationSettings = pgTable("notification_settings", {
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id, { onDelete: "cascade" }).notNull().unique(),
+  enabled: boolean("enabled").default(true).notNull(),
+  calendarEnabled: boolean("calendar_enabled").default(true).notNull(),
+  tasksEnabled: boolean("tasks_enabled").default(true).notNull(),
+  shoppingEnabled: boolean("shopping_enabled").default(true).notNull(),
+  budgetEnabled: boolean("budget_enabled").default(true).notNull(),
+  aiEnabled: boolean("ai_enabled").default(true).notNull(),
+  quietHoursStart: text("quiet_hours_start"),
+  quietHoursEnd: text("quiet_hours_end"),
+  eventReminderMinutes: integer("event_reminder_minutes").default(30).notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const pushTokens = pgTable("push_tokens", {
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  token: text("token").notNull().unique(),
+  platform: text("platform").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type NotificationType = typeof notificationTypeEnum.enumValues[number];
+export type NotificationCategory = typeof notificationCategoryEnum.enumValues[number];
+export type DbNotification = typeof notifications.$inferSelect;
+export type DbNotificationSettings = typeof notificationSettings.$inferSelect;
+export type DbPushToken = typeof pushTokens.$inferSelect;

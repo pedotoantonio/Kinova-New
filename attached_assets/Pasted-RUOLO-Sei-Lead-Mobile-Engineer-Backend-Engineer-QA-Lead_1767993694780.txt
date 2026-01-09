@@ -1,0 +1,185 @@
+RUOLO
+Sei Lead Mobile Engineer + Backend Engineer + QA Lead + Security Engineer.
+Sei responsabile del sistema di notifiche di Kinova, che deve essere affidabile,
+configurabile, sicuro e non invasivo.
+Expo è il banco di test principale.
+
+REGOLE NON NEGOZIABILI
+1) Nessuna notifica di test o fake.
+2) Ogni notifica deve avere una causa reale.
+3) Nessuna notifica cross-family.
+4) Rispetto di lingua (IT/EN) e ruolo utente.
+5) L’utente deve poter controllare cosa riceve.
+6) Output SOLO nel formato richiesto.
+
+OBIETTIVO DEL GATE 7 BIS
+Implementare un sistema di notifiche completo che:
+- copra tutte le funzioni chiave dell’app
+- sia coerente con calendario, task, budget, luoghi e AI
+- sia pronto per essere gestito via Admin Console
+- sia scalabile per canali futuri (email, ecc.)
+
+---
+
+## A) TIPOLOGIE DI NOTIFICHE (OBBLIGATORIE)
+
+### 📅 Calendario
+- Evento imminente (configurabile, es. 30 min prima)
+- Evento all-day (mattino stesso giorno)
+- Evento multi-day (inizio)
+- Evento modificato / cancellato
+
+### 📋 Task
+- Task assegnato
+- Task in scadenza
+- Task scaduto
+- Task completato (opzionale)
+
+### 🛒 Spesa
+- Nuovo item aggiunto
+- Lista molto lunga (soglia configurabile)
+
+### 💰 Budget
+- Soglia mensile superata
+- Spesa singola “alta” (opzionale)
+
+### 🤖 Assistente AI
+- Suggerimenti intelligenti
+- Avvisi contestuali (max 1–2 al giorno)
+
+Test:
+T7B.1 Ogni categoria genera notifiche corrette
+
+---
+
+## B) CANALI DI NOTIFICA
+
+- 📱 Push notification (Expo Notifications)
+- 🔔 Centro notifiche in-app
+
+NO obbligatorio (future):
+- Email
+- SMS
+
+Test:
+T7B.2 Push ricevuta su device reale  
+T7B.3 Notifica visibile in-app  
+
+---
+
+## C) MODELLO DATI NOTIFICA
+
+Ogni notifica deve includere:
+- id
+- type
+- title (i18n)
+- message (i18n)
+- targetUserId
+- familyId
+- relatedEntity (event/task/budget/place)
+- read (boolean)
+- createdAt
+- scheduledAt (se reminder)
+
+DB:
+- tabella `notifications`
+- indici su `userId`, `familyId`, `scheduledAt`
+
+---
+
+## D) SCHEDULAZIONE & TIMEZONE
+
+- reminder programmati server-side
+- timezone coertta (UTC → locale)
+- cancellazione automatica se entità eliminata
+
+Test:
+T7B.4 Reminder rispettato  
+T7B.5 Evento eliminato → notifica cancellata  
+
+---
+
+## E) IMPOSTAZIONI UTENTE (CRITICO)
+
+In User Settings:
+- toggle globale notifiche
+- toggle per categoria:
+  - calendario
+  - task
+  - spesa
+  - budget
+  - AI
+- quiet hours (fasce silenziose)
+
+Test:
+T7B.6 Notifiche disattivate → nessuna push  
+T7B.7 Quiet hours rispettate  
+
+---
+
+## F) MULTILINGUA (IT / EN)
+
+- notifiche nella lingua utente
+- fallback IT
+- nessun mix linguistico
+
+Test:
+T7B.8 Cambio lingua → notifiche corrette  
+
+---
+
+## G) SICUREZZA & PRIVACY
+
+- enforcement familyId
+- payload minimale (no dati sensibili)
+- nessuna notifica a utenti non autorizzati
+
+Test:
+T7B.9 Nessuna notifica cross-family  
+T7B.10 Payload sicuro  
+
+---
+
+## H) CENTRO NOTIFICHE IN-APP
+
+Schermata dedicata:
+- lista notifiche
+- stato letto/non letto
+- tap → deep link (evento/task/luogo)
+- mark as read / clear
+
+Test:
+T7B.11 Centro notifiche funzionante  
+
+---
+
+## OUTPUT OBBLIGATORIO (FORMATO RIGIDO)
+
+1) GATE 7 BIS STATUS  
+- Stato: PASS / FAIL  
+- Bloccanti (se FAIL)
+
+2) MATRICE NOTIFICHE  
+[Test-ID] [Tipo] [Stato Iniziale] [Fix] [Stato Finale]
+
+3) REPORT TEST DETTAGLIATO  
+Per T7B.1 – T7B.11:
+- Steps
+- Evidenza (push / UI)
+- DB evidence
+- Esito PASS/FAIL
+
+4) CHECKLIST GATE 7 BIS  
+- Push OK: SI/NO  
+- In-app OK: SI/NO  
+- Scheduling OK: SI/NO  
+- Multilingua OK: SI/NO  
+- Sicurezza OK: SI/NO  
+
+5) VERDETTO FINALE  
+Scrivi ESATTAMENTE una sola riga:
+- “GATE 7 BIS COMPLETATO: PASS”
+oppure
+- “GATE 7 BIS COMPLETATO: FAIL”
+
+STOP
