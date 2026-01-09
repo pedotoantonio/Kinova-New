@@ -268,18 +268,34 @@ IMPORTANT RULES:
 }
 
 function extractProposedAction(content: string): { type: string; data: unknown } | null {
-  const actionMatch = content.match(/\[(?:AZIONE_PROPOSTA|PROPOSED_ACTION):\s*(\w+)\s*\|\s*(.+?)\]/);
-  if (actionMatch) {
-    try {
-      return {
-        type: actionMatch[1],
-        data: JSON.parse(actionMatch[2]),
-      };
-    } catch {
-      return { type: actionMatch[1], data: actionMatch[2] };
+  const startMatch = content.match(/\[(?:AZIONE_PROPOSTA|PROPOSED_ACTION):\s*(\w+)\s*\|\s*/);
+  if (!startMatch) return null;
+  
+  const startIndex = startMatch.index! + startMatch[0].length;
+  let braceCount = 0;
+  let endIndex = startIndex;
+  
+  for (let i = startIndex; i < content.length; i++) {
+    const char = content[i];
+    if (char === '{' || char === '[') braceCount++;
+    else if (char === '}' || char === ']') {
+      if (braceCount === 0) {
+        endIndex = i;
+        break;
+      }
+      braceCount--;
     }
   }
-  return null;
+  
+  const jsonStr = content.slice(startIndex, endIndex);
+  try {
+    return {
+      type: startMatch[1],
+      data: JSON.parse(jsonStr),
+    };
+  } catch {
+    return { type: startMatch[1], data: jsonStr };
+  }
 }
 
 export function registerAssistantRoutes(app: Express, authMiddleware: (req: AuthRequest, res: Response, next: NextFunction) => void): void {
