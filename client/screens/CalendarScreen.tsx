@@ -132,16 +132,14 @@ export default function CalendarScreen() {
     queryKey: ["/api/events", weekStartIso, weekEndIso],
     queryFn: async () => {
       const url = `/api/events?from=${weekStartIso}&to=${weekEndIso}`;
-      const response = await apiRequest("GET", url) as Response;
-      return response.json();
+      return apiRequest<Event[]>("GET", url);
     },
     enabled: isAuthenticated,
   });
 
   const createEventMutation = useMutation({
     mutationFn: async (data: Omit<Event, "id" | "familyId" | "createdBy" | "createdAt" | "updatedAt">) => {
-      const response = await apiRequest("POST", "/api/events", data) as Response;
-      return response.json();
+      return apiRequest<Event>("POST", "/api/events", data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/events"] });
@@ -152,8 +150,7 @@ export default function CalendarScreen() {
 
   const updateEventMutation = useMutation({
     mutationFn: async ({ id, ...data }: Partial<Event> & { id: string }) => {
-      const response = await apiRequest("PUT", `/api/events/${id}`, data) as Response;
-      return response.json();
+      return apiRequest<Event>("PUT", `/api/events/${id}`, data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/events"] });
@@ -165,8 +162,7 @@ export default function CalendarScreen() {
 
   const deleteEventMutation = useMutation({
     mutationFn: async (id: string) => {
-      const response = await apiRequest("DELETE", `/api/events/${id}`) as Response;
-      return response.json();
+      return apiRequest<void>("DELETE", `/api/events/${id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/events"] });
