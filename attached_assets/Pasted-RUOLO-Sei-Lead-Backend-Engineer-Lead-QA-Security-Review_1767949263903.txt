@@ -1,0 +1,170 @@
+RUOLO
+Sei Lead Backend Engineer + Lead QA + Security Reviewer del progetto Kinova.
+Hai la responsabilità diretta di rendere SOLIDO, COERENTE e VERIFICATO il core di:
+- autenticazione
+- gestione famiglia
+- ruoli utente
+- integrità familyId
+Expo resta il banco di test ufficiale.
+
+REGOLE NON NEGOZIABILI
+1) Nessun comportamento “presunto”: tutto deve essere testato.
+2) Nessuna ambiguità su ruoli e permessi.
+3) Nessun dato fuori dal proprio familyId deve essere visibile o modificabile.
+4) Se un requisito non è rispettato → FAIL con root cause + fix.
+5) L’output deve rispettare ESATTAMENTE il formato richiesto.
+
+OBIETTIVO DEL GATE 1
+Garantire che:
+- l’autenticazione funzioni end-to-end
+- ogni utente appartenga a UNA famiglia reale
+- i ruoli (admin/member/child) siano coerenti e rispettati
+- inviti famiglia funzionino davvero
+- nessun dato “cross-family” sia accessibile
+- la UI rifletta fedelmente i permessi
+
+SCOPE OBBLIGATORIO
+
+A) AUTENTICAZIONE — LOGIN STANDARD
+Verificare e correggere:
+- POST /api/auth/login
+- emissione accessToken (15 min)
+- emissione refreshToken (7 giorni)
+- refresh automatico via /api/auth/refresh
+- gestione token scaduti (retry trasparente)
+- gestione errori (401/403)
+
+Test obbligatori:
+T1.1 Login valido → token ricevuti
+T1.2 Access token scaduto → refresh automatico
+T1.3 Refresh token invalido → logout forzato
+T1.4 Token non valido → accesso negato
+
+B) AUTENTICAZIONE — GUEST LOGIN
+Se il guest login è previsto:
+- deve creare:
+  - user reale in DB
+  - family reale in DB
+  - user.familyId valido
+- NON deve usare:
+  - utenti condivisi
+  - famiglie demo
+  - dati temporanei non persistenti
+
+Test obbligatori:
+T1.5 Guest login → user+family creati in DB
+T1.6 Logout → re-login guest → nuova family (o comportamento dichiarato e coerente)
+
+Se il comportamento non è definito → FAIL e va definito.
+
+C) STRUTTURA FAMIGLIA (CORE)
+Verificare:
+- ogni utente ha 1 familyId (NOT NULL)
+- familyId è usato come filtro in TUTTE le query dati
+- nessuna query senza WHERE familyId
+
+Test obbligatori:
+T1.7 Due famiglie diverse → dati totalmente isolati
+T1.8 User A non vede MAI dati Family B
+
+D) RUOLI UTENTE (ADMIN / MEMBER / CHILD)
+Verificare che:
+- il ruolo sia salvato in DB
+- il ruolo venga:
+  - usato dal backend (permessi)
+  - riflesso dalla UI (azioni disponibili)
+  - passato all’AI (in futuro)
+
+Permessi minimi:
+ADMIN:
+- gestisce famiglia
+- invita/rimuove membri
+- modifica tutto
+
+MEMBER:
+- crea/modifica contenuti
+- NON gestisce struttura famiglia
+
+CHILD:
+- visualizzazione semplificata
+- nessuna azione distruttiva
+- linguaggio AI semplificato (verifica solo flag per ora)
+
+Test obbligatori:
+T1.9 UI differente per ruoli
+T1.10 Endpoint protetti bloccano ruoli non autorizzati
+
+E) INVITI FAMIGLIA
+Se presente:
+- invito genera:
+  - token o codice univoco
+  - scadenza
+- accettazione:
+  - associa user alla family corretta
+  - ruolo corretto
+
+Test obbligatori:
+T1.11 Invito valido → join family
+T1.12 Invito scaduto → errore
+T1.13 Invito riutilizzato → bloccato
+
+F) STORAGE E SESSIONE
+Verificare:
+- AsyncStorage contiene SOLO:
+  - token
+  - userId
+  - familyId
+- nessun dato sensibile extra
+- logout pulisce tutto
+
+Test obbligatori:
+T1.14 Logout → storage vuoto → nessun residuo
+T1.15 Re-login → dati corretti ricaricati
+
+G) UI VERIFICA (EXPO)
+- Header mostra:
+  - nome famiglia reale
+  - nome utente reale
+- FamilyScreen:
+  - lista membri corretta
+  - ruoli visibili (se previsto)
+- Nessun nome fake in nessun punto
+
+OUTPUT OBBLIGATORIO (FORMATO RIGIDO)
+
+1) GATE 1 STATUS
+- Stato: PASS / FAIL
+- Bloccanti (se presenti)
+
+2) MATRICE AUTH & FAMILY
+Tabella:
+[Area] [Test-ID] [Stato Iniziale] [Fix] [Stato Finale PASS/FAIL]
+
+3) REPORT TEST DETTAGLIATO
+Per ogni test T1.1 – T1.15:
+- Steps
+- API chiamate (endpoint + status)
+- DB query (SELECT con familyId)
+- Evidenza UI
+- Esito PASS/FAIL
+
+4) ANALISI SICUREZZA
+- Punti deboli trovati
+- Fix applicati
+- Rischi residui (se presenti)
+
+5) CHECKLIST GATE 1
+- Login standard OK: SI/NO
+- Guest login coerente: SI/NO
+- Ruoli rispettati: SI/NO
+- Isolamento famiglie: SI/NO
+- UI coerente: SI/NO
+
+6) VERDETTO FINALE
+Scrivi ESATTAMENTE una sola riga:
+- “GATE 1 COMPLETATO: PASS”
+oppure
+- “GATE 1 COMPLETATO: FAIL”
+
+STOP
+Non scrivere altro.
