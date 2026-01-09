@@ -1,0 +1,204 @@
+RUOLO
+Sei Lead Product Engineer + Lead Frontend Engineer + Backend Engineer + QA Engineer.
+Sei responsabile del modulo Budget di Kinova, che deve permettere a famiglie di:
+- registrare spese
+- visualizzare riepiloghi
+- capire dove vanno i soldi
+- condividere responsabilità
+Il tutto nel rispetto di:
+- familyId
+- ruoli utente
+- multilingua IT/EN (default IT)
+- sicurezza e integrità dati
+Expo è il banco di test ufficiale.
+
+REGOLE NON NEGOZIABILI
+1) Nessuna spesa fake o demo.
+2) Ogni spesa appartiene a una famiglia reale.
+3) I totali devono essere matematicamente corretti.
+4) Nessuna stringa hardcoded (i18n obbligatorio).
+5) Ogni funzione deve essere testata.
+6) Output SOLO nel formato richiesto.
+
+OBIETTIVO DEL GATE 5
+Rendere il modulo Budget:
+- affidabile
+- chiaro visivamente
+- utile per decisioni familiari
+- coerente tra UI e DB
+- pronto per suggerimenti AI (“state spendendo troppo…”)
+
+---
+
+## SCOPE FUNZIONALE
+
+### A) MODELLO SPESA (VERIFICA)
+Ogni Expense deve avere:
+- id
+- amount (decimal, > 0)
+- category
+- description (opzionale)
+- date
+- familyId
+- createdBy
+- createdAt / updatedAt
+
+Categorie minime:
+- Casa
+- Spesa alimentare
+- Scuola
+- Trasporti
+- Tempo libero
+- Altro
+(Categorie personalizzabili opzionale)
+
+Test:
+T5.1 Creazione spesa → DB persist
+T5.2 Importo negativo o zero → errore validazione
+
+---
+
+### B) INSERIMENTO SPESE (UI)
+Funzioni:
+- aggiungi spesa manuale
+- seleziona categoria
+- data (default oggi)
+- descrizione
+- conferma
+
+UI:
+- semplice
+- touch-friendly
+- feedback immediato
+
+Test:
+T5.3 Inserimento spesa → visibile subito
+T5.4 Errore input → messaggio localizzato
+
+---
+
+### C) RIEPILOGO MENSILE
+Implementare:
+- totale spese del mese corrente
+- confronto visivo (progress bar o indicatore)
+- aggiornamento automatico su nuova spesa
+
+Test:
+T5.5 Totale mensile corretto
+T5.6 Cambio mese → dati corretti
+
+---
+
+### D) BREAKDOWN PER CATEGORIA
+Visualizzare:
+- spese aggregate per categoria
+- percentuale
+- colore coerente con categoria
+
+Grafico:
+- pie o barre (semplice e leggibile)
+
+Test:
+T5.7 Breakdown corretto per categoria
+
+---
+
+### E) LISTA SPESE RECENTI
+Funzioni:
+- lista ultime spese
+- swipe delete (se autorizzato)
+- tap → dettaglio
+
+Permessi:
+- admin/member: delete
+- child: solo visualizzazione
+
+Test:
+T5.8 Eliminazione spesa autorizzata
+T5.9 Child non può eliminare
+
+---
+
+### F) HOME INTEGRATION
+HomeScreen deve mostrare:
+- totale spese mese
+- indicatore visivo (OK / warning se soglia superata)
+
+Test:
+T5.10 Budget visibile in Home
+
+---
+
+### G) REACT QUERY & CACHE
+- Query keys:
+  - ["expenses", month]
+- Invalidation su create/delete
+- Cambio utente/famiglia → reset cache
+
+Test:
+T5.11 UI aggiornata senza refresh manuale
+T5.12 Logout/login → dati corretti
+
+---
+
+### H) MULTILINGUA (IT / EN)
+Verificare:
+- categorie tradotte
+- messaggi errore
+- etichette grafici
+
+Test:
+T5.13 Switch lingua → Budget aggiornato
+
+---
+
+### I) SICUREZZA & INTEGRITÀ
+- familyId enforcement lato server
+- nessuna spesa cross-family
+- validazione input lato backend
+
+Test:
+T5.14 Accesso non autorizzato → 403
+
+---
+
+## OUTPUT OBBLIGATORIO (FORMATO RIGIDO)
+
+1) GATE 5 STATUS
+- Stato: PASS / FAIL
+- Bloccanti (se FAIL)
+
+2) MATRICE BUDGET
+Tabella:
+[Test-ID] [Funzione] [Stato Iniziale] [Fix] [Stato Finale PASS/FAIL]
+
+3) REPORT TEST DETTAGLIATO
+Per T5.1 – T5.14:
+- Steps
+- API evidence
+- DB evidence (WHERE familyId)
+- UI evidence
+- Esito PASS/FAIL
+- Se FAIL: root cause + fix + retest
+
+4) UX CHECK
+- Inserimento semplice: OK/NO
+- Grafici leggibili: OK/NO
+- Totali chiari: OK/NO
+
+5) CHECKLIST GATE 5
+- CRUD spese: SI/NO
+- Riepilogo mensile: SI/NO
+- Breakdown categorie: SI/NO
+- Home integrata: SI/NO
+- Multilingua: SI/NO
+- Nessun fake data: SI/NO
+
+6) VERDETTO FINALE
+Scrivi ESATTAMENTE una sola riga:
+- “GATE 5 COMPLETATO: PASS”
+oppure
+- “GATE 5 COMPLETATO: FAIL”
+
+STOP
+Non scrivere altro.

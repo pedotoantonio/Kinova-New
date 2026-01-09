@@ -1034,6 +1034,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: { code: "VALIDATION_ERROR", message: "Amount, description, paidBy, and date are required" } });
       }
       
+      const numAmount = parseFloat(amount);
+      if (isNaN(numAmount) || numAmount <= 0) {
+        return res.status(400).json({ error: { code: "VALIDATION_ERROR", message: "Amount must be greater than zero" } });
+      }
+      
       const expense = await storage.createExpense({
         familyId: req.auth!.familyId,
         amount: amount.toString(),
@@ -1073,7 +1078,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const updates: Record<string, unknown> = {};
-      if (amount !== undefined) updates.amount = amount.toString();
+      if (amount !== undefined) {
+        const numAmount = parseFloat(amount);
+        if (isNaN(numAmount) || numAmount <= 0) {
+          return res.status(400).json({ error: { code: "VALIDATION_ERROR", message: "Amount must be greater than zero" } });
+        }
+        updates.amount = amount.toString();
+      }
       if (description !== undefined) updates.description = description;
       if (category !== undefined) updates.category = category;
       if (paidBy !== undefined) updates.paidBy = paidBy;
@@ -1102,7 +1113,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/expenses/:id", authMiddleware, async (req: AuthRequest, res: Response) => {
+  app.delete("/api/expenses/:id", authMiddleware, requireRoles("admin", "member"), async (req: AuthRequest, res: Response) => {
     try {
       const { id } = req.params;
       
