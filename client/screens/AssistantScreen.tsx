@@ -301,11 +301,19 @@ export default function AssistantScreen() {
       
       const result = await response.json();
       
-      if (result.success) {
+      if (response.status === 403) {
+        setStreamingContent(result.error || (language === "it" ? "Non hai i permessi per questa azione" : "You don't have permission for this action"));
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+        setTimeout(() => {
+          setStreamingContent("");
+          refetchConversation();
+        }, 3000);
+        return;
+      } else if (result.success) {
         setStreamingContent(`✅ ${result.message}`);
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       } else {
-        setStreamingContent(`❌ ${result.message || (language === "it" ? "Errore durante l'operazione" : "Operation failed")}`);
+        setStreamingContent(`❌ ${result.message || result.error || (language === "it" ? "Errore durante l'operazione" : "Operation failed")}`);
       }
       
       queryClient.invalidateQueries({ queryKey: ["/api/events"] });

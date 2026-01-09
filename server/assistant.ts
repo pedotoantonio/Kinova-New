@@ -424,9 +424,19 @@ export function registerAssistantRoutes(app: Express, authMiddleware: (req: Auth
       }
 
       if (req.auth!.role === "child") {
-        const destructiveActions = ["delete_event", "delete_task", "delete_expense", "delete_shopping", "remove_shopping"];
-        if (destructiveActions.includes(actionType)) {
-          return res.status(403).json({ error: language === "it" ? "Azione non permessa per il tuo ruolo" : "Action not allowed for your role" });
+        const restrictedActions = [
+          "create_event", "update_event", "delete_event",
+          "create_task", "update_task", "complete_task", "delete_task",
+          "create_expense", "update_expense", "delete_expense",
+          "add_shopping", "add_shopping_item", "add_shopping_items", "update_shopping", "update_shopping_item", "delete_shopping", "delete_shopping_item", "remove_shopping"
+        ];
+        if (restrictedActions.includes(actionType)) {
+          return res.status(403).json({ 
+            success: false,
+            error: language === "it" 
+              ? "Non hai i permessi per eseguire questa azione. Chiedi a un genitore!" 
+              : "You don't have permission to perform this action. Ask a parent!" 
+          });
         }
       }
 
