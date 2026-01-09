@@ -49,7 +49,7 @@ Preferred communication style: Simple, everyday language.
 - Authentication endpoints: `/api/auth/register`, `/api/auth/login`, `/api/auth/me`
 - Family endpoints: `/api/family`, `/api/family/members`
 
-**Authentication**: Token-based sessions stored in memory (Map). Tokens are UUIDs generated with `randomUUID()`. Password hashing uses Base64 encoding (simplified for development).
+**Authentication**: Token-based sessions stored in PostgreSQL database (persists across server restarts). Tokens are secure random strings using `randomBytes(32).toString("base64url")`. Password hashing uses scrypt with random salt.
 
 **Database Access**: Storage abstraction layer (`IStorage` interface) with `DatabaseStorage` implementation using Drizzle ORM.
 
@@ -59,7 +59,13 @@ Preferred communication style: Simple, everyday language.
 
 **Schema** (defined in `shared/schema.ts`):
 - `families` table: id (UUID), name, createdAt
-- `users` table: id (UUID), username (unique), password, displayName, avatarUrl, familyId (FK), createdAt
+- `users` table: id (UUID), username (unique), password, displayName, avatarUrl, familyId (FK), role, createdAt
+- `sessions` table: id (UUID), token (unique), userId (FK), familyId (FK), role, type (access/refresh), expiresAt, createdAt
+- `events` table: id (UUID), familyId (FK), title, description, startDate, endDate, allDay, color, createdBy (FK), createdAt, updatedAt
+- `tasks` table: id (UUID), familyId (FK), title, description, completed, dueDate, assignedTo (FK), priority, createdBy (FK), createdAt, updatedAt
+- `shopping_items` table: id (UUID), familyId (FK), name, quantity, unit, category, purchased, createdBy (FK), createdAt, updatedAt
+- `expenses` table: id (UUID), familyId (FK), amount, description, category, paidBy (FK), date, createdBy (FK), createdAt, updatedAt
+- `family_invites` table: id (UUID), familyId (FK), code (unique), role, email, expiresAt, acceptedAt, acceptedBy (FK), createdBy (FK), createdAt
 
 **Migrations**: Managed via `drizzle-kit` with output to `./migrations` directory
 

@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { getApiUrl } from "./query-client";
+import { getApiUrl, clearQueryCache, setSessionExpiredHandler } from "./query-client";
 
 const AUTH_TOKEN_KEY = "@kinova/auth_token";
 const REFRESH_TOKEN_KEY = "@kinova/refresh_token";
@@ -113,6 +113,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       clearTimeout(refreshTimeoutRef.current);
     }
     await clearAllStorage();
+    clearQueryCache();
     setToken(null);
     setUser(null);
   };
@@ -139,6 +140,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [token, fetchUser]);
 
   useEffect(() => {
+    setSessionExpiredHandler(() => {
+      handleLogout();
+    });
+
     const loadStoredAuth = async () => {
       try {
         const [[, storedToken], [, storedRefreshToken], [, expiryStr]] = await AsyncStorage.multiGet([

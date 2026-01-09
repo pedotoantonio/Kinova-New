@@ -5,18 +5,29 @@ import {
   type InsertFamily, 
   type FamilyInvite,
   type UserRole,
+  type DbEvent,
+  type DbTask,
+  type DbShoppingItem,
+  type DbExpense,
+  type DbSession,
   users, 
   families,
-  familyInvites 
+  familyInvites,
+  events,
+  tasks,
+  shoppingItems,
+  expenses,
+  sessions
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, isNull, gt } from "drizzle-orm";
+import { eq, and, isNull, gt, gte, lte, desc, lt } from "drizzle-orm";
 
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser & { familyId: string; role?: UserRole }): Promise<User>;
   updateUser(id: string, data: Partial<User>): Promise<User | undefined>;
+  deleteUser(id: string): Promise<boolean>;
   getFamily(id: string): Promise<Family | undefined>;
   createFamily(family: InsertFamily): Promise<Family>;
   getFamilyMembers(familyId: string): Promise<User[]>;
@@ -24,6 +35,36 @@ export interface IStorage {
   getInviteByCode(code: string): Promise<FamilyInvite | undefined>;
   acceptInvite(inviteId: string, userId: string): Promise<FamilyInvite | undefined>;
   getActiveInvitesByFamily(familyId: string): Promise<FamilyInvite[]>;
+  
+  getEvents(familyId: string, from?: Date, to?: Date): Promise<DbEvent[]>;
+  getEvent(id: string, familyId: string): Promise<DbEvent | undefined>;
+  createEvent(data: Omit<DbEvent, "id" | "createdAt" | "updatedAt">): Promise<DbEvent>;
+  updateEvent(id: string, familyId: string, data: Partial<DbEvent>): Promise<DbEvent | undefined>;
+  deleteEvent(id: string, familyId: string): Promise<boolean>;
+  
+  getTasks(familyId: string, filters?: { completed?: boolean; assignedTo?: string }): Promise<DbTask[]>;
+  getTask(id: string, familyId: string): Promise<DbTask | undefined>;
+  createTask(data: Omit<DbTask, "id" | "createdAt" | "updatedAt">): Promise<DbTask>;
+  updateTask(id: string, familyId: string, data: Partial<DbTask>): Promise<DbTask | undefined>;
+  deleteTask(id: string, familyId: string): Promise<boolean>;
+  
+  getShoppingItems(familyId: string, filters?: { purchased?: boolean; category?: string }): Promise<DbShoppingItem[]>;
+  getShoppingItem(id: string, familyId: string): Promise<DbShoppingItem | undefined>;
+  createShoppingItem(data: Omit<DbShoppingItem, "id" | "createdAt" | "updatedAt">): Promise<DbShoppingItem>;
+  updateShoppingItem(id: string, familyId: string, data: Partial<DbShoppingItem>): Promise<DbShoppingItem | undefined>;
+  deleteShoppingItem(id: string, familyId: string): Promise<boolean>;
+  
+  getExpenses(familyId: string, filters?: { from?: Date; to?: Date; category?: string; paidBy?: string }): Promise<DbExpense[]>;
+  getExpense(id: string, familyId: string): Promise<DbExpense | undefined>;
+  createExpense(data: Omit<DbExpense, "id" | "createdAt" | "updatedAt">): Promise<DbExpense>;
+  updateExpense(id: string, familyId: string, data: Partial<DbExpense>): Promise<DbExpense | undefined>;
+  deleteExpense(id: string, familyId: string): Promise<boolean>;
+  
+  createSession(data: { token: string; userId: string; familyId: string; role: UserRole; type: "access" | "refresh"; expiresAt: Date }): Promise<DbSession>;
+  getSession(token: string): Promise<DbSession | undefined>;
+  deleteSession(token: string): Promise<boolean>;
+  deleteSessionsByUser(userId: string): Promise<boolean>;
+  cleanExpiredSessions(): Promise<number>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -58,6 +99,11 @@ export class DatabaseStorage implements IStorage {
       .where(eq(users.id, id))
       .returning();
     return user;
+  }
+
+  async deleteUser(id: string): Promise<boolean> {
+    const result = await db.delete(users).where(eq(users.id, id));
+    return true;
   }
 
   async getFamily(id: string): Promise<Family | undefined> {
@@ -138,6 +184,217 @@ export class DatabaseStorage implements IStorage {
           gt(familyInvites.expiresAt, new Date())
         )
       );
+  }
+
+  async getEvents(familyId: string, from?: Date, to?: Date): Promise<DbEvent[]> {
+    const conditions = [eq(events.familyId, familyId)];
+    if (from) conditions.push(gte(events.startDate, from));
+    if (to) conditions.push(lte(events.startDate, to));
+    
+    return db
+      .select()
+      .from(events)
+      .where(and(...conditions))
+      .orderBy(events.startDate);
+  }
+
+  async getEvent(id: string, familyId: string): Promise<DbEvent | undefined> {
+    const [event] = await db
+      .select()
+      .from(events)
+      .where(and(eq(events.id, id), eq(events.familyId, familyId)));
+    return event;
+  }
+
+  async createEvent(data: Omit<DbEvent, "id" | "createdAt" | "updatedAt">): Promise<DbEvent> {
+    const [event] = await db
+      .insert(events)
+      .values(data)
+      .returning();
+    return event;
+  }
+
+  async updateEvent(id: string, familyId: string, data: Partial<DbEvent>): Promise<DbEvent | undefined> {
+    const [event] = await db
+      .update(events)
+      .set({ ...data, updatedAt: new Date() })
+      .where(and(eq(events.id, id), eq(events.familyId, familyId)))
+      .returning();
+    return event;
+  }
+
+  async deleteEvent(id: string, familyId: string): Promise<boolean> {
+    await db.delete(events).where(and(eq(events.id, id), eq(events.familyId, familyId)));
+    return true;
+  }
+
+  async getTasks(familyId: string, filters?: { completed?: boolean; assignedTo?: string }): Promise<DbTask[]> {
+    const conditions = [eq(tasks.familyId, familyId)];
+    if (filters?.completed !== undefined) conditions.push(eq(tasks.completed, filters.completed));
+    if (filters?.assignedTo) conditions.push(eq(tasks.assignedTo, filters.assignedTo));
+    
+    return db
+      .select()
+      .from(tasks)
+      .where(and(...conditions))
+      .orderBy(desc(tasks.createdAt));
+  }
+
+  async getTask(id: string, familyId: string): Promise<DbTask | undefined> {
+    const [task] = await db
+      .select()
+      .from(tasks)
+      .where(and(eq(tasks.id, id), eq(tasks.familyId, familyId)));
+    return task;
+  }
+
+  async createTask(data: Omit<DbTask, "id" | "createdAt" | "updatedAt">): Promise<DbTask> {
+    const [task] = await db
+      .insert(tasks)
+      .values(data)
+      .returning();
+    return task;
+  }
+
+  async updateTask(id: string, familyId: string, data: Partial<DbTask>): Promise<DbTask | undefined> {
+    const [task] = await db
+      .update(tasks)
+      .set({ ...data, updatedAt: new Date() })
+      .where(and(eq(tasks.id, id), eq(tasks.familyId, familyId)))
+      .returning();
+    return task;
+  }
+
+  async deleteTask(id: string, familyId: string): Promise<boolean> {
+    await db.delete(tasks).where(and(eq(tasks.id, id), eq(tasks.familyId, familyId)));
+    return true;
+  }
+
+  async getShoppingItems(familyId: string, filters?: { purchased?: boolean; category?: string }): Promise<DbShoppingItem[]> {
+    const conditions = [eq(shoppingItems.familyId, familyId)];
+    if (filters?.purchased !== undefined) conditions.push(eq(shoppingItems.purchased, filters.purchased));
+    if (filters?.category) conditions.push(eq(shoppingItems.category, filters.category));
+    
+    return db
+      .select()
+      .from(shoppingItems)
+      .where(and(...conditions))
+      .orderBy(desc(shoppingItems.createdAt));
+  }
+
+  async getShoppingItem(id: string, familyId: string): Promise<DbShoppingItem | undefined> {
+    const [item] = await db
+      .select()
+      .from(shoppingItems)
+      .where(and(eq(shoppingItems.id, id), eq(shoppingItems.familyId, familyId)));
+    return item;
+  }
+
+  async createShoppingItem(data: Omit<DbShoppingItem, "id" | "createdAt" | "updatedAt">): Promise<DbShoppingItem> {
+    const [item] = await db
+      .insert(shoppingItems)
+      .values(data)
+      .returning();
+    return item;
+  }
+
+  async updateShoppingItem(id: string, familyId: string, data: Partial<DbShoppingItem>): Promise<DbShoppingItem | undefined> {
+    const [item] = await db
+      .update(shoppingItems)
+      .set({ ...data, updatedAt: new Date() })
+      .where(and(eq(shoppingItems.id, id), eq(shoppingItems.familyId, familyId)))
+      .returning();
+    return item;
+  }
+
+  async deleteShoppingItem(id: string, familyId: string): Promise<boolean> {
+    await db.delete(shoppingItems).where(and(eq(shoppingItems.id, id), eq(shoppingItems.familyId, familyId)));
+    return true;
+  }
+
+  async getExpenses(familyId: string, filters?: { from?: Date; to?: Date; category?: string; paidBy?: string }): Promise<DbExpense[]> {
+    const conditions = [eq(expenses.familyId, familyId)];
+    if (filters?.from) conditions.push(gte(expenses.date, filters.from));
+    if (filters?.to) conditions.push(lte(expenses.date, filters.to));
+    if (filters?.category) conditions.push(eq(expenses.category, filters.category));
+    if (filters?.paidBy) conditions.push(eq(expenses.paidBy, filters.paidBy));
+    
+    return db
+      .select()
+      .from(expenses)
+      .where(and(...conditions))
+      .orderBy(desc(expenses.date));
+  }
+
+  async getExpense(id: string, familyId: string): Promise<DbExpense | undefined> {
+    const [expense] = await db
+      .select()
+      .from(expenses)
+      .where(and(eq(expenses.id, id), eq(expenses.familyId, familyId)));
+    return expense;
+  }
+
+  async createExpense(data: Omit<DbExpense, "id" | "createdAt" | "updatedAt">): Promise<DbExpense> {
+    const [expense] = await db
+      .insert(expenses)
+      .values(data)
+      .returning();
+    return expense;
+  }
+
+  async updateExpense(id: string, familyId: string, data: Partial<DbExpense>): Promise<DbExpense | undefined> {
+    const [expense] = await db
+      .update(expenses)
+      .set({ ...data, updatedAt: new Date() })
+      .where(and(eq(expenses.id, id), eq(expenses.familyId, familyId)))
+      .returning();
+    return expense;
+  }
+
+  async deleteExpense(id: string, familyId: string): Promise<boolean> {
+    await db.delete(expenses).where(and(eq(expenses.id, id), eq(expenses.familyId, familyId)));
+    return true;
+  }
+
+  async createSession(data: { 
+    token: string; 
+    userId: string; 
+    familyId: string; 
+    role: UserRole; 
+    type: "access" | "refresh"; 
+    expiresAt: Date 
+  }): Promise<DbSession> {
+    const [session] = await db
+      .insert(sessions)
+      .values(data)
+      .returning();
+    return session;
+  }
+
+  async getSession(token: string): Promise<DbSession | undefined> {
+    const [session] = await db
+      .select()
+      .from(sessions)
+      .where(eq(sessions.token, token));
+    return session;
+  }
+
+  async deleteSession(token: string): Promise<boolean> {
+    await db.delete(sessions).where(eq(sessions.token, token));
+    return true;
+  }
+
+  async deleteSessionsByUser(userId: string): Promise<boolean> {
+    await db.delete(sessions).where(eq(sessions.userId, userId));
+    return true;
+  }
+
+  async cleanExpiredSessions(): Promise<number> {
+    const result = await db
+      .delete(sessions)
+      .where(lt(sessions.expiresAt, new Date()))
+      .returning();
+    return result.length;
   }
 }
 

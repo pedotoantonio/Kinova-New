@@ -1,9 +1,10 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, timestamp, pgEnum } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, timestamp, pgEnum, boolean, integer, numeric } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod";
 
 export const userRoleEnum = pgEnum("user_role", ["admin", "member", "child"]);
+export const priorityEnum = pgEnum("priority", ["low", "medium", "high"]);
 
 export const families = pgTable("families", {
   id: varchar("id")
@@ -41,6 +42,83 @@ export const familyInvites = pgTable("family_invites", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+export const events = pgTable("events", {
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  familyId: varchar("family_id").references(() => families.id).notNull(),
+  title: text("title").notNull(),
+  description: text("description"),
+  startDate: timestamp("start_date").notNull(),
+  endDate: timestamp("end_date"),
+  allDay: boolean("all_day").default(false).notNull(),
+  color: text("color"),
+  createdBy: varchar("created_by").references(() => users.id).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const tasks = pgTable("tasks", {
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  familyId: varchar("family_id").references(() => families.id).notNull(),
+  title: text("title").notNull(),
+  description: text("description"),
+  completed: boolean("completed").default(false).notNull(),
+  dueDate: timestamp("due_date"),
+  assignedTo: varchar("assigned_to").references(() => users.id),
+  priority: priorityEnum("priority").default("medium").notNull(),
+  createdBy: varchar("created_by").references(() => users.id).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const shoppingItems = pgTable("shopping_items", {
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  familyId: varchar("family_id").references(() => families.id).notNull(),
+  name: text("name").notNull(),
+  quantity: integer("quantity").default(1).notNull(),
+  unit: text("unit"),
+  category: text("category"),
+  purchased: boolean("purchased").default(false).notNull(),
+  createdBy: varchar("created_by").references(() => users.id).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const expenses = pgTable("expenses", {
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  familyId: varchar("family_id").references(() => families.id).notNull(),
+  amount: numeric("amount", { precision: 10, scale: 2 }).notNull(),
+  description: text("description").notNull(),
+  category: text("category"),
+  paidBy: varchar("paid_by").references(() => users.id).notNull(),
+  date: timestamp("date").notNull(),
+  createdBy: varchar("created_by").references(() => users.id).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const tokenTypeEnum = pgEnum("token_type", ["access", "refresh"]);
+
+export const sessions = pgTable("sessions", {
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  token: text("token").notNull().unique(),
+  userId: varchar("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  familyId: varchar("family_id").references(() => families.id, { onDelete: "cascade" }).notNull(),
+  role: userRoleEnum("role").notNull(),
+  type: tokenTypeEnum("type").notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
@@ -52,8 +130,14 @@ export const insertFamilySchema = createInsertSchema(families).pick({
 });
 
 export type UserRole = "admin" | "member" | "child";
+export type Priority = "low" | "medium" | "high";
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type InsertFamily = z.infer<typeof insertFamilySchema>;
 export type Family = typeof families.$inferSelect;
 export type FamilyInvite = typeof familyInvites.$inferSelect;
+export type DbEvent = typeof events.$inferSelect;
+export type DbTask = typeof tasks.$inferSelect;
+export type DbShoppingItem = typeof shoppingItems.$inferSelect;
+export type DbExpense = typeof expenses.$inferSelect;
+export type DbSession = typeof sessions.$inferSelect;

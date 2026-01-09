@@ -1,0 +1,186 @@
+RUOLO
+Sei Lead Frontend Engineer + Lead Backend Engineer + QA Engineer. Sei responsabile del data layer di Kinova:
+- contratti API stabili
+- React Query configurato correttamente
+- cache coerente, invalidation corretta
+- gestione errori e retry
+- offline-safe (senza inventare dati)
+Expo è l’ambiente di test.
+
+REGOLE NON NEGOZIABILI
+1) Nessun mock/fake data. Se offline o API down, si mostra stato “offline/errore”, non dati inventati.
+2) Ogni endpoint deve avere uno schema di risposta definito e versionabile.
+3) Ogni chiamata API deve includere auth corretta e familyId enforcement lato server.
+4) Ogni bug deve avere: root cause + fix + retest.
+5) Output SOLO nel formato richiesto.
+
+OBIETTIVO DEL GATE 2
+Stabilizzare il “motore dati” dell’app, garantendo:
+- API contracts definiti (request/response)
+- enforcement familyId lato server (sempre)
+- client data fetching robusto (React Query)
+- caching e invalidation coerenti
+- error handling uniforme (UI + logging)
+- strategia offline minima (read-cache) + indicatori UI
+- zero inconsistenze tra UI e DB
+
+SCOPE OBBLIGATORIO
+
+A) API CONTRACTS (OBBLIGATORIO)
+Definire contratti per questi domini (minimo):
+- Auth: login, refresh, logout (se endpoint), me/session
+- Family: get family, list members, invite, accept invite, update member role (se previsto)
+- Events: list range, create, update, delete
+- Tasks: list, create, update, delete
+- Shopping: list, create, update, delete
+- Expenses: list, create, update, delete
+- AI: assistant endpoint (solo contratto, implementazione gate successivo)
+
+Per ogni endpoint definire:
+- method + path
+- request body (schema)
+- response body (schema)
+- error responses standard (400/401/403/404/409/500) con shape coerente
+- note su pagination/filters (se presenti)
+
+Standard error shape OBBLIGATORIO:
+{
+  "error": {
+    "code": "string",
+    "message": "string",
+    "details": any?
+  }
+}
+
+B) BACKEND ENFORCEMENT: FAMILYID & AUTH
+Verificare che TUTTI gli endpoint dati:
+- richiedano auth (tranne login/refresh)
+- derivino familyId dalla sessione/token (non dal client)
+- filtrino query DB con WHERE familyId = session.familyId
+- blocchino accesso cross-family con 403 (non 404 “silenzioso”)
+
+Test obbligatori:
+T2.1 User A prova a leggere/modificare record Family B -> 403
+T2.2 Client invia familyId falsificato -> ignorato lato server (server usa token)
+
+C) CLIENT DATA LAYER: API CLIENT UNIFICATO
+Implementare/validare un client API unico (es. lib/api.ts) con:
+- baseUrl da EXPO_PUBLIC_DOMAIN
+- header Authorization Bearer accessToken
+- auto refresh token su 401 (una volta) e retry request
+- gestione timeout
+- mapping error shape standard
+- logging (dev-only) per richieste/risposte (senza token in chiaro)
+
+Test obbligatori:
+T2.3 401 -> refresh -> retry -> success
+T2.4 refresh fallisce -> logout + UI stato “session expired”
+
+D) REACT QUERY CONFIG (query-client.ts)
+Configurare React Query con:
+- query keys standard (es. ["family"], ["events", from, to], ["tasks"], ecc.)
+- staleTime e cacheTime ragionati
+- invalidation dopo mutation (create/update/delete)
+- optimistic updates solo se coerenti, altrimenti invalidation
+
+Test obbligatori:
+T2.5 Dopo create/update/delete, UI si aggiorna correttamente SENZA refresh manuale
+T2.6 Nessun “dato vecchio” dopo logout/login con altro utente (cache reset)
+
+E) STORAGE E CACHE STRATEGY
+Definire cosa viene salvato in AsyncStorage:
+- token
+- user session basic
+- opzionale: snapshot cache read-only (se previsto)
+Non salvare interi dataset senza strategia.
+Alla disconnessione:
+- mostra badge “Offline”
+- usa SOLO dati già in cache (se disponibili) marcandoli come cached
+- non generare contenuti fake
+
+Test obbligatori:
+T2.7 Offline: UI mostra stato offline e dati cached (se presenti) o empty state
+T2.8 Ritorno online: sync e invalidation corretta
+
+F) UI ERROR HANDLING UNIFICATO
+Implementare pattern unico per stati:
+- loading
+- empty
+- error (con retry button)
+- offline
+Ogni screen principale deve usarlo:
+- Home
+- Calendar
+- Lists
+- Budget
+- Family
+- Assistant (solo skeleton)
+
+Test obbligatori:
+T2.9 Forzare 500 dal server -> UI error state + retry
+T2.10 Timeout -> UI error state + retry
+
+G) CONTRATTI TYPESCRIPT (types.ts)
+Generare/validare types TS coerenti con DB e API:
+- User, FamilyMember, Event, Task, ShoppingItem, Expense
+- ApiError
+- ApiResponse wrappers
+Assicurare che la UI non usi campi inesistenti.
+
+H) OSSERVABILITÀ MINIMA (DEV)
+Aggiungere logging dev:
+- request start/end
+- status code
+- error code
+- correlation id (opzionale)
+Mai loggare token o password.
+
+OUTPUT OBBLIGATORIO (FORMATO RIGIDO)
+
+1) GATE 2 STATUS
+- Stato: PASS/FAIL
+- Bloccanti (se FAIL)
+
+2) API CONTRACT CATALOG
+Per ogni endpoint in scope:
+- METHOD PATH
+- Request schema (sintetico)
+- Response schema (sintetico)
+- Error schema (standard)
+- Auth required SI/NO
+
+3) DATA LAYER IMPLEMENTATION SUMMARY
+- File creati/modificati (path)
+- Descrizione sintetica
+
+4) TEST REPORT (T2.1 – T2.10)
+Per ogni test:
+- Steps
+- API evidence (status + snippet response)
+- DB evidence (query WHERE familyId)
+- UI evidence
+- Esito PASS/FAIL
+- Se FAIL: root cause + fix + retest
+
+5) CACHE & OFFLINE BEHAVIOR
+- Cosa è cached
+- Cosa non lo è
+- UX offline definita
+- Limiti
+
+6) CHECKLIST GATE 2
+- API contracts definiti: SI/NO
+- Enforcement familyId lato server: SI/NO
+- API client con refresh+retry: SI/NO
+- React Query invalidation ok: SI/NO
+- Error handling uniforme: SI/NO
+- Offline-safe (no fake): SI/NO
+
+7) VERDETTO FINALE
+Scrivi ESATTAMENTE una sola riga:
+- “GATE 2 COMPLETATO: PASS”
+oppure
+- “GATE 2 COMPLETATO: FAIL”
+
+STOP
+Non scrivere altro.

@@ -8,16 +8,6 @@ const ACCESS_TOKEN_EXPIRY_MS = 15 * 60 * 1000;
 const REFRESH_TOKEN_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000;
 const INVITE_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000;
 
-interface TokenData {
-  userId: string;
-  familyId: string;
-  role: UserRole;
-  type: "access" | "refresh";
-  expiresAt: number;
-}
-
-const tokens = new Map<string, TokenData>();
-
 function createToken(): string {
   return randomBytes(32).toString("base64url");
 }
@@ -41,41 +31,54 @@ function generateInviteCode(): string {
   return randomBytes(6).toString("base64url").toUpperCase().slice(0, 8);
 }
 
-function issueTokens(userId: string, familyId: string, role: UserRole): { accessToken: string; refreshToken: string; expiresIn: number } {
+let lastCleanupTime = 0;
+const CLEANUP_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
+
+async function maybeCleanupExpiredSessions() {
+  const now = Date.now();
+  if (now - lastCleanupTime > CLEANUP_INTERVAL_MS) {
+    lastCleanupTime = now;
+    try {
+      const cleaned = await storage.cleanExpiredSessions();
+      if (cleaned > 0) {
+        console.log(`Cleaned up ${cleaned} expired sessions`);
+      }
+    } catch (error) {
+      console.error("Session cleanup error:", error);
+    }
+  }
+}
+
+async function issueTokens(userId: string, familyId: string, role: UserRole): Promise<{ accessToken: string; refreshToken: string; expiresIn: number }> {
   const accessToken = createToken();
   const refreshToken = createToken();
   const now = Date.now();
 
-  tokens.set(accessToken, {
+  await storage.createSession({
+    token: accessToken,
     userId,
     familyId,
     role,
     type: "access",
-    expiresAt: now + ACCESS_TOKEN_EXPIRY_MS,
+    expiresAt: new Date(now + ACCESS_TOKEN_EXPIRY_MS),
   });
 
-  tokens.set(refreshToken, {
+  await storage.createSession({
+    token: refreshToken,
     userId,
     familyId,
     role,
     type: "refresh",
-    expiresAt: now + REFRESH_TOKEN_EXPIRY_MS,
+    expiresAt: new Date(now + REFRESH_TOKEN_EXPIRY_MS),
   });
+
+  maybeCleanupExpiredSessions();
 
   return {
     accessToken,
     refreshToken,
     expiresIn: ACCESS_TOKEN_EXPIRY_MS / 1000,
   };
-}
-
-function cleanExpiredTokens() {
-  const now = Date.now();
-  for (const [token, data] of tokens.entries()) {
-    if (data.expiresAt < now) {
-      tokens.delete(token);
-    }
-  }
 }
 
 interface AuthRequest extends Request {
@@ -87,38 +90,42 @@ interface AuthRequest extends Request {
   };
 }
 
-function authMiddleware(req: AuthRequest, res: Response, next: NextFunction) {
-  cleanExpiredTokens();
-
+async function authMiddleware(req: AuthRequest, res: Response, next: NextFunction) {
   const authHeader = req.headers.authorization;
   if (!authHeader?.startsWith("Bearer ")) {
     return res.status(401).json({ error: "Not authenticated" });
   }
 
   const token = authHeader.slice(7);
-  const tokenData = tokens.get(token);
+  
+  try {
+    const session = await storage.getSession(token);
 
-  if (!tokenData) {
-    return res.status(401).json({ error: "Invalid token" });
+    if (!session) {
+      return res.status(401).json({ error: "Invalid token" });
+    }
+
+    if (new Date(session.expiresAt) < new Date()) {
+      await storage.deleteSession(token);
+      return res.status(401).json({ error: "Token expired" });
+    }
+
+    if (session.type !== "access") {
+      return res.status(401).json({ error: "Invalid token type" });
+    }
+
+    req.auth = {
+      userId: session.userId,
+      familyId: session.familyId,
+      role: session.role,
+      tokenId: token,
+    };
+
+    next();
+  } catch (error) {
+    console.error("Auth middleware error:", error);
+    return res.status(500).json({ error: "Authentication error" });
   }
-
-  if (tokenData.expiresAt < Date.now()) {
-    tokens.delete(token);
-    return res.status(401).json({ error: "Token expired" });
-  }
-
-  if (tokenData.type !== "access") {
-    return res.status(401).json({ error: "Invalid token type" });
-  }
-
-  req.auth = {
-    userId: tokenData.userId,
-    familyId: tokenData.familyId,
-    role: tokenData.role,
-    tokenId: token,
-  };
-
-  next();
 }
 
 function requireRoles(...allowedRoles: UserRole[]) {
@@ -159,7 +166,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         role: "admin",
       });
 
-      const tokenData = issueTokens(user.id, user.familyId, user.role);
+      const tokenData = await issueTokens(user.id, user.familyId, user.role);
 
       res.status(201).json({
         ...tokenData,
@@ -190,7 +197,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ error: "Invalid credentials" });
       }
 
-      const tokenData = issueTokens(user.id, user.familyId, user.role);
+      const tokenData = await issueTokens(user.id, user.familyId, user.role);
 
       res.json({
         ...tokenData,
@@ -223,7 +230,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         role: "admin",
       });
 
-      const tokenData = issueTokens(user.id, user.familyId, user.role);
+      const tokenData = await issueTokens(user.id, user.familyId, user.role);
 
       res.status(201).json({
         ...tokenData,
@@ -249,29 +256,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Refresh token required" });
       }
 
-      const tokenData = tokens.get(refreshToken);
+      const session = await storage.getSession(refreshToken);
 
-      if (!tokenData) {
+      if (!session) {
         return res.status(401).json({ error: "Invalid refresh token" });
       }
 
-      if (tokenData.type !== "refresh") {
+      if (session.type !== "refresh") {
         return res.status(401).json({ error: "Invalid token type" });
       }
 
-      if (tokenData.expiresAt < Date.now()) {
-        tokens.delete(refreshToken);
+      if (new Date(session.expiresAt) < new Date()) {
+        await storage.deleteSession(refreshToken);
         return res.status(401).json({ error: "Refresh token expired" });
       }
 
-      tokens.delete(refreshToken);
+      await storage.deleteSession(refreshToken);
 
-      const user = await storage.getUser(tokenData.userId);
+      const user = await storage.getUser(session.userId);
       if (!user) {
         return res.status(401).json({ error: "User not found" });
       }
 
-      const newTokens = issueTokens(user.id, user.familyId, user.role);
+      const newTokens = await issueTokens(user.id, user.familyId, user.role);
 
       res.json({
         ...newTokens,
@@ -290,18 +297,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.post("/api/auth/logout", async (req: Request, res: Response) => {
-    const authHeader = req.headers.authorization;
-    if (authHeader?.startsWith("Bearer ")) {
-      const token = authHeader.slice(7);
-      tokens.delete(token);
-    }
+    try {
+      const authHeader = req.headers.authorization;
+      if (authHeader?.startsWith("Bearer ")) {
+        const token = authHeader.slice(7);
+        await storage.deleteSession(token);
+      }
 
-    const { refreshToken } = req.body;
-    if (refreshToken) {
-      tokens.delete(refreshToken);
-    }
+      const { refreshToken } = req.body;
+      if (refreshToken) {
+        await storage.deleteSession(refreshToken);
+      }
 
-    res.json({ success: true });
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Logout error:", error);
+      res.json({ success: true });
+    }
   });
 
   app.get("/api/auth/me", authMiddleware, async (req: AuthRequest, res: Response) => {
@@ -450,7 +462,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       await storage.acceptInvite(invite.id, user.id);
 
-      const tokenData = issueTokens(user.id, user.familyId, user.role);
+      const tokenData = await issueTokens(user.id, user.familyId, user.role);
 
       res.status(201).json({
         ...tokenData,
@@ -473,16 +485,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { memberId } = req.params;
 
       if (memberId === req.auth!.userId) {
-        return res.status(400).json({ error: "Cannot remove yourself" });
+        return res.status(400).json({ error: { code: "SELF_REMOVAL", message: "Cannot remove yourself" } });
       }
 
       const member = await storage.getUser(memberId);
       if (!member) {
-        return res.status(404).json({ error: "Member not found" });
+        return res.status(404).json({ error: { code: "NOT_FOUND", message: "Member not found" } });
       }
 
       if (member.familyId !== req.auth!.familyId) {
-        return res.status(403).json({ error: "Member does not belong to your family" });
+        return res.status(403).json({ error: { code: "FORBIDDEN", message: "Member does not belong to your family" } });
       }
 
       const guestFamily = await storage.createFamily({ name: `${member.username}'s Family` });
@@ -491,7 +503,512 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ success: true });
     } catch (error) {
       console.error("Remove member error:", error);
-      res.status(500).json({ error: "Internal server error" });
+      res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Internal server error" } });
+    }
+  });
+
+  app.get("/api/events", authMiddleware, async (req: AuthRequest, res: Response) => {
+    try {
+      const { from, to } = req.query;
+      const fromDate = from ? new Date(from as string) : undefined;
+      const toDate = to ? new Date(to as string) : undefined;
+      
+      const events = await storage.getEvents(req.auth!.familyId, fromDate, toDate);
+      res.json(events.map(e => ({
+        id: e.id,
+        familyId: e.familyId,
+        title: e.title,
+        description: e.description,
+        startDate: e.startDate.toISOString(),
+        endDate: e.endDate?.toISOString() || null,
+        allDay: e.allDay,
+        color: e.color,
+        createdBy: e.createdBy,
+        createdAt: e.createdAt.toISOString(),
+        updatedAt: e.updatedAt.toISOString(),
+      })));
+    } catch (error) {
+      console.error("Get events error:", error);
+      res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Internal server error" } });
+    }
+  });
+
+  app.post("/api/events", authMiddleware, async (req: AuthRequest, res: Response) => {
+    try {
+      const { title, description, startDate, endDate, allDay, color } = req.body;
+      
+      if (!title || !startDate) {
+        return res.status(400).json({ error: { code: "VALIDATION_ERROR", message: "Title and startDate are required" } });
+      }
+      
+      const event = await storage.createEvent({
+        familyId: req.auth!.familyId,
+        title,
+        description: description || null,
+        startDate: new Date(startDate),
+        endDate: endDate ? new Date(endDate) : null,
+        allDay: allDay ?? false,
+        color: color || null,
+        createdBy: req.auth!.userId,
+      });
+      
+      res.status(201).json({
+        id: event.id,
+        familyId: event.familyId,
+        title: event.title,
+        description: event.description,
+        startDate: event.startDate.toISOString(),
+        endDate: event.endDate?.toISOString() || null,
+        allDay: event.allDay,
+        color: event.color,
+        createdBy: event.createdBy,
+        createdAt: event.createdAt.toISOString(),
+        updatedAt: event.updatedAt.toISOString(),
+      });
+    } catch (error) {
+      console.error("Create event error:", error);
+      res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Internal server error" } });
+    }
+  });
+
+  app.put("/api/events/:id", authMiddleware, async (req: AuthRequest, res: Response) => {
+    try {
+      const { id } = req.params;
+      const { title, description, startDate, endDate, allDay, color } = req.body;
+      
+      const existing = await storage.getEvent(id, req.auth!.familyId);
+      if (!existing) {
+        return res.status(404).json({ error: { code: "NOT_FOUND", message: "Event not found" } });
+      }
+      
+      const updates: Record<string, unknown> = {};
+      if (title !== undefined) updates.title = title;
+      if (description !== undefined) updates.description = description;
+      if (startDate !== undefined) updates.startDate = new Date(startDate);
+      if (endDate !== undefined) updates.endDate = endDate ? new Date(endDate) : null;
+      if (allDay !== undefined) updates.allDay = allDay;
+      if (color !== undefined) updates.color = color;
+      
+      const event = await storage.updateEvent(id, req.auth!.familyId, updates);
+      if (!event) {
+        return res.status(404).json({ error: { code: "NOT_FOUND", message: "Event not found" } });
+      }
+      
+      res.json({
+        id: event.id,
+        familyId: event.familyId,
+        title: event.title,
+        description: event.description,
+        startDate: event.startDate.toISOString(),
+        endDate: event.endDate?.toISOString() || null,
+        allDay: event.allDay,
+        color: event.color,
+        createdBy: event.createdBy,
+        createdAt: event.createdAt.toISOString(),
+        updatedAt: event.updatedAt.toISOString(),
+      });
+    } catch (error) {
+      console.error("Update event error:", error);
+      res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Internal server error" } });
+    }
+  });
+
+  app.delete("/api/events/:id", authMiddleware, async (req: AuthRequest, res: Response) => {
+    try {
+      const { id } = req.params;
+      
+      const existing = await storage.getEvent(id, req.auth!.familyId);
+      if (!existing) {
+        return res.status(404).json({ error: { code: "NOT_FOUND", message: "Event not found" } });
+      }
+      
+      await storage.deleteEvent(id, req.auth!.familyId);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Delete event error:", error);
+      res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Internal server error" } });
+    }
+  });
+
+  app.get("/api/tasks", authMiddleware, async (req: AuthRequest, res: Response) => {
+    try {
+      const { completed, assignedTo } = req.query;
+      const filters: { completed?: boolean; assignedTo?: string } = {};
+      if (completed !== undefined) filters.completed = completed === "true";
+      if (assignedTo) filters.assignedTo = assignedTo as string;
+      
+      const tasks = await storage.getTasks(req.auth!.familyId, filters);
+      res.json(tasks.map(t => ({
+        id: t.id,
+        familyId: t.familyId,
+        title: t.title,
+        description: t.description,
+        completed: t.completed,
+        dueDate: t.dueDate?.toISOString() || null,
+        assignedTo: t.assignedTo,
+        priority: t.priority,
+        createdBy: t.createdBy,
+        createdAt: t.createdAt.toISOString(),
+        updatedAt: t.updatedAt.toISOString(),
+      })));
+    } catch (error) {
+      console.error("Get tasks error:", error);
+      res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Internal server error" } });
+    }
+  });
+
+  app.post("/api/tasks", authMiddleware, async (req: AuthRequest, res: Response) => {
+    try {
+      const { title, description, dueDate, assignedTo, priority } = req.body;
+      
+      if (!title) {
+        return res.status(400).json({ error: { code: "VALIDATION_ERROR", message: "Title is required" } });
+      }
+      
+      const task = await storage.createTask({
+        familyId: req.auth!.familyId,
+        title,
+        description: description || null,
+        completed: false,
+        dueDate: dueDate ? new Date(dueDate) : null,
+        assignedTo: assignedTo || null,
+        priority: priority || "medium",
+        createdBy: req.auth!.userId,
+      });
+      
+      res.status(201).json({
+        id: task.id,
+        familyId: task.familyId,
+        title: task.title,
+        description: task.description,
+        completed: task.completed,
+        dueDate: task.dueDate?.toISOString() || null,
+        assignedTo: task.assignedTo,
+        priority: task.priority,
+        createdBy: task.createdBy,
+        createdAt: task.createdAt.toISOString(),
+        updatedAt: task.updatedAt.toISOString(),
+      });
+    } catch (error) {
+      console.error("Create task error:", error);
+      res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Internal server error" } });
+    }
+  });
+
+  app.put("/api/tasks/:id", authMiddleware, async (req: AuthRequest, res: Response) => {
+    try {
+      const { id } = req.params;
+      const { title, description, completed, dueDate, assignedTo, priority } = req.body;
+      
+      const existing = await storage.getTask(id, req.auth!.familyId);
+      if (!existing) {
+        return res.status(404).json({ error: { code: "NOT_FOUND", message: "Task not found" } });
+      }
+      
+      const updates: Record<string, unknown> = {};
+      if (title !== undefined) updates.title = title;
+      if (description !== undefined) updates.description = description;
+      if (completed !== undefined) updates.completed = completed;
+      if (dueDate !== undefined) updates.dueDate = dueDate ? new Date(dueDate) : null;
+      if (assignedTo !== undefined) updates.assignedTo = assignedTo;
+      if (priority !== undefined) updates.priority = priority;
+      
+      const task = await storage.updateTask(id, req.auth!.familyId, updates);
+      if (!task) {
+        return res.status(404).json({ error: { code: "NOT_FOUND", message: "Task not found" } });
+      }
+      
+      res.json({
+        id: task.id,
+        familyId: task.familyId,
+        title: task.title,
+        description: task.description,
+        completed: task.completed,
+        dueDate: task.dueDate?.toISOString() || null,
+        assignedTo: task.assignedTo,
+        priority: task.priority,
+        createdBy: task.createdBy,
+        createdAt: task.createdAt.toISOString(),
+        updatedAt: task.updatedAt.toISOString(),
+      });
+    } catch (error) {
+      console.error("Update task error:", error);
+      res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Internal server error" } });
+    }
+  });
+
+  app.delete("/api/tasks/:id", authMiddleware, async (req: AuthRequest, res: Response) => {
+    try {
+      const { id } = req.params;
+      
+      const existing = await storage.getTask(id, req.auth!.familyId);
+      if (!existing) {
+        return res.status(404).json({ error: { code: "NOT_FOUND", message: "Task not found" } });
+      }
+      
+      await storage.deleteTask(id, req.auth!.familyId);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Delete task error:", error);
+      res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Internal server error" } });
+    }
+  });
+
+  app.get("/api/shopping", authMiddleware, async (req: AuthRequest, res: Response) => {
+    try {
+      const { purchased, category } = req.query;
+      const filters: { purchased?: boolean; category?: string } = {};
+      if (purchased !== undefined) filters.purchased = purchased === "true";
+      if (category) filters.category = category as string;
+      
+      const items = await storage.getShoppingItems(req.auth!.familyId, filters);
+      res.json(items.map(i => ({
+        id: i.id,
+        familyId: i.familyId,
+        name: i.name,
+        quantity: i.quantity,
+        unit: i.unit,
+        category: i.category,
+        purchased: i.purchased,
+        createdBy: i.createdBy,
+        createdAt: i.createdAt.toISOString(),
+        updatedAt: i.updatedAt.toISOString(),
+      })));
+    } catch (error) {
+      console.error("Get shopping items error:", error);
+      res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Internal server error" } });
+    }
+  });
+
+  app.post("/api/shopping", authMiddleware, async (req: AuthRequest, res: Response) => {
+    try {
+      const { name, quantity, unit, category } = req.body;
+      
+      if (!name) {
+        return res.status(400).json({ error: { code: "VALIDATION_ERROR", message: "Name is required" } });
+      }
+      
+      const item = await storage.createShoppingItem({
+        familyId: req.auth!.familyId,
+        name,
+        quantity: quantity ?? 1,
+        unit: unit || null,
+        category: category || null,
+        purchased: false,
+        createdBy: req.auth!.userId,
+      });
+      
+      res.status(201).json({
+        id: item.id,
+        familyId: item.familyId,
+        name: item.name,
+        quantity: item.quantity,
+        unit: item.unit,
+        category: item.category,
+        purchased: item.purchased,
+        createdBy: item.createdBy,
+        createdAt: item.createdAt.toISOString(),
+        updatedAt: item.updatedAt.toISOString(),
+      });
+    } catch (error) {
+      console.error("Create shopping item error:", error);
+      res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Internal server error" } });
+    }
+  });
+
+  app.put("/api/shopping/:id", authMiddleware, async (req: AuthRequest, res: Response) => {
+    try {
+      const { id } = req.params;
+      const { name, quantity, unit, category, purchased } = req.body;
+      
+      const existing = await storage.getShoppingItem(id, req.auth!.familyId);
+      if (!existing) {
+        return res.status(404).json({ error: { code: "NOT_FOUND", message: "Shopping item not found" } });
+      }
+      
+      const updates: Record<string, unknown> = {};
+      if (name !== undefined) updates.name = name;
+      if (quantity !== undefined) updates.quantity = quantity;
+      if (unit !== undefined) updates.unit = unit;
+      if (category !== undefined) updates.category = category;
+      if (purchased !== undefined) updates.purchased = purchased;
+      
+      const item = await storage.updateShoppingItem(id, req.auth!.familyId, updates);
+      if (!item) {
+        return res.status(404).json({ error: { code: "NOT_FOUND", message: "Shopping item not found" } });
+      }
+      
+      res.json({
+        id: item.id,
+        familyId: item.familyId,
+        name: item.name,
+        quantity: item.quantity,
+        unit: item.unit,
+        category: item.category,
+        purchased: item.purchased,
+        createdBy: item.createdBy,
+        createdAt: item.createdAt.toISOString(),
+        updatedAt: item.updatedAt.toISOString(),
+      });
+    } catch (error) {
+      console.error("Update shopping item error:", error);
+      res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Internal server error" } });
+    }
+  });
+
+  app.delete("/api/shopping/:id", authMiddleware, async (req: AuthRequest, res: Response) => {
+    try {
+      const { id } = req.params;
+      
+      const existing = await storage.getShoppingItem(id, req.auth!.familyId);
+      if (!existing) {
+        return res.status(404).json({ error: { code: "NOT_FOUND", message: "Shopping item not found" } });
+      }
+      
+      await storage.deleteShoppingItem(id, req.auth!.familyId);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Delete shopping item error:", error);
+      res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Internal server error" } });
+    }
+  });
+
+  app.get("/api/expenses", authMiddleware, async (req: AuthRequest, res: Response) => {
+    try {
+      const { from, to, category, paidBy } = req.query;
+      const filters: { from?: Date; to?: Date; category?: string; paidBy?: string } = {};
+      if (from) filters.from = new Date(from as string);
+      if (to) filters.to = new Date(to as string);
+      if (category) filters.category = category as string;
+      if (paidBy) filters.paidBy = paidBy as string;
+      
+      const expenses = await storage.getExpenses(req.auth!.familyId, filters);
+      res.json(expenses.map(e => ({
+        id: e.id,
+        familyId: e.familyId,
+        amount: parseFloat(e.amount),
+        description: e.description,
+        category: e.category,
+        paidBy: e.paidBy,
+        date: e.date.toISOString(),
+        createdBy: e.createdBy,
+        createdAt: e.createdAt.toISOString(),
+        updatedAt: e.updatedAt.toISOString(),
+      })));
+    } catch (error) {
+      console.error("Get expenses error:", error);
+      res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Internal server error" } });
+    }
+  });
+
+  app.post("/api/expenses", authMiddleware, async (req: AuthRequest, res: Response) => {
+    try {
+      const { amount, description, category, paidBy, date } = req.body;
+      
+      if (amount === undefined || !description || !paidBy || !date) {
+        return res.status(400).json({ error: { code: "VALIDATION_ERROR", message: "Amount, description, paidBy, and date are required" } });
+      }
+      
+      const expense = await storage.createExpense({
+        familyId: req.auth!.familyId,
+        amount: amount.toString(),
+        description,
+        category: category || null,
+        paidBy,
+        date: new Date(date),
+        createdBy: req.auth!.userId,
+      });
+      
+      res.status(201).json({
+        id: expense.id,
+        familyId: expense.familyId,
+        amount: parseFloat(expense.amount),
+        description: expense.description,
+        category: expense.category,
+        paidBy: expense.paidBy,
+        date: expense.date.toISOString(),
+        createdBy: expense.createdBy,
+        createdAt: expense.createdAt.toISOString(),
+        updatedAt: expense.updatedAt.toISOString(),
+      });
+    } catch (error) {
+      console.error("Create expense error:", error);
+      res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Internal server error" } });
+    }
+  });
+
+  app.put("/api/expenses/:id", authMiddleware, async (req: AuthRequest, res: Response) => {
+    try {
+      const { id } = req.params;
+      const { amount, description, category, paidBy, date } = req.body;
+      
+      const existing = await storage.getExpense(id, req.auth!.familyId);
+      if (!existing) {
+        return res.status(404).json({ error: { code: "NOT_FOUND", message: "Expense not found" } });
+      }
+      
+      const updates: Record<string, unknown> = {};
+      if (amount !== undefined) updates.amount = amount.toString();
+      if (description !== undefined) updates.description = description;
+      if (category !== undefined) updates.category = category;
+      if (paidBy !== undefined) updates.paidBy = paidBy;
+      if (date !== undefined) updates.date = new Date(date);
+      
+      const expense = await storage.updateExpense(id, req.auth!.familyId, updates);
+      if (!expense) {
+        return res.status(404).json({ error: { code: "NOT_FOUND", message: "Expense not found" } });
+      }
+      
+      res.json({
+        id: expense.id,
+        familyId: expense.familyId,
+        amount: parseFloat(expense.amount),
+        description: expense.description,
+        category: expense.category,
+        paidBy: expense.paidBy,
+        date: expense.date.toISOString(),
+        createdBy: expense.createdBy,
+        createdAt: expense.createdAt.toISOString(),
+        updatedAt: expense.updatedAt.toISOString(),
+      });
+    } catch (error) {
+      console.error("Update expense error:", error);
+      res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Internal server error" } });
+    }
+  });
+
+  app.delete("/api/expenses/:id", authMiddleware, async (req: AuthRequest, res: Response) => {
+    try {
+      const { id } = req.params;
+      
+      const existing = await storage.getExpense(id, req.auth!.familyId);
+      if (!existing) {
+        return res.status(404).json({ error: { code: "NOT_FOUND", message: "Expense not found" } });
+      }
+      
+      await storage.deleteExpense(id, req.auth!.familyId);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Delete expense error:", error);
+      res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Internal server error" } });
+    }
+  });
+
+  app.post("/api/assistant", authMiddleware, async (req: AuthRequest, res: Response) => {
+    try {
+      const { message } = req.body;
+      
+      if (!message) {
+        return res.status(400).json({ error: { code: "VALIDATION_ERROR", message: "Message is required" } });
+      }
+      
+      res.json({
+        message: "AI Assistant is not yet implemented. This is a placeholder response.",
+        suggestions: ["Create a task", "Add an event", "Check shopping list"],
+      });
+    } catch (error) {
+      console.error("Assistant error:", error);
+      res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Internal server error" } });
     }
   });
 

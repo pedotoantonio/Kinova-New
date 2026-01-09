@@ -1,90 +1,76 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { api, ApiRequestError, NetworkError, TimeoutError, getApiUrl } from "./api";
 
-const AUTH_TOKEN_KEY = "@kinova/auth_token";
+export { getApiUrl };
+export { apiRequest, api, ApiRequestError, NetworkError, TimeoutError } from "./api";
+export { getAuthToken, getRefreshToken, setTokens, clearTokens, setSessionExpiredHandler } from "./api";
 
-export function getApiUrl(): string {
-  let host = process.env.EXPO_PUBLIC_DOMAIN;
-
-  if (!host) {
-    throw new Error("EXPO_PUBLIC_DOMAIN is not set");
-  }
-
-  let url = new URL(`https://${host}`);
-
-  return url.href;
-}
-
-async function getAuthToken(): Promise<string | null> {
-  try {
-    return await AsyncStorage.getItem(AUTH_TOKEN_KEY);
-  } catch {
-    return null;
-  }
-}
-
-async function throwIfResNotOk(res: Response) {
-  if (!res.ok) {
-    const text = (await res.text()) || res.statusText;
-    throw new Error(`${res.status}: ${text}`);
-  }
-}
-
-export async function apiRequest(
-  method: string,
-  route: string,
-  data?: unknown | undefined,
-): Promise<Response> {
-  const baseUrl = getApiUrl();
-  const url = new URL(route, baseUrl);
-  const token = await getAuthToken();
-
-  const headers: Record<string, string> = {};
-  if (data) {
-    headers["Content-Type"] = "application/json";
-  }
-  if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
-  }
-
-  const res = await fetch(url, {
-    method,
-    headers,
-    body: data ? JSON.stringify(data) : undefined,
-    credentials: "include",
-  });
-
-  await throwIfResNotOk(res);
-  return res;
-}
+export const queryKeys = {
+  auth: {
+    me: ["/api/auth/me"] as const,
+  },
+  family: {
+    all: ["/api/family"] as const,
+    members: ["/api/family/members"] as const,
+    invites: ["/api/family/invites"] as const,
+  },
+  events: {
+    all: ["/api/events"] as const,
+    list: (from?: string, to?: string) => ["/api/events", { from, to }] as const,
+  },
+  tasks: {
+    all: ["/api/tasks"] as const,
+    list: (filters?: { completed?: boolean; assignedTo?: string }) =>
+      ["/api/tasks", filters] as const,
+  },
+  shopping: {
+    all: ["/api/shopping"] as const,
+    list: (filters?: { purchased?: boolean; category?: string }) =>
+      ["/api/shopping", filters] as const,
+  },
+  expenses: {
+    all: ["/api/expenses"] as const,
+    list: (filters?: { from?: string; to?: string; category?: string; paidBy?: string }) =>
+      ["/api/expenses", filters] as const,
+  },
+};
 
 type UnauthorizedBehavior = "returnNull" | "throw";
-export const getQueryFn: <T>(options: {
+
+export function getQueryFn<T>(options: {
   on401: UnauthorizedBehavior;
-}) => QueryFunction<T> =
-  ({ on401: unauthorizedBehavior }) =>
-  async ({ queryKey }) => {
-    const baseUrl = getApiUrl();
-    const url = new URL(queryKey.join("/") as string, baseUrl);
-    const token = await getAuthToken();
-
-    const headers: Record<string, string> = {};
-    if (token) {
-      headers["Authorization"] = `Bearer ${token}`;
+}): QueryFunction<T> {
+  const { on401: unauthorizedBehavior } = options;
+  
+  return async ({ queryKey }) => {
+    try {
+      const [path, params] = queryKey as [string, Record<string, unknown>?];
+      
+      let url = path;
+      if (params && typeof params === "object") {
+        const searchParams = new URLSearchParams();
+        for (const [key, value] of Object.entries(params)) {
+          if (value !== undefined && value !== null) {
+            searchParams.set(key, String(value));
+          }
+        }
+        const queryString = searchParams.toString();
+        if (queryString) {
+          url = `${path}?${queryString}`;
+        }
+      }
+      
+      return await api.get<T>(url);
+    } catch (error) {
+      if (error instanceof ApiRequestError && error.status === 401) {
+        if (unauthorizedBehavior === "returnNull") {
+          return null as T;
+        }
+      }
+      throw error;
     }
-
-    const res = await fetch(url, {
-      headers,
-      credentials: "include",
-    });
-
-    if (unauthorizedBehavior === "returnNull" && res.status === 401) {
-      return null;
-    }
-
-    await throwIfResNotOk(res);
-    return await res.json();
   };
+}
 
 export const queryClient = new QueryClient({
   defaultOptions: {
@@ -92,11 +78,31 @@ export const queryClient = new QueryClient({
       queryFn: getQueryFn({ on401: "throw" }),
       refetchInterval: false,
       refetchOnWindowFocus: false,
-      staleTime: Infinity,
-      retry: false,
+      staleTime: 5 * 60 * 1000,
+      gcTime: 10 * 60 * 1000,
+      retry: (failureCount, error) => {
+        if (error instanceof ApiRequestError) {
+          if (error.status === 401 || error.status === 403 || error.status === 404) {
+            return false;
+          }
+        }
+        if (error instanceof NetworkError || error instanceof TimeoutError) {
+          return failureCount < 2;
+        }
+        return false;
+      },
+      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
     },
     mutations: {
       retry: false,
     },
   },
 });
+
+export function invalidateAllQueries() {
+  queryClient.invalidateQueries();
+}
+
+export function clearQueryCache() {
+  queryClient.clear();
+}
