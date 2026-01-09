@@ -213,9 +213,9 @@ export default function ListsScreen() {
   };
 
   const priorityColors: Record<string, string> = {
-    low: "#4CAF50",
-    medium: "#FF9800",
-    high: "#F44336",
+    low: colors.success,
+    medium: colors.warning,
+    high: colors.error,
   };
 
   const renderShoppingItem = ({ item }: { item: ShoppingItem }) => {
@@ -239,7 +239,7 @@ export default function ListsScreen() {
               ]}
             >
               {item.purchased ? (
-                <Feather name="check" size={14} color="#FFFFFF" />
+                <Feather name="check" size={14} color={colors.buttonText} />
               ) : null}
             </View>
           </Pressable>
@@ -289,7 +289,7 @@ export default function ListsScreen() {
               ]}
             >
               {item.completed ? (
-                <Feather name="check" size={14} color="#FFFFFF" />
+                <Feather name="check" size={14} color={colors.buttonText} />
               ) : null}
             </View>
           </Pressable>
@@ -316,7 +316,7 @@ export default function ListsScreen() {
                 <ThemedText
                   style={[
                     styles.dueDateText,
-                    { color: isOverdue ? "#F44336" : colors.textSecondary },
+                    { color: isOverdue ? colors.error : colors.textSecondary },
                   ]}
                 >
                   <Feather name="clock" size={12} />{" "}
@@ -349,16 +349,18 @@ export default function ListsScreen() {
         ]}
         onPress={() => setActiveTab("shopping")}
         testID="tab-shopping"
+        accessibilityLabel={t.lists.shopping}
+        accessibilityRole="tab"
       >
         <Feather
           name="shopping-cart"
           size={16}
-          color={activeTab === "shopping" ? "#FFFFFF" : colors.textSecondary}
+          color={activeTab === "shopping" ? colors.buttonText : colors.textSecondary}
         />
         <ThemedText
           style={[
             styles.tabText,
-            { color: activeTab === "shopping" ? "#FFFFFF" : colors.textSecondary },
+            { color: activeTab === "shopping" ? colors.buttonText : colors.textSecondary },
           ]}
         >
           {t.lists.shopping}
@@ -371,16 +373,18 @@ export default function ListsScreen() {
         ]}
         onPress={() => setActiveTab("tasks")}
         testID="tab-tasks"
+        accessibilityLabel={t.lists.tasks}
+        accessibilityRole="tab"
       >
         <Feather
           name="check-square"
           size={16}
-          color={activeTab === "tasks" ? "#FFFFFF" : colors.textSecondary}
+          color={activeTab === "tasks" ? colors.buttonText : colors.textSecondary}
         />
         <ThemedText
           style={[
             styles.tabText,
-            { color: activeTab === "tasks" ? "#FFFFFF" : colors.textSecondary },
+            { color: activeTab === "tasks" ? colors.buttonText : colors.textSecondary },
           ]}
         >
           {t.lists.tasks}
@@ -407,7 +411,7 @@ export default function ListsScreen() {
           <ThemedText
             style={[
               styles.filterText,
-              { color: shoppingFilter === filter ? "#FFFFFF" : colors.textSecondary },
+              { color: shoppingFilter === filter ? colors.buttonText : colors.textSecondary },
             ]}
           >
             {filter === "all"
@@ -439,7 +443,7 @@ export default function ListsScreen() {
           <ThemedText
             style={[
               styles.filterText,
-              { color: taskFilter === filter ? "#FFFFFF" : colors.textSecondary },
+              { color: taskFilter === filter ? colors.buttonText : colors.textSecondary },
             ]}
           >
             {filter === "all"
@@ -472,8 +476,10 @@ export default function ListsScreen() {
         onPress={handleAddItem}
         disabled={!newItemName.trim()}
         testID="button-add-item"
+        accessibilityLabel={activeTab === "shopping" ? t.shopping.addItem : t.tasks.addTask}
+        accessibilityRole="button"
       >
-        <Feather name="plus" size={20} color="#FFFFFF" />
+        <Feather name="plus" size={20} color={colors.buttonText} />
       </Pressable>
     </View>
   );

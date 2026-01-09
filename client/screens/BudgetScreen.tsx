@@ -344,8 +344,10 @@ export default function BudgetScreen() {
       <Pressable
         style={[styles.fab, { backgroundColor: colors.primary }]}
         onPress={() => setShowAddModal(true)}
+        accessibilityLabel={t.budget.addExpense}
+        accessibilityRole="button"
       >
-        <Feather name="plus" size={24} color="#FFFFFF" />
+        <Feather name="plus" size={24} color={colors.buttonText} />
       </Pressable>
 
       <Modal
@@ -404,7 +406,7 @@ export default function BudgetScreen() {
                     <ThemedText
                       style={[
                         styles.categoryChipText,
-                        { color: newCategory === cat ? "#FFFFFF" : colors.text },
+                        { color: newCategory === cat ? colors.buttonText : colors.text },
                       ]}
                     >
                       {getCategoryLabel(cat)}
@@ -431,9 +433,9 @@ export default function BudgetScreen() {
               disabled={createExpenseMutation.isPending}
             >
               {createExpenseMutation.isPending ? (
-                <ActivityIndicator size="small" color="#FFFFFF" />
+                <ActivityIndicator size="small" color={colors.buttonText} />
               ) : (
-                <ThemedText style={styles.submitButtonText}>{t.common.save}</ThemedText>
+                <ThemedText style={[styles.submitButtonText, { color: colors.buttonText }]}>{t.common.save}</ThemedText>
               )}
             </Pressable>
           </View>
@@ -638,7 +640,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   submitButtonText: {
-    color: "#FFFFFF",
     ...Typography.body,
     fontWeight: "600",
   },

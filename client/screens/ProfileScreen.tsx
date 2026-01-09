@@ -96,17 +96,17 @@ export default function ProfileScreen() {
 
   const handleLogout = () => {
     if (Platform.OS === "web") {
-      if (window.confirm("Are you sure you want to logout?")) {
+      if (window.confirm(t.auth.confirmLogout)) {
         performLogout();
       }
     } else {
       Alert.alert(
-        "Logout",
-        "Are you sure you want to logout?",
+        t.auth.logout,
+        t.auth.confirmLogout,
         [
-          { text: "Cancel", style: "cancel" },
+          { text: t.common.cancel, style: "cancel" },
           {
-            text: "Logout",
+            text: t.auth.logout,
             style: "destructive",
             onPress: performLogout,
           },
@@ -126,7 +126,7 @@ export default function ProfileScreen() {
   if (!isAuthenticated || !user) {
     return (
       <View style={[styles.centered, { backgroundColor: theme.backgroundRoot }]}>
-        <ThemedText style={{ color: colors.textSecondary }}>Please log in</ThemedText>
+        <ThemedText style={{ color: colors.textSecondary }}>{t.auth.pleaseLogin}</ThemedText>
       </View>
     );
   }
@@ -143,7 +143,7 @@ export default function ProfileScreen() {
     >
       <View style={styles.profileHeader}>
         <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
-          <ThemedText style={styles.avatarText}>
+          <ThemedText style={[styles.avatarText, { color: colors.buttonText }]}>
             {(user.displayName || user.username).charAt(0).toUpperCase()}
           </ThemedText>
         </View>
@@ -160,7 +160,7 @@ export default function ProfileScreen() {
           <Feather name="user" size={20} color={colors.textSecondary} />
           <View style={styles.infoContent}>
             <ThemedText style={[styles.infoLabel, { color: colors.textSecondary }]}>
-              User ID
+              {t.profile.userId}
             </ThemedText>
             <ThemedText style={[styles.infoValue, { color: colors.text }]}>
               {user.id}
@@ -174,10 +174,10 @@ export default function ProfileScreen() {
           <Feather name="users" size={20} color={colors.textSecondary} />
           <View style={styles.infoContent}>
             <ThemedText style={[styles.infoLabel, { color: colors.textSecondary }]}>
-              Family ID
+              {t.profile.familyId}
             </ThemedText>
             <ThemedText style={[styles.infoValue, { color: colors.text }]}>
-              {user.familyId || "None"}
+              {user.familyId || t.profile.none}
             </ThemedText>
           </View>
         </View>
@@ -188,10 +188,10 @@ export default function ProfileScreen() {
           <Feather name="shield" size={20} color={colors.textSecondary} />
           <View style={styles.infoContent}>
             <ThemedText style={[styles.infoLabel, { color: colors.textSecondary }]}>
-              Role
+              {t.profile.role}
             </ThemedText>
             <ThemedText style={[styles.infoValue, { color: colors.text }]}>
-              {user.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : "Member"}
+              {user.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : t.profile.member}
             </ThemedText>
           </View>
         </View>
@@ -231,9 +231,11 @@ export default function ProfileScreen() {
         ]}
         onPress={handleLogout}
         testID="button-logout"
+        accessibilityLabel={t.auth.logout}
+        accessibilityRole="button"
       >
-        <Feather name="log-out" size={20} color="#FFFFFF" />
-        <ThemedText style={styles.logoutText}>Logout</ThemedText>
+        <Feather name="log-out" size={20} color={colors.buttonText} />
+        <ThemedText style={[styles.logoutText, { color: colors.buttonText }]}>{t.auth.logout}</ThemedText>
       </Pressable>
 
       <Modal
@@ -334,7 +336,6 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.lg,
   },
   avatarText: {
-    color: "#FFFFFF",
     fontSize: 32,
     fontWeight: "700",
   },
@@ -378,7 +379,6 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
   },
   logoutText: {
-    color: "#FFFFFF",
     ...Typography.body,
     fontWeight: "600",
   },

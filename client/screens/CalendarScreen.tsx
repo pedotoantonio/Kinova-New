@@ -428,6 +428,7 @@ export default function CalendarScreen() {
       color: formData.color,
       category: formData.category,
       recurrence,
+      isHoliday: formData.category === "holiday",
     };
 
     if (editingEvent) {
@@ -489,7 +490,7 @@ export default function CalendarScreen() {
           style={[styles.retryButton, { backgroundColor: colors.primary }]}
           onPress={() => refetch()}
         >
-          <ThemedText style={{ color: "#FFF" }}>{t.common.retry}</ThemedText>
+          <ThemedText style={{ color: colors.buttonText }}>{t.common.retry}</ThemedText>
         </Pressable>
       </ThemedView>
     );
@@ -528,7 +529,7 @@ export default function CalendarScreen() {
               ]}
               onPress={() => setViewMode("month")}
             >
-              <Feather name="grid" size={16} color={viewMode === "month" ? "#FFF" : colors.text} />
+              <Feather name="grid" size={16} color={viewMode === "month" ? colors.buttonText : colors.text} />
             </Pressable>
             <Pressable
               style={[
@@ -537,7 +538,7 @@ export default function CalendarScreen() {
               ]}
               onPress={() => setViewMode("week")}
             >
-              <Feather name="list" size={16} color={viewMode === "week" ? "#FFF" : colors.text} />
+              <Feather name="list" size={16} color={viewMode === "week" ? colors.buttonText : colors.text} />
             </Pressable>
           </View>
         </View>
@@ -701,18 +702,20 @@ export default function CalendarScreen() {
             </ThemedText>
             <View style={styles.headerButtons}>
               <Pressable
-                style={[styles.filterButton, { backgroundColor: hasActiveFilters ? colors.primary : colors.card }]}
+                style={[styles.filterButton, { backgroundColor: hasActiveFilters ? colors.primary : colors.backgroundSecondary }]}
                 onPress={() => setShowFilters(true)}
                 testID="button-filter"
               >
-                <Feather name="filter" size={18} color={hasActiveFilters ? "#FFF" : colors.text} />
+                <Feather name="filter" size={18} color={hasActiveFilters ? colors.buttonText : colors.text} />
               </Pressable>
               <Pressable
                 style={[styles.addButton, { backgroundColor: colors.primary }]}
                 onPress={openCreateEvent}
                 testID="button-add-event"
+                accessibilityLabel={t.calendar.addEvent}
+                accessibilityRole="button"
               >
-                <Feather name="plus" size={20} color="#FFF" />
+                <Feather name="plus" size={20} color={colors.buttonText} />
               </Pressable>
             </View>
           </View>
@@ -737,7 +740,7 @@ export default function CalendarScreen() {
                   onPress={() => openEditEvent(event)}
                   testID={`event-card-${event.id}`}
                 >
-                  <Card style={[styles.eventCard, isMultiDay && styles.multiDayCard]}>
+                  <Card style={[styles.eventCard, isMultiDay ? styles.multiDayCard : undefined]}>
                     <View
                       style={[
                         styles.eventColorBar,
@@ -959,7 +962,7 @@ export default function CalendarScreen() {
                   onPress={handleDeleteEvent}
                   testID="button-delete-event"
                 >
-                  <ThemedText style={{ color: "#FFF" }}>{t.common.delete}</ThemedText>
+                  <ThemedText style={{ color: colors.buttonText }}>{t.common.delete}</ThemedText>
                 </Pressable>
               ) : null}
               <View style={{ flex: 1 }} />
@@ -974,7 +977,7 @@ export default function CalendarScreen() {
                 onPress={handleSaveEvent}
                 testID="button-save-event"
               >
-                <ThemedText style={{ color: "#FFF" }}>{t.common.save}</ThemedText>
+                <ThemedText style={{ color: colors.buttonText }}>{t.common.save}</ThemedText>
               </Pressable>
             </View>
           </View>
@@ -1044,7 +1047,7 @@ export default function CalendarScreen() {
                 style={[styles.saveButton, { backgroundColor: colors.primary, flex: 1 }]}
                 onPress={() => setShowFilters(false)}
               >
-                <ThemedText style={{ color: "#FFF" }}>{t.common.confirm}</ThemedText>
+                <ThemedText style={{ color: colors.buttonText }}>{t.common.confirm}</ThemedText>
               </Pressable>
             </View>
           </View>

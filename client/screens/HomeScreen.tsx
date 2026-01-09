@@ -271,8 +271,8 @@ export default function HomeScreen() {
               {t.home.pendingTasks}
             </ThemedText>
             {overdueTasks.length > 0 ? (
-              <View style={styles.overdueBadge}>
-                <ThemedText style={styles.overdueBadgeText}>
+              <View style={[styles.overdueBadge, { backgroundColor: colors.error }]}>
+                <ThemedText style={[styles.overdueBadgeText, { color: colors.buttonText }]}>
                   {overdueTasks.length} {t.home.overdue}
                 </ThemedText>
               </View>
@@ -303,12 +303,12 @@ export default function HomeScreen() {
                       styles.listItemDot,
                       {
                         backgroundColor: isOverdue
-                          ? "#F44336"
+                          ? colors.error
                           : task.priority === "high"
-                          ? "#F44336"
+                          ? colors.error
                           : task.priority === "medium"
-                          ? "#FF9800"
-                          : "#4CAF50",
+                          ? colors.warning
+                          : colors.success,
                       },
                     ]}
                   />
@@ -319,7 +319,7 @@ export default function HomeScreen() {
                     <ThemedText
                       style={[
                         styles.listItemMeta,
-                        { color: isOverdue ? "#F44336" : colors.textSecondary },
+                        { color: isOverdue ? colors.error : colors.textSecondary },
                       ]}
                     >
                       {new Date(task.dueDate).toLocaleDateString()}
@@ -480,13 +480,11 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
   },
   overdueBadge: {
-    backgroundColor: "#F44336",
     paddingHorizontal: Spacing.sm,
     paddingVertical: 2,
     borderRadius: BorderRadius.xs,
   },
   overdueBadgeText: {
-    color: "#FFFFFF",
     ...Typography.small,
     fontWeight: "600",
   },

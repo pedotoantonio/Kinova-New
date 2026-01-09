@@ -8,12 +8,14 @@ import { ThemedView } from "@/components/ThemedView";
 import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollViewCompat";
 import { useTheme } from "@/hooks/useTheme";
 import { useAuth } from "@/lib/auth";
+import { useI18n } from "@/lib/i18n";
 import { Colors, Spacing, BorderRadius, Typography } from "@/constants/theme";
 
 export default function LoginScreen() {
   const insets = useSafeAreaInsets();
   const { theme, isDark } = useTheme();
   const { login, register, guestLogin, isLoading } = useAuth();
+  const { t } = useI18n();
 
   const [isRegisterMode, setIsRegisterMode] = useState(false);
   const [username, setUsername] = useState("");
@@ -25,7 +27,7 @@ export default function LoginScreen() {
 
   const handleSubmit = async () => {
     if (!username.trim() || !password.trim()) {
-      Alert.alert("Error", "Please enter username and password");
+      Alert.alert(t.common.error, t.auth.enterCredentials);
       return;
     }
 
@@ -39,7 +41,7 @@ export default function LoginScreen() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (error: any) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      Alert.alert("Error", error.message || "Authentication failed");
+      Alert.alert(t.common.error, error.message || t.auth.authFailed);
     } finally {
       setLoading(false);
     }
@@ -52,7 +54,7 @@ export default function LoginScreen() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (error: any) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      Alert.alert("Error", error.message || "Guest login failed");
+      Alert.alert(t.common.error, error.message || t.auth.guestLoginFailed);
     } finally {
       setLoading(false);
     }
@@ -77,7 +79,7 @@ export default function LoginScreen() {
       <View style={styles.header}>
         <ThemedText style={[styles.title, { color: colors.primary }]}>Kinova</ThemedText>
         <ThemedText style={[styles.subtitle, { color: colors.textSecondary }]}>
-          {isRegisterMode ? "Create your account" : "Welcome back"}
+          {isRegisterMode ? t.auth.createYourAccount : t.auth.welcomeBack}
         </ThemedText>
       </View>
 
@@ -91,7 +93,7 @@ export default function LoginScreen() {
               borderColor: colors.backgroundSecondary,
             },
           ]}
-          placeholder="Username"
+          placeholder={t.auth.username}
           placeholderTextColor={colors.textSecondary}
           value={username}
           onChangeText={setUsername}
@@ -109,7 +111,7 @@ export default function LoginScreen() {
               borderColor: colors.backgroundSecondary,
             },
           ]}
-          placeholder="Password"
+          placeholder={t.auth.password}
           placeholderTextColor={colors.textSecondary}
           value={password}
           onChangeText={setPassword}
@@ -127,7 +129,7 @@ export default function LoginScreen() {
                 borderColor: colors.backgroundSecondary,
               },
             ]}
-            placeholder="Display Name (optional)"
+            placeholder={t.auth.displayNameOptional}
             placeholderTextColor={colors.textSecondary}
             value={displayName}
             onChangeText={setDisplayName}
@@ -145,10 +147,10 @@ export default function LoginScreen() {
           testID="button-submit"
         >
           {loading ? (
-            <ActivityIndicator color="#FFFFFF" />
+            <ActivityIndicator color={colors.buttonText} />
           ) : (
-            <ThemedText style={styles.buttonText}>
-              {isRegisterMode ? "Create Account" : "Login"}
+            <ThemedText style={[styles.buttonText, { color: colors.buttonText }]}>
+              {isRegisterMode ? t.auth.createAccount : t.auth.login}
             </ThemedText>
           )}
         </Pressable>
@@ -162,13 +164,13 @@ export default function LoginScreen() {
           disabled={loading}
         >
           <ThemedText style={[styles.secondaryButtonText, { color: colors.primary }]}>
-            {isRegisterMode ? "Already have an account? Login" : "Create new account"}
+            {isRegisterMode ? t.auth.alreadyHaveAccount : t.auth.createNewAccount}
           </ThemedText>
         </Pressable>
 
         <View style={styles.divider}>
           <View style={[styles.dividerLine, { backgroundColor: colors.backgroundSecondary }]} />
-          <ThemedText style={[styles.dividerText, { color: colors.textSecondary }]}>or</ThemedText>
+          <ThemedText style={[styles.dividerText, { color: colors.textSecondary }]}>{t.auth.or}</ThemedText>
           <View style={[styles.dividerLine, { backgroundColor: colors.backgroundSecondary }]} />
         </View>
 
@@ -181,7 +183,7 @@ export default function LoginScreen() {
           disabled={loading}
           testID="button-guest"
         >
-          <ThemedText style={styles.buttonText}>Continue as Guest</ThemedText>
+          <ThemedText style={[styles.buttonText, { color: colors.buttonText }]}>{t.auth.continueAsGuest}</ThemedText>
         </Pressable>
       </View>
     </KeyboardAwareScrollViewCompat>
@@ -243,7 +245,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   buttonText: {
-    color: "#FFFFFF",
     ...Typography.body,
     fontWeight: "600",
   },
