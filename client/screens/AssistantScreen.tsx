@@ -11,6 +11,7 @@ import {
   Platform,
   KeyboardAvoidingView,
   Image,
+  ScrollView,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
@@ -19,6 +20,7 @@ import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
 import * as DocumentPicker from "expo-document-picker";
+import * as Clipboard from "expo-clipboard";
 import Animated, {
   FadeIn,
   FadeOut,
@@ -62,10 +64,26 @@ interface Attachment {
   filename: string;
   mimeType: string;
   uri?: string;
-  uploading?: boolean;
+  status: "uploading" | "analyzing" | "ready" | "error";
+  error?: string;
 }
 
 const AUTH_TOKEN_KEY = "@kinova/auth_token";
+
+const SUGGESTION_CHIPS = {
+  it: [
+    { icon: "calendar", text: "Cosa ho in programma oggi?" },
+    { icon: "check-square", text: "Quali task devo completare?" },
+    { icon: "shopping-cart", text: "Cosa devo comprare?" },
+    { icon: "dollar-sign", text: "Quanto ho speso questo mese?" },
+  ],
+  en: [
+    { icon: "calendar", text: "What do I have planned today?" },
+    { icon: "check-square", text: "What tasks do I need to complete?" },
+    { icon: "shopping-cart", text: "What do I need to buy?" },
+    { icon: "dollar-sign", text: "How much did I spend this month?" },
+  ],
+};
 
 export default function AssistantScreen() {
   const insets = useSafeAreaInsets();
@@ -86,6 +104,9 @@ export default function AssistantScreen() {
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [showAttachMenu, setShowAttachMenu] = useState(false);
   const [pendingAction, setPendingAction] = useState<{ messageId: string; action: ProposedAction } | null>(null);
+  const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
+  const [lastUserMessage, setLastUserMessage] = useState<string>("");
+  const [showCopiedToast, setShowCopiedToast] = useState(false);
 
   const scrollButtonOpacity = useSharedValue(0);
 
@@ -95,6 +116,7 @@ export default function AssistantScreen() {
   });
 
   const messages = activeConversation?.messages || [];
+  const suggestions = SUGGESTION_CHIPS[language as keyof typeof SUGGESTION_CHIPS] || SUGGESTION_CHIPS.it;
 
   const createConversationMutation = useMutation({
     mutationFn: async () => {
@@ -111,6 +133,7 @@ export default function AssistantScreen() {
     setActiveConversationId(null);
     setStreamingContent("");
     setPendingAction(null);
+    setSelectedMessage(null);
     await createConversationMutation.mutateAsync();
   }, [createConversationMutation]);
 
@@ -124,13 +147,25 @@ export default function AssistantScreen() {
     }
   }, [inputText, activeConversationId, attachments]);
 
+  const handleSuggestionPress = useCallback(async (text: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    if (!activeConversationId) {
+      const conv = await createConversationMutation.mutateAsync();
+      sendMessage(conv.id, text, []);
+    } else {
+      sendMessage(activeConversationId, text, []);
+    }
+  }, [activeConversationId]);
+
   const sendMessage = async (conversationId: string, content: string, files: Attachment[]) => {
     const messageContent = content.trim();
-    const attachmentIds = files.filter(f => !f.uploading && f.id).map(f => f.id);
+    const attachmentIds = files.filter(f => f.status === "ready" && f.id).map(f => f.id);
+    setLastUserMessage(messageContent);
     setInputText("");
     setAttachments([]);
     setIsStreaming(true);
     setStreamingContent("");
+    setSelectedMessage(null);
 
     try {
       abortControllerRef.current = new AbortController();
@@ -211,6 +246,28 @@ export default function AssistantScreen() {
     abortControllerRef.current?.abort();
     setIsStreaming(false);
   }, []);
+
+  const handleRegenerate = useCallback(async () => {
+    if (!lastUserMessage || !activeConversationId || isStreaming) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    sendMessage(activeConversationId, lastUserMessage, []);
+  }, [lastUserMessage, activeConversationId, isStreaming]);
+
+  const handleCopyMessage = useCallback(async (content: string) => {
+    await Clipboard.setStringAsync(content);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setShowCopiedToast(true);
+    setSelectedMessage(null);
+    setTimeout(() => setShowCopiedToast(false), 2000);
+  }, []);
+
+  const handleRetryMessage = useCallback(async (msg: Message) => {
+    if (msg.role === "user" && activeConversationId) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      setSelectedMessage(null);
+      sendMessage(activeConversationId, msg.content, []);
+    }
+  }, [activeConversationId]);
 
   const handleActionResponse = async (approved: boolean) => {
     if (!pendingAction) return;
@@ -303,7 +360,7 @@ export default function AssistantScreen() {
 
   const uploadFile = async (uri: string, filename: string, mimeType: string) => {
     const tempId = `temp-${Date.now()}`;
-    setAttachments(prev => [...prev, { id: tempId, filename, mimeType, uri, uploading: true }]);
+    setAttachments(prev => [...prev, { id: tempId, filename, mimeType, uri, status: "uploading" }]);
 
     try {
       const formData = new FormData();
@@ -314,6 +371,9 @@ export default function AssistantScreen() {
       } as unknown as Blob);
 
       const token = await AsyncStorage.getItem(AUTH_TOKEN_KEY);
+      
+      setAttachments(prev => prev.map(a => a.id === tempId ? { ...a, status: "analyzing" as const } : a));
+      
       const response = await fetch(new URL("/api/assistant/uploads", getApiUrl()).toString(), {
         method: "POST",
         headers: {
@@ -324,16 +384,20 @@ export default function AssistantScreen() {
 
       if (response.ok) {
         const data = await response.json();
-        setAttachments(prev => prev.map(a => a.id === tempId ? { ...a, id: data.id, uploading: false } : a));
+        setAttachments(prev => prev.map(a => a.id === tempId ? { ...a, id: data.id, status: "ready" as const } : a));
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       } else {
-        setAttachments(prev => prev.filter(a => a.id !== tempId));
-        Alert.alert(t.common.error, t.errors.serverError);
+        setAttachments(prev => prev.map(a => a.id === tempId ? { ...a, status: "error" as const, error: t.errors.serverError } : a));
       }
     } catch {
-      setAttachments(prev => prev.filter(a => a.id !== tempId));
-      Alert.alert(t.common.error, t.errors.networkError);
+      setAttachments(prev => prev.map(a => a.id === tempId ? { ...a, status: "error" as const, error: t.errors.networkError } : a));
     }
+  };
+
+  const retryUpload = async (att: Attachment) => {
+    if (!att.uri) return;
+    setAttachments(prev => prev.filter(a => a.id !== att.id));
+    await uploadFile(att.uri, att.filename, att.mimeType);
   };
 
   const removeAttachment = (id: string) => {
@@ -367,20 +431,57 @@ export default function AssistantScreen() {
     transform: [{ scale: scrollButtonOpacity.value }],
   }));
 
-  const renderMessage = ({ item }: { item: Message }) => {
+  const renderMessage = ({ item, index }: { item: Message; index: number }) => {
     const isUser = item.role === "user";
+    const isSelected = selectedMessage?.id === item.id;
+    const isLastAssistant = !isUser && index === messages.length - 1;
+    
     return (
-      <View style={[styles.messageRow, isUser && styles.messageRowUser]}>
-        <View
-          style={[
-            styles.messageBubble,
-            isUser ? { backgroundColor: theme.primary } : { backgroundColor: theme.surface },
-          ]}
+      <View>
+        <Pressable
+          style={[styles.messageRow, isUser && styles.messageRowUser]}
+          onLongPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+            setSelectedMessage(item);
+          }}
         >
-          <Text style={[styles.messageText, isUser ? { color: "#FFFFFF" } : { color: theme.text }]}>
-            {item.content}
-          </Text>
-        </View>
+          <View
+            style={[
+              styles.messageBubble,
+              isUser ? { backgroundColor: theme.primary } : { backgroundColor: theme.surface },
+              isSelected && styles.messageBubbleSelected,
+            ]}
+          >
+            <Text style={[styles.messageText, isUser ? { color: "#FFFFFF" } : { color: theme.text }]}>
+              {item.content}
+            </Text>
+          </View>
+        </Pressable>
+        
+        {isSelected ? (
+          <Animated.View entering={FadeIn.duration(150)} style={[styles.messageMenu, isUser && styles.messageMenuUser]}>
+            <Pressable style={styles.messageMenuItem} onPress={() => handleCopyMessage(item.content)}>
+              <Feather name="copy" size={16} color={theme.text} />
+              <Text style={[styles.messageMenuText, { color: theme.text }]}>{t.assistant.copy}</Text>
+            </Pressable>
+            {isUser ? (
+              <Pressable style={styles.messageMenuItem} onPress={() => handleRetryMessage(item)}>
+                <Feather name="refresh-cw" size={16} color={theme.text} />
+                <Text style={[styles.messageMenuText, { color: theme.text }]}>{t.assistant.retry}</Text>
+              </Pressable>
+            ) : null}
+            <Pressable style={styles.messageMenuItem} onPress={() => setSelectedMessage(null)}>
+              <Feather name="x" size={16} color={theme.textSecondary} />
+            </Pressable>
+          </Animated.View>
+        ) : null}
+        
+        {isLastAssistant && !isStreaming && messages.length > 1 ? (
+          <Pressable style={[styles.regenerateButton, { borderColor: theme.border }]} onPress={handleRegenerate}>
+            <Feather name="refresh-cw" size={14} color={theme.textSecondary} />
+            <Text style={[styles.regenerateText, { color: theme.textSecondary }]}>{t.assistant.regenerate}</Text>
+          </Pressable>
+        ) : null}
       </View>
     );
   };
@@ -409,15 +510,35 @@ export default function AssistantScreen() {
       complete_task: t.assistant.confirmCompleteTask,
       delete_task: t.assistant.confirmDeleteTask,
       add_shopping: t.assistant.confirmAddShopping,
+      add_shopping_item: t.assistant.confirmAddShopping,
       remove_shopping: t.assistant.confirmRemoveShopping,
       add_expense: t.assistant.confirmAddExpense,
+      create_expense: t.assistant.confirmAddExpense,
     };
 
+    const actionData = pendingAction.action.data;
+    const summaryLines: string[] = [];
+    
+    if (actionData.title) summaryLines.push(`${language === "it" ? "Titolo" : "Title"}: ${actionData.title}`);
+    if (actionData.name) summaryLines.push(`${language === "it" ? "Nome" : "Name"}: ${actionData.name}`);
+    if (actionData.amount) summaryLines.push(`${language === "it" ? "Importo" : "Amount"}: €${actionData.amount}`);
+    if (actionData.description) summaryLines.push(`${language === "it" ? "Descrizione" : "Description"}: ${actionData.description}`);
+    if (actionData.startDate) summaryLines.push(`${language === "it" ? "Data" : "Date"}: ${new Date(actionData.startDate as string).toLocaleDateString(language === "it" ? "it-IT" : "en-US")}`);
+    if (actionData.dueDate) summaryLines.push(`${language === "it" ? "Scadenza" : "Due"}: ${new Date(actionData.dueDate as string).toLocaleDateString(language === "it" ? "it-IT" : "en-US")}`);
+    if (actionData.category) summaryLines.push(`${language === "it" ? "Categoria" : "Category"}: ${actionData.category}`);
+
     return (
-      <Animated.View entering={FadeIn} style={[styles.actionConfirmation, { backgroundColor: theme.surface }]}>
+      <Animated.View entering={FadeIn} style={[styles.actionConfirmation, { backgroundColor: theme.surface, bottom: tabBarHeight + 70 }]}>
         <Text style={[styles.actionTitle, { color: theme.text }]}>
           {actionLabels[pendingAction.action.type] || t.assistant.confirmAction}
         </Text>
+        {summaryLines.length > 0 ? (
+          <View style={styles.actionSummary}>
+            {summaryLines.map((line, idx) => (
+              <Text key={idx} style={[styles.actionSummaryText, { color: theme.textSecondary }]}>{line}</Text>
+            ))}
+          </View>
+        ) : null}
         <View style={styles.actionButtons}>
           <Pressable
             style={[styles.actionButton, styles.rejectButton]}
@@ -438,13 +559,51 @@ export default function AssistantScreen() {
     );
   };
 
+  const renderSuggestionChips = () => (
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.suggestionsScroll} contentContainerStyle={styles.suggestionsContainer}>
+      {suggestions.map((chip, idx) => (
+        <Pressable
+          key={idx}
+          style={[styles.suggestionChip, { backgroundColor: theme.surface, borderColor: theme.border }]}
+          onPress={() => handleSuggestionPress(chip.text)}
+        >
+          <Feather name={chip.icon as keyof typeof Feather.glyphMap} size={14} color={theme.primary} />
+          <Text style={[styles.suggestionText, { color: theme.text }]} numberOfLines={1}>{chip.text}</Text>
+        </Pressable>
+      ))}
+    </ScrollView>
+  );
+
   const renderEmptyState = () => (
     <View style={styles.emptyState}>
-      <Feather name="message-circle" size={64} color={theme.textSecondary} />
+      <View style={[styles.emptyIcon, { backgroundColor: theme.primary + "20" }]}>
+        <Feather name="message-circle" size={48} color={theme.primary} />
+      </View>
       <Text style={[styles.emptyTitle, { color: theme.text }]}>{t.assistant.title}</Text>
       <Text style={[styles.emptySubtitle, { color: theme.textSecondary }]}>{t.assistant.startChat}</Text>
+      {renderSuggestionChips()}
     </View>
   );
+
+  const getAttachmentStatusIcon = (status: Attachment["status"]) => {
+    switch (status) {
+      case "uploading": return "upload-cloud";
+      case "analyzing": return "cpu";
+      case "ready": return "check-circle";
+      case "error": return "alert-circle";
+      default: return "file";
+    }
+  };
+
+  const getAttachmentStatusColor = (status: Attachment["status"]) => {
+    switch (status) {
+      case "uploading": return theme.primary;
+      case "analyzing": return "#F59E0B";
+      case "ready": return "#22C55E";
+      case "error": return "#EF4444";
+      default: return theme.textSecondary;
+    }
+  };
 
   return (
     <KeyboardAvoidingView
@@ -473,7 +632,7 @@ export default function AssistantScreen() {
         data={messages}
         keyExtractor={(item) => item.id}
         renderItem={renderMessage}
-        contentContainerStyle={[styles.messagesList, { paddingBottom: tabBarHeight + 70 }]}
+        contentContainerStyle={[styles.messagesList, { paddingBottom: tabBarHeight + 80 }]}
         ListEmptyComponent={!isStreaming && !streamingContent ? renderEmptyState : null}
         ListFooterComponent={renderStreamingMessage}
         onScroll={handleScroll}
@@ -481,7 +640,7 @@ export default function AssistantScreen() {
       />
 
       {showScrollButton ? (
-        <Animated.View style={[styles.scrollButton, { bottom: tabBarHeight + 70 }, animatedScrollButtonStyle]}>
+        <Animated.View style={[styles.scrollButton, { bottom: tabBarHeight + 80 }, animatedScrollButtonStyle]}>
           <Pressable
             style={[styles.scrollButtonInner, { backgroundColor: theme.surface }]}
             onPress={scrollToBottom}
@@ -491,27 +650,46 @@ export default function AssistantScreen() {
         </Animated.View>
       ) : null}
 
+      {showCopiedToast ? (
+        <Animated.View entering={FadeIn} exiting={FadeOut} style={[styles.toast, { backgroundColor: theme.surface }]}>
+          <Feather name="check" size={16} color="#22C55E" />
+          <Text style={[styles.toastText, { color: theme.text }]}>{t.assistant.copied}</Text>
+        </Animated.View>
+      ) : null}
+
       {pendingAction ? renderActionConfirmation() : null}
 
       {attachments.length > 0 ? (
         <View style={[styles.attachmentsRow, { backgroundColor: theme.surface, bottom: tabBarHeight + 56 }]}>
           {attachments.map((att) => (
-            <View key={att.id} style={[styles.attachmentChip, { backgroundColor: theme.backgroundRoot }]}>
-              {att.uploading ? (
-                <ActivityIndicator size="small" color={theme.primary} />
+            <View key={att.id} style={[styles.attachmentChip, { backgroundColor: theme.backgroundRoot, borderColor: getAttachmentStatusColor(att.status) }]}>
+              {att.status === "uploading" || att.status === "analyzing" ? (
+                <ActivityIndicator size="small" color={getAttachmentStatusColor(att.status)} />
               ) : att.mimeType.startsWith("image/") && att.uri ? (
                 <Image source={{ uri: att.uri }} style={styles.attachmentImage} />
               ) : (
-                <Feather name="file" size={14} color={theme.primary} />
+                <Feather name={getAttachmentStatusIcon(att.status)} size={14} color={getAttachmentStatusColor(att.status)} />
               )}
-              <Text style={[styles.attachmentName, { color: theme.text }]} numberOfLines={1}>
-                {att.filename}
-              </Text>
-              {!att.uploading ? (
-                <Pressable onPress={() => removeAttachment(att.id)} hitSlop={8}>
-                  <Feather name="x" size={16} color={theme.textSecondary} />
+              <View style={styles.attachmentInfo}>
+                <Text style={[styles.attachmentName, { color: theme.text }]} numberOfLines={1}>
+                  {att.filename}
+                </Text>
+                {att.status !== "ready" ? (
+                  <Text style={[styles.attachmentStatus, { color: getAttachmentStatusColor(att.status) }]}>
+                    {att.status === "uploading" ? t.assistant.uploadingFile : 
+                     att.status === "analyzing" ? t.assistant.analyzing :
+                     att.error || t.errors.serverError}
+                  </Text>
+                ) : null}
+              </View>
+              {att.status === "error" ? (
+                <Pressable onPress={() => retryUpload(att)} hitSlop={8}>
+                  <Feather name="refresh-cw" size={14} color={theme.primary} />
                 </Pressable>
               ) : null}
+              <Pressable onPress={() => removeAttachment(att.id)} hitSlop={8}>
+                <Feather name="x" size={16} color={theme.textSecondary} />
+              </Pressable>
             </View>
           ))}
         </View>
@@ -567,10 +745,10 @@ export default function AssistantScreen() {
           <Pressable
             style={[
               styles.sendButton,
-              { backgroundColor: (inputText.trim() || attachments.length > 0) ? theme.primary : theme.border },
+              { backgroundColor: (inputText.trim() || attachments.filter(a => a.status === "ready").length > 0) ? theme.primary : theme.border },
             ]}
             onPress={handleSend}
-            disabled={!inputText.trim() && attachments.length === 0}
+            disabled={!inputText.trim() && attachments.filter(a => a.status === "ready").length === 0}
           >
             <Feather name="send" size={18} color="#FFFFFF" />
           </Pressable>
@@ -632,9 +810,47 @@ const styles = StyleSheet.create({
     padding: Spacing.md,
     borderRadius: BorderRadius.lg,
   },
+  messageBubbleSelected: {
+    borderWidth: 2,
+    borderColor: "#2F7F6D",
+  },
   messageText: {
     ...Typography.body,
     lineHeight: 22,
+  },
+  messageMenu: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+    marginTop: Spacing.xs,
+    marginBottom: Spacing.sm,
+  },
+  messageMenuUser: {
+    justifyContent: "flex-end",
+  },
+  messageMenuItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.xs,
+    padding: Spacing.xs,
+  },
+  messageMenuText: {
+    ...Typography.small,
+  },
+  regenerateButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-start",
+    gap: Spacing.xs,
+    paddingVertical: Spacing.xs,
+    paddingHorizontal: Spacing.sm,
+    borderRadius: BorderRadius.sm,
+    borderWidth: 1,
+    marginTop: Spacing.xs,
+    marginBottom: Spacing.sm,
+  },
+  regenerateText: {
+    ...Typography.small,
   },
   streamingIndicator: {
     marginTop: Spacing.xs,
@@ -644,16 +860,48 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    paddingTop: 100,
+    paddingTop: 80,
+    paddingHorizontal: Spacing.lg,
+  },
+  emptyIcon: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: Spacing.lg,
   },
   emptyTitle: {
     ...Typography.title,
-    marginTop: Spacing.lg,
   },
   emptySubtitle: {
     ...Typography.body,
     marginTop: Spacing.xs,
     textAlign: "center",
+    marginBottom: Spacing.xl,
+  },
+  suggestionsScroll: {
+    maxHeight: 100,
+  },
+  suggestionsContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: Spacing.sm,
+    justifyContent: "center",
+    paddingHorizontal: Spacing.md,
+  },
+  suggestionChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.xs,
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+  },
+  suggestionText: {
+    ...Typography.small,
+    maxWidth: 200,
   },
   scrollButton: {
     position: "absolute",
@@ -670,6 +918,25 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 4,
     elevation: 3,
+  },
+  toast: {
+    position: "absolute",
+    top: 100,
+    alignSelf: "center",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.xs,
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+    borderRadius: BorderRadius.lg,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  toastText: {
+    ...Typography.body,
   },
   inputContainer: {
     position: "absolute",
@@ -739,11 +1006,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.sm,
     borderRadius: BorderRadius.sm,
     gap: Spacing.xs,
-    maxWidth: 150,
+    maxWidth: 200,
+    borderWidth: 1,
+  },
+  attachmentInfo: {
+    flex: 1,
+    minWidth: 0,
   },
   attachmentName: {
     ...Typography.small,
-    flex: 1,
+  },
+  attachmentStatus: {
+    ...Typography.caption,
+    marginTop: 2,
   },
   attachmentImage: {
     width: 24,
@@ -754,7 +1029,6 @@ const styles = StyleSheet.create({
     position: "absolute",
     left: Spacing.md,
     right: Spacing.md,
-    bottom: 140,
     padding: Spacing.md,
     borderRadius: BorderRadius.lg,
     shadowColor: "#000",
@@ -766,8 +1040,17 @@ const styles = StyleSheet.create({
   actionTitle: {
     ...Typography.body,
     fontWeight: "600",
-    marginBottom: Spacing.md,
+    marginBottom: Spacing.sm,
     textAlign: "center",
+  },
+  actionSummary: {
+    marginBottom: Spacing.md,
+    padding: Spacing.sm,
+    borderRadius: BorderRadius.sm,
+  },
+  actionSummaryText: {
+    ...Typography.small,
+    marginBottom: 2,
   },
   actionButtons: {
     flexDirection: "row",
