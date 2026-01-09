@@ -1,0 +1,193 @@
+RUOLO
+Sei Lead Frontend Engineer + Lead Backend Engineer + QA Engineer.
+Sei responsabile dei moduli “Liste” e “Task” di Kinova, che devono essere:
+- coerenti con familyId
+- affidabili e persistenti
+- multilingua (IT/EN, default IT)
+- integrati con Home e AI context
+- performanti su Expo
+
+REGOLE NON NEGOZIABILI
+1) Nessun dato fake o demo.
+2) Tutti i record devono essere legati a familyId reale.
+3) Nessuna stringa hardcoded (i18n obbligatorio).
+4) Stati e permessi devono essere rispettati.
+5) Output SOLO nel formato richiesto.
+
+OBIETTIVO DEL GATE 4
+Garantire che:
+- Liste spesa e Task funzionino end-to-end (CRUD)
+- Le assegnazioni familiari siano corrette
+- Gli stati siano coerenti e persistenti
+- HomeScreen mostri riepiloghi corretti
+- I dati siano pronti per l’AI context
+
+SCOPE OBBLIGATORIO
+
+A) MODELLO DATI (VERIFICA/CONSOLIDAMENTO)
+
+ShoppingItem:
+- id
+- name
+- quantity (int, opzionale)
+- completed (boolean)
+- familyId (NOT NULL)
+- addedBy
+- createdAt / updatedAt
+
+Task:
+- id
+- title
+- description (opzionale)
+- completed (boolean)
+- dueDate (opzionale)
+- assignedTo (userId, opzionale)
+- familyId (NOT NULL)
+- createdBy
+- createdAt / updatedAt
+
+Regole:
+- name/title non vuoti
+- completed default = false
+- familyId derivato dal token
+
+B) API LISTE & TASK (CRUD)
+Verificare e correggere:
+- GET  /api/shopping
+- POST /api/shopping
+- PATCH /api/shopping/:id
+- DELETE /api/shopping/:id
+- GET  /api/tasks
+- POST /api/tasks
+- PATCH /api/tasks/:id
+- DELETE /api/tasks/:id
+
+Requisiti:
+- auth obbligatoria
+- familyId enforced lato server
+- errori standard (GATE 2)
+
+Test obbligatori:
+T4.1 Create item/task → DB persist
+T4.2 Update (complete/assign) → DB update
+T4.3 Delete → DB delete (soft/hard dichiarato)
+T4.4 Cross-family access → 403
+
+C) UI — LISTS SCREEN
+Verificare:
+- Tab “Shopping” e Tab “Tasks”
+- Checkbox per completed
+- Swipe delete (con conferma)
+- Pull-to-refresh
+- Empty state localizzato (IT/EN)
+
+Test obbligatori:
+T4.5 Toggle completed → UI + DB coerenti
+T4.6 Swipe delete → conferma → item rimosso
+
+D) ASSEGNAZIONI TASK
+Implementare:
+- assegnazione a membro famiglia
+- visualizzazione avatar/nome
+- filtro per assegnatario
+
+Permessi:
+- admin/member possono assegnare
+- child solo visualizzazione (se previsto)
+
+Test obbligatori:
+T4.7 Assegna task → visibile correttamente
+T4.8 Ruolo child → azioni bloccate
+
+E) STATO & FILTRI
+Implementare filtri:
+- Shopping: completati / da fare
+- Task: completati / pendenti / scaduti
+- Reset filtri
+
+Test obbligatori:
+T4.9 Filtri applicati → risultati corretti
+
+F) HOME SCREEN — INTEGRAZIONE
+Verificare:
+- Sezione Spesa:
+  - mostra max 5 item non completati
+- Sezione Task:
+  - mostra task pendenti/scaduti
+- Testi localizzati:
+  - IT: “Niente da comprare 🎉”
+  - EN: “Nothing to buy 🎉”
+
+Test obbligatori:
+T4.10 Dati liste/task → Home aggiornata correttamente
+
+G) REACT QUERY & CACHE
+- Query keys:
+  - ["shopping"]
+  - ["tasks"]
+- Invalidation su mutation
+- Cambio famiglia → reset cache
+
+Test obbligatori:
+T4.11 Mutation → UI aggiornata senza refresh manuale
+T4.12 Logout/login → dati corretti nuova famiglia
+
+H) MULTILINGUA (IT / EN)
+Verificare:
+- Tutte le stringhe liste/task localizzate
+- Switch lingua → UI aggiornata
+- Fallback IT corretto
+
+Test obbligatori:
+T4.13 Cambio lingua → Lists/Home coerenti
+
+I) PREPARAZIONE AI CONTEXT (NO AI ACTIONS)
+Verificare che:
+- pendingItems
+- recentlyCompleted
+- pendingTasks
+- overdueTasks
+siano raccolti correttamente dal context layer (senza azioni automatiche).
+
+Test obbligatori:
+T4.14 Context data corretto (log/debug)
+
+OUTPUT OBBLIGATORIO (FORMATO RIGIDO)
+
+1) GATE 4 STATUS
+- Stato: PASS/FAIL
+- Bloccanti (se FAIL)
+
+2) MATRICE LISTE & TASK
+Tabella:
+[Test-ID] [Scenario] [Stato Iniziale] [Fix] [Stato Finale PASS/FAIL]
+
+3) REPORT TEST DETTAGLIATO
+Per T4.1 – T4.14:
+- Steps
+- API evidence (status + snippet)
+- DB evidence (SELECT WHERE familyId)
+- UI evidence
+- Esito PASS/FAIL
+- Se FAIL: root cause + fix + retest
+
+4) MULTILINGUA CHECK
+- IT completo: SI/NO
+- EN completo: SI/NO
+
+5) CHECKLIST GATE 4
+- CRUD liste OK: SI/NO
+- CRUD task OK: SI/NO
+- Assegnazioni OK: SI/NO
+- Home coerente: SI/NO
+- Cache OK: SI/NO
+- Nessun fake data: SI/NO
+
+6) VERDETTO FINALE
+Scrivi ESATTAMENTE una sola riga:
+- “GATE 4 COMPLETATO: PASS”
+oppure
+- “GATE 4 COMPLETATO: FAIL”
+
+STOP
+Non scrivere altro.

@@ -21,7 +21,8 @@ Preferred communication style: Simple, everyday language.
 
 **Navigation Pattern**: Tab-based navigation with nested stack navigators
 - Root stack navigator handles auth flow (Login vs Main app)
-- Main tab navigator with 4 tabs: Home, Calendar, Tasks, Profile
+- Main tab navigator with 4 tabs: Home, Calendar, Lists, Profile
+- Lists tab combines Shopping and Tasks with tabbed interface and filters
 - Each tab has its own stack navigator for screen hierarchy
 
 **State Management**:

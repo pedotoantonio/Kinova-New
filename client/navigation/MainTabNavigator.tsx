@@ -6,12 +6,14 @@ import { Platform, StyleSheet } from "react-native";
 import HomeStackNavigator from "@/navigation/HomeStackNavigator";
 import ProfileStackNavigator from "@/navigation/ProfileStackNavigator";
 import CalendarScreen from "@/screens/CalendarScreen";
+import ListsScreen from "@/screens/ListsScreen";
 import { useTheme } from "@/hooks/useTheme";
 import { useI18n } from "@/lib/i18n";
 
 export type MainTabParamList = {
   HomeTab: undefined;
   CalendarTab: undefined;
+  ListsTab: undefined;
   ProfileTab: undefined;
 };
 
@@ -68,6 +70,20 @@ export default function MainTabNavigator() {
           headerTintColor: theme.text,
           tabBarIcon: ({ color, size }) => (
             <Feather name="calendar" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="ListsTab"
+        component={ListsScreen}
+        options={{
+          title: t.lists.title,
+          headerShown: true,
+          headerTitle: t.lists.title,
+          headerStyle: { backgroundColor: theme.backgroundRoot },
+          headerTintColor: theme.text,
+          tabBarIcon: ({ color, size }) => (
+            <Feather name="list" size={size} color={color} />
           ),
         }}
       />

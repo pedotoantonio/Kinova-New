@@ -10,12 +10,11 @@ import { useNavigation } from "@react-navigation/native";
 import { useTheme } from "@/hooks/useTheme";
 import { useAuth, UserRole } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
-import { apiRequest } from "@/lib/query-client";
 import { Colors, Spacing, BorderRadius, Typography } from "@/constants/theme";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { Card } from "@/components/Card";
-import type { Event } from "@shared/types";
+import type { Event, Task, ShoppingItem } from "@shared/types";
 
 interface FamilyMember {
   id: string;
@@ -99,16 +98,35 @@ export default function HomeScreen() {
   const todayEnd = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59, 999);
 
   const { data: todayEvents } = useQuery<Event[]>({
-    queryKey: ["/api/events", todayStart.toISOString(), todayEnd.toISOString()],
-    queryFn: async () => {
-      const response = await apiRequest(
-        "GET",
-        `/api/events?from=${todayStart.toISOString()}&to=${todayEnd.toISOString()}`
-      ) as Response;
-      return response.json();
-    },
+    queryKey: ["/api/events", { from: todayStart.toISOString(), to: todayEnd.toISOString() }],
     enabled: isAuthenticated,
   });
+
+  const { data: shoppingItems } = useQuery<ShoppingItem[]>({
+    queryKey: ["/api/shopping"],
+    enabled: isAuthenticated,
+  });
+
+  const { data: tasksData } = useQuery<Task[]>({
+    queryKey: ["/api/tasks"],
+    enabled: isAuthenticated,
+  });
+
+  const pendingShoppingItems = React.useMemo(() => {
+    if (!shoppingItems) return [];
+    return shoppingItems.filter((i) => !i.purchased).slice(0, 5);
+  }, [shoppingItems]);
+
+  const pendingTasks = React.useMemo(() => {
+    if (!tasksData) return [];
+    return tasksData.filter((t) => !t.completed).slice(0, 5);
+  }, [tasksData]);
+
+  const overdueTasks = React.useMemo(() => {
+    if (!tasksData) return [];
+    const now = new Date();
+    return tasksData.filter((t) => !t.completed && t.dueDate && new Date(t.dueDate) < now);
+  }, [tasksData]);
 
   const filteredTodayEvents = React.useMemo(() => {
     if (!todayEvents) return [];
@@ -152,6 +170,10 @@ export default function HomeScreen() {
 
   const navigateToCalendar = () => {
     (navigation as any).navigate("CalendarTab");
+  };
+
+  const navigateToLists = (tab?: "shopping" | "tasks") => {
+    (navigation as any).navigate("ListsTab");
   };
 
   const renderHeader = () => (
@@ -203,6 +225,112 @@ export default function HomeScreen() {
               </Card>
             </Pressable>
           ))
+        )}
+      </View>
+
+      <View style={styles.todaySection}>
+        <View style={styles.sectionHeader}>
+          <ThemedText style={[styles.sectionTitle, { color: colors.text }]}>
+            {t.home.shoppingList}
+          </ThemedText>
+          <Pressable onPress={() => navigateToLists("shopping")} hitSlop={8}>
+            <ThemedText style={[styles.viewAllLink, { color: colors.primary }]}>
+              {t.home.viewShopping}
+            </ThemedText>
+          </Pressable>
+        </View>
+
+        {pendingShoppingItems.length === 0 ? (
+          <Card style={styles.emptyTodayCard}>
+            <Feather name="shopping-cart" size={24} color={colors.textSecondary} />
+            <ThemedText style={[styles.emptyTodayText, { color: colors.textSecondary }]}>
+              {t.home.nothingToBuy}
+            </ThemedText>
+          </Card>
+        ) : (
+          pendingShoppingItems.map((item) => (
+            <Pressable key={item.id} onPress={() => navigateToLists("shopping")} testID={`home-shopping-${item.id}`}>
+              <Card style={styles.listItemCard}>
+                <View style={[styles.listItemDot, { backgroundColor: colors.primary }]} />
+                <ThemedText style={[styles.listItemText, { color: colors.text }]}>
+                  {item.name}
+                </ThemedText>
+                {item.quantity > 1 ? (
+                  <ThemedText style={[styles.listItemMeta, { color: colors.textSecondary }]}>
+                    x{item.quantity}
+                  </ThemedText>
+                ) : null}
+              </Card>
+            </Pressable>
+          ))
+        )}
+      </View>
+
+      <View style={styles.todaySection}>
+        <View style={styles.sectionHeader}>
+          <View style={styles.sectionTitleRow}>
+            <ThemedText style={[styles.sectionTitle, { color: colors.text }]}>
+              {t.home.pendingTasks}
+            </ThemedText>
+            {overdueTasks.length > 0 ? (
+              <View style={styles.overdueBadge}>
+                <ThemedText style={styles.overdueBadgeText}>
+                  {overdueTasks.length} {t.home.overdue}
+                </ThemedText>
+              </View>
+            ) : null}
+          </View>
+          <Pressable onPress={() => navigateToLists("tasks")} hitSlop={8}>
+            <ThemedText style={[styles.viewAllLink, { color: colors.primary }]}>
+              {t.home.viewTasks}
+            </ThemedText>
+          </Pressable>
+        </View>
+
+        {pendingTasks.length === 0 ? (
+          <Card style={styles.emptyTodayCard}>
+            <Feather name="check-square" size={24} color={colors.textSecondary} />
+            <ThemedText style={[styles.emptyTodayText, { color: colors.textSecondary }]}>
+              {t.home.noTasksPending}
+            </ThemedText>
+          </Card>
+        ) : (
+          pendingTasks.map((task) => {
+            const isOverdue = task.dueDate && new Date(task.dueDate) < new Date();
+            return (
+              <Pressable key={task.id} onPress={() => navigateToLists("tasks")} testID={`home-task-${task.id}`}>
+                <Card style={styles.listItemCard}>
+                  <View
+                    style={[
+                      styles.listItemDot,
+                      {
+                        backgroundColor: isOverdue
+                          ? "#F44336"
+                          : task.priority === "high"
+                          ? "#F44336"
+                          : task.priority === "medium"
+                          ? "#FF9800"
+                          : "#4CAF50",
+                      },
+                    ]}
+                  />
+                  <ThemedText style={[styles.listItemText, { color: colors.text }]}>
+                    {task.title}
+                  </ThemedText>
+                  {task.dueDate ? (
+                    <ThemedText
+                      style={[
+                        styles.listItemMeta,
+                        { color: isOverdue ? "#F44336" : colors.textSecondary },
+                      ]}
+                    >
+                      {new Date(task.dueDate).toLocaleDateString()}
+                    </ThemedText>
+                  ) : null}
+                </Card>
+              </Pressable>
+            );
+          })
         )}
       </View>
 
@@ -392,5 +520,40 @@ const styles = StyleSheet.create({
   emptyText: {
     ...Typography.body,
     marginTop: Spacing.lg,
+  },
+  sectionTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+  },
+  overdueBadge: {
+    backgroundColor: "#F44336",
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 2,
+    borderRadius: BorderRadius.xs,
+  },
+  overdueBadgeText: {
+    color: "#FFFFFF",
+    ...Typography.small,
+    fontWeight: "600",
+  },
+  listItemCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: Spacing.md,
+    marginBottom: Spacing.sm,
+  },
+  listItemDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginRight: Spacing.md,
+  },
+  listItemText: {
+    flex: 1,
+    ...Typography.body,
+  },
+  listItemMeta: {
+    ...Typography.small,
   },
 });
