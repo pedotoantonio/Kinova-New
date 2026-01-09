@@ -141,14 +141,21 @@ export default function ListsScreen() {
 
   const filteredShoppingItems = useMemo(() => {
     if (!shoppingItems) return [];
+    let items: ShoppingItem[];
     switch (shoppingFilter) {
       case "toBuy":
-        return shoppingItems.filter((i) => !i.purchased);
+        items = shoppingItems.filter((i) => !i.purchased);
+        break;
       case "purchased":
-        return shoppingItems.filter((i) => i.purchased);
+        items = shoppingItems.filter((i) => i.purchased);
+        break;
       default:
-        return shoppingItems;
+        items = [...shoppingItems];
     }
+    return items.sort((a, b) => {
+      if (a.purchased !== b.purchased) return a.purchased ? 1 : -1;
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
   }, [shoppingItems, shoppingFilter]);
 
   const filteredTasks = useMemo(() => {
@@ -323,9 +330,11 @@ export default function ListsScreen() {
               ) : null}
             </View>
           </View>
-          <Pressable onPress={handleDelete} hitSlop={8} testID={`task-delete-${item.id}`}>
-            <Feather name="trash-2" size={18} color={colors.textSecondary} />
-          </Pressable>
+          {user?.role !== "child" ? (
+            <Pressable onPress={handleDelete} hitSlop={8} testID={`task-delete-${item.id}`}>
+              <Feather name="trash-2" size={18} color={colors.textSecondary} />
+            </Pressable>
+          ) : null}
         </Card>
       </Animated.View>
     );

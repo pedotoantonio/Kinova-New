@@ -862,7 +862,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/tasks/:id", authMiddleware, async (req: AuthRequest, res: Response) => {
+  app.delete("/api/tasks/:id", authMiddleware, requireRoles("admin", "member"), async (req: AuthRequest, res: Response) => {
     try {
       const { id } = req.params;
       
