@@ -5,10 +5,13 @@ import { BlurView } from "expo-blur";
 import { Platform, StyleSheet } from "react-native";
 import HomeStackNavigator from "@/navigation/HomeStackNavigator";
 import ProfileStackNavigator from "@/navigation/ProfileStackNavigator";
+import CalendarScreen from "@/screens/CalendarScreen";
 import { useTheme } from "@/hooks/useTheme";
+import { useI18n } from "@/lib/i18n";
 
 export type MainTabParamList = {
   HomeTab: undefined;
+  CalendarTab: undefined;
   ProfileTab: undefined;
 };
 
@@ -16,6 +19,7 @@ const Tab = createBottomTabNavigator<MainTabParamList>();
 
 export default function MainTabNavigator() {
   const { theme, isDark } = useTheme();
+  const { t } = useI18n();
 
   return (
     <Tab.Navigator
@@ -47,9 +51,25 @@ export default function MainTabNavigator() {
         name="HomeTab"
         component={HomeStackNavigator}
         options={{
-          title: "Home",
+          title: t.home.title,
           tabBarIcon: ({ color, size }) => (
             <Feather name="home" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="CalendarTab"
+        component={CalendarScreen}
+        options={{
+          title: t.calendar.title,
+          headerShown: true,
+          headerTitle: t.calendar.title,
+          headerStyle: { backgroundColor: theme.backgroundRoot },
+          headerTintColor: theme.text,
+          headerTransparent: true,
+          headerBlurEffect: isDark ? "dark" : "light",
+          tabBarIcon: ({ color, size }) => (
+            <Feather name="calendar" size={size} color={color} />
           ),
         }}
       />
@@ -57,7 +77,7 @@ export default function MainTabNavigator() {
         name="ProfileTab"
         component={ProfileStackNavigator}
         options={{
-          title: "Profile",
+          title: t.profile.title,
           tabBarIcon: ({ color, size }) => (
             <Feather name="user" size={size} color={color} />
           ),

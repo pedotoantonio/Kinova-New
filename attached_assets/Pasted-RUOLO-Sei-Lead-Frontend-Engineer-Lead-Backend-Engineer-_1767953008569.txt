@@ -1,0 +1,169 @@
+RUOLO
+Sei Lead Frontend Engineer + Lead Backend Engineer + QA Engineer.
+Sei responsabile del modulo Calendario di Kinova, che deve diventare:
+- affidabile
+- coerente con familyId
+- corretto temporalmente (timezone)
+- integrato con Home e AI context
+- multilingua (IT/EN, default IT)
+Expo è il banco di test ufficiale.
+
+REGOLE NON NEGOZIABILI
+1) Nessun evento fake o demo.
+2) Tutti gli eventi devono essere legati a familyId reale.
+3) Nessuna ambiguità su date, timezone o all-day.
+4) Nessuna stringa hardcoded (i18n obbligatorio).
+5) Ogni modifica deve essere testata e verificata.
+6) Output SOLO nel formato richiesto.
+
+OBIETTIVO DEL GATE 3
+Garantire che il **Calendario Core**:
+- supporti CRUD eventi completo
+- mostri eventi corretti per giorno/settimana
+- gestisca all-day e multi-day base
+- sia coerente tra CalendarScreen e HomeScreen
+- sia pronto per viste avanzate future
+- funzioni correttamente in IT/EN
+
+SCOPE OBBLIGATORIO
+
+A) MODELLO EVENTO (VERIFICA/CONSOLIDAMENTO)
+Verificare che Event abbia almeno:
+- id
+- title
+- description (opzionale)
+- startDate (timestamp)
+- endDate (timestamp)
+- allDay (boolean)
+- familyId (NOT NULL)
+- createdBy
+- createdAt / updatedAt
+
+Regole temporali:
+- startDate < endDate
+- allDay:
+  - startDate = 00:00 locale
+  - endDate = 00:00 del giorno successivo (exclusive)
+- timezone coerente (salvata in UTC, convertita in locale lato client)
+
+B) API EVENTI (CRUD)
+Verificare e correggere:
+- GET  /api/events?from=&to=
+- POST /api/events
+- PATCH /api/events/:id
+- DELETE /api/events/:id
+
+Requisiti:
+- familyId derivato dal token (mai dal client)
+- validazione input (date, title non vuoto)
+- errori standardizzati (vedi GATE 2)
+
+Test obbligatori:
+T3.1 Create evento → DB persist
+T3.2 Update evento → DB update
+T3.3 Delete evento → DB delete (soft/hard dichiarato)
+T3.4 Accesso cross-family → 403
+
+C) CalendarScreen (UI CORE)
+Verificare:
+- vista settimanale o mensile base funzionante
+- tap su giorno → eventi corretti
+- tap su evento → dettaglio
+- FAB “+” → creazione evento
+- stato loading / empty / error localizzati (IT/EN)
+
+Nessuna vista avanzata ancora (schedule mensile verrà dopo).
+
+D) HomeScreen — INTEGRAZIONE
+Verificare:
+- sezione “Oggi”
+- mostra max 3 eventi di oggi
+- include eventi:
+  - all-day attivi oggi
+  - multi-day che coprono oggi
+- ordinati correttamente
+- testo localizzato:
+  - IT: “Nessun impegno oggi”
+  - EN: “No events today”
+
+Test obbligatori:
+T3.5 Evento oggi → visibile in Home
+T3.6 Evento multi-day → visibile ogni giorno coperto
+
+E) REACT QUERY & CACHE
+- Query key: ["events", from, to]
+- Invalidation su create/update/delete
+- Cambio utente/famiglia → reset cache
+
+Test obbligatori:
+T3.7 Create evento → UI aggiornata senza refresh manuale
+T3.8 Logout/login → eventi corretti della nuova famiglia
+
+F) MULTILINGUA (OBBLIGATORIO)
+Verificare:
+- Tutte le stringhe calendario passano da i18n
+- Default IT
+- Switch EN → UI aggiornata
+- Nessuna stringa non tradotta visibile
+
+Test obbligatori:
+T3.9 Cambio lingua → Calendar + Home aggiornati
+
+G) TIMEZONE & EDGE CASE
+Verificare manualmente:
+- evento 23:00–01:00
+- evento all-day
+- evento che attraversa mezzanotte
+- cambio giorno corretto
+- nessun evento “spostato” di un giorno
+
+Test obbligatori:
+T3.10 Edge cases temporali → risultati corretti
+
+H) SICUREZZA & INTEGRITÀ
+- Nessun evento modificabile da ruolo non autorizzato
+- Logica permessi coerente con GATE 1
+
+OUTPUT OBBLIGATORIO (FORMATO RIGIDO)
+
+1) GATE 3 STATUS
+- Stato: PASS/FAIL
+- Bloccanti (se FAIL)
+
+2) MATRICE CALENDARIO CORE
+Tabella:
+[Test-ID] [Scenario] [Stato Iniziale] [Fix] [Stato Finale PASS/FAIL]
+
+3) REPORT TEST DETTAGLIATO
+Per T3.1 – T3.10:
+- Steps
+- API evidence (status + snippet)
+- DB evidence (SELECT WHERE familyId)
+- UI evidence
+- Esito PASS/FAIL
+- Se FAIL: root cause + fix + retest
+
+4) MULTILINGUA CHECK
+- IT completo: SI/NO
+- EN completo: SI/NO
+- Fallback corretto: SI/NO
+
+5) TIMEZONE VERIFICATION
+- Strategia adottata
+- Risultati test
+
+6) CHECKLIST GATE 3
+- CRUD eventi OK: SI/NO
+- Home coerente: SI/NO
+- Cache ok: SI/NO
+- i18n completo: SI/NO
+- Nessun fake data: SI/NO
+
+7) VERDETTO FINALE
+Scrivi ESATTAMENTE una sola riga:
+- “GATE 3 COMPLETATO: PASS”
+oppure
+- “GATE 3 COMPLETATO: FAIL”
+
+STOP
+Non scrivere altro.

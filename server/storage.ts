@@ -20,7 +20,7 @@ import {
   sessions
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, isNull, gt, gte, lte, desc, lt } from "drizzle-orm";
+import { eq, and, isNull, gt, gte, lte, desc, lt, or } from "drizzle-orm";
 
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
@@ -188,8 +188,25 @@ export class DatabaseStorage implements IStorage {
 
   async getEvents(familyId: string, from?: Date, to?: Date): Promise<DbEvent[]> {
     const conditions = [eq(events.familyId, familyId)];
-    if (from) conditions.push(gte(events.startDate, from));
-    if (to) conditions.push(lte(events.startDate, to));
+    
+    if (from && to) {
+      conditions.push(lte(events.startDate, to));
+      conditions.push(
+        or(
+          gte(events.endDate, from),
+          isNull(events.endDate)
+        )!
+      );
+    } else if (from) {
+      conditions.push(
+        or(
+          gte(events.startDate, from),
+          gte(events.endDate, from)
+        )!
+      );
+    } else if (to) {
+      conditions.push(lte(events.startDate, to));
+    }
     
     return db
       .select()
