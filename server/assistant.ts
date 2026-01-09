@@ -454,7 +454,7 @@ export function registerAssistantRoutes(app: Express, authMiddleware: (req: Auth
           "create_event", "update_event", "delete_event",
           "create_task", "update_task", "complete_task", "delete_task",
           "create_expense", "update_expense", "delete_expense",
-          "add_shopping", "add_shopping_item", "add_shopping_items", "update_shopping", "update_shopping_item", "delete_shopping", "delete_shopping_item", "remove_shopping"
+          "add_shopping", "add_shopping_item", "add_shopping_items", "update_shopping", "update_shopping_item", "delete_shopping", "delete_shopping_item", "remove_shopping", "complete_purchase"
         ];
         if (restrictedActions.includes(actionType)) {
           return res.status(403).json({ 
@@ -582,13 +582,19 @@ export function registerAssistantRoutes(app: Express, authMiddleware: (req: Auth
 
         case "add_shopping_item":
         case "add_shopping": {
+          const estPrice = actionData.estimatedPrice || actionData.price;
           const item = await storage.createShoppingItem({
             familyId: req.auth!.familyId,
             name: actionData.name,
             quantity: actionData.quantity || 1,
             unit: actionData.unit || null,
             category: actionData.category || null,
+            estimatedPrice: estPrice ? String(estPrice) : null,
             purchased: false,
+            purchasedAt: null,
+            purchasedBy: null,
+            actualPrice: null,
+            purchaseExpenseId: null,
             createdBy: req.auth!.userId,
           });
           result = { success: true, message: language === "it" ? "Prodotto aggiunto alla lista" : "Item added to list", data: item };
@@ -596,20 +602,26 @@ export function registerAssistantRoutes(app: Express, authMiddleware: (req: Auth
         }
 
         case "add_shopping_items": {
-          const items = actionData.items as Array<{ name: string; quantity?: number; unit?: string; category?: string }>;
+          const items = actionData.items as Array<{ name: string; quantity?: number; unit?: string; category?: string; estimatedPrice?: number; price?: number }>;
           if (!items || !Array.isArray(items) || items.length === 0) {
             result = { success: false, message: language === "it" ? "Nessun prodotto specificato" : "No items specified" };
             break;
           }
           const createdItems = [];
           for (const item of items) {
+            const itemEstPrice = item.estimatedPrice || item.price;
             const created = await storage.createShoppingItem({
               familyId: req.auth!.familyId,
               name: item.name,
               quantity: item.quantity || 1,
               unit: item.unit || null,
               category: item.category || null,
+              estimatedPrice: itemEstPrice ? String(itemEstPrice) : null,
               purchased: false,
+              purchasedAt: null,
+              purchasedBy: null,
+              actualPrice: null,
+              purchaseExpenseId: null,
               createdBy: req.auth!.userId,
             });
             createdItems.push(created);
@@ -624,6 +636,60 @@ export function registerAssistantRoutes(app: Express, authMiddleware: (req: Auth
           break;
         }
 
+        case "complete_purchase": {
+          const purchaseItems = actionData.items as Array<{ id: string; actualPrice?: number }>;
+          const totalAmount = actionData.totalAmount as number;
+          const store = actionData.store as string | undefined;
+          
+          if (!purchaseItems || !Array.isArray(purchaseItems) || purchaseItems.length === 0) {
+            result = { success: false, message: language === "it" ? "Nessun prodotto selezionato per l'acquisto" : "No items selected for purchase" };
+            break;
+          }
+          
+          const purchaseDate = new Date();
+          const itemNames: string[] = [];
+          
+          for (const item of purchaseItems) {
+            const existingItem = await storage.getShoppingItem(item.id, req.auth!.familyId);
+            if (existingItem) {
+              itemNames.push(existingItem.name);
+            }
+          }
+          
+          const expenseDescription = store 
+            ? `${language === "it" ? "Spesa a" : "Shopping at"} ${store}: ${itemNames.join(", ")}`
+            : `${language === "it" ? "Spesa" : "Shopping"}: ${itemNames.join(", ")}`;
+          
+          const expense = await storage.createExpense({
+            familyId: req.auth!.familyId,
+            amount: String(totalAmount),
+            description: expenseDescription.slice(0, 200),
+            category: "shopping",
+            paidBy: req.auth!.userId,
+            date: purchaseDate,
+            createdBy: req.auth!.userId,
+          });
+          
+          for (const item of purchaseItems) {
+            await storage.updateShoppingItem(item.id, req.auth!.familyId, {
+              purchased: true,
+              purchasedAt: purchaseDate,
+              purchasedBy: req.auth!.userId,
+              actualPrice: item.actualPrice ? String(item.actualPrice) : null,
+              purchaseExpenseId: expense.id,
+            });
+          }
+          
+          result = { 
+            success: true, 
+            message: language === "it" 
+              ? `Acquisto completato! Spesa di €${totalAmount.toFixed(2)} registrata.` 
+              : `Purchase completed! Expense of €${totalAmount.toFixed(2)} recorded.`,
+            data: { expense, purchasedCount: purchaseItems.length }
+          };
+          break;
+        }
+
         case "update_shopping":
         case "update_shopping_item": {
           const updated = await storage.updateShoppingItem(actionData.id, req.auth!.familyId, {
@@ -631,6 +697,7 @@ export function registerAssistantRoutes(app: Express, authMiddleware: (req: Auth
             quantity: actionData.quantity,
             unit: actionData.unit,
             category: actionData.category,
+            estimatedPrice: actionData.estimatedPrice || actionData.price,
             purchased: actionData.purchased,
           });
           result = { success: !!updated, message: language === "it" ? "Prodotto aggiornato" : "Item updated", data: updated };
