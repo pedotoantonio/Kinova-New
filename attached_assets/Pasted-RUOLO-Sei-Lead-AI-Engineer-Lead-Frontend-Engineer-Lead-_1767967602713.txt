@@ -1,0 +1,206 @@
+RUOLO
+Sei Lead AI Engineer + Lead Frontend Engineer + Lead Backend Engineer + QA Engineer.
+Devi implementare l’Assistente AI di Kinova come:
+- assistente professionale
+- contestuale
+- operativo
+- sicuro
+- con UX stile ChatGPT
+Expo è il banco di test ufficiale.
+
+REGOLE NON NEGOZIABILI (ASSOLUTE)
+1) L’assistente PUÒ inserire / modificare / cancellare dati REALI dell’app.
+2) L’assistente NON PUÒ MAI farlo senza conferma esplicita dell’utente (two-step commit).
+3) L’assistente DEVE conoscere la situazione dell’utente (context reale).
+4) L’assistente DEVE proporre soluzioni, alternative e ottimizzazioni.
+5) Nessun mock, nessun fake, nessuna azione silenziosa.
+6) Multilingua IT/EN (default IT).
+7) Output SOLO nel formato richiesto.
+
+OBIETTIVO DEL GATE 6
+Rendere l’Assistente AI:
+- il punto centrale di Kinova
+- capace di gestire TUTTE le funzionalità dell’app
+- capace di analizzare documenti e immagini
+- capace di guidare l’utente passo-passo
+- indistinguibile (per UX) da ChatGPT, ma con azioni reali sull’app
+
+---
+
+## SCOPE FUNZIONALE (CORE ASSOLUTO)
+
+### A) CHAT UX STILE CHATGPT
+Implementare:
+- messaggi user/assistant
+- streaming token-by-token
+- pulsante “Stop”
+- “Rigenera risposta”
+- menu messaggio (copy, select, retry)
+- scroll intelligente
+- suggestion chips contestuali
+- typing indicator
+- error/retry state
+
+Test:
+A6.1 Chat fluida, streaming corretto
+
+---
+
+### B) INPUT MULTIMODALE (ALLEGATI)
+Supportare:
+- testo
+- 📷 foto (camera)
+- 🖼️ immagini (galleria)
+- 📄 documenti (PDF, DOC, TXT, CSV)
+
+UX:
+- preview allegati
+- stato upload (uploading / analyzing / ready / error)
+- retry
+
+Test:
+A6.2 Allegato caricato e visualizzato correttamente
+
+---
+
+### C) ANALISI DOCUMENTI & IMMAGINI (CORE FEATURE)
+Implementare pipeline:
+1) Upload
+2) Analisi (parsing / OCR)
+3) Estrazione dati strutturati
+4) Proposta azioni
+
+L’AI deve:
+- spiegare cosa ha capito
+- mostrare i dati estratti
+- proporre azioni pertinenti
+
+Esempi obbligatori:
+- scontrino/fattura → spesa
+- multa → spesa + evento + task
+- documento scuola → evento + task
+- file ambiguo → proporre alternative
+
+Test:
+A6.3 Documento analizzato → proposta azione corretta
+
+---
+
+### D) ACTION FRAMEWORK (OPERAZIONI REALI)
+Definire azioni standard:
+- CREATE / UPDATE / DELETE:
+  - Event
+  - Task
+  - ShoppingItem
+  - Expense
+- INVITE / CHANGE_ROLE (admin only)
+
+Flusso obbligatorio:
+- proposta → riepilogo → conferma → API → risultato
+
+Test:
+A6.4 Azione proposta → conferma → DB aggiornato
+
+---
+
+### E) TWO-STEP COMMIT (OBBLIGATORIO)
+Ogni azione deve:
+1) mostrare riepilogo modifiche
+2) chiedere conferma esplicita
+3) eseguire solo dopo conferma
+
+Test:
+A6.5 Nessuna modifica senza conferma
+
+---
+
+### F) CONOSCENZA CONTESTUALE
+L’AI riceve SEMPRE:
+- eventi oggi / prossimi
+- task pendenti / scaduti
+- spesa mese
+- meteo attuale
+- membri famiglia
+- ruolo utente
+- lingua
+
+Test:
+A6.6 AI fa riferimento corretto al contesto
+
+---
+
+### G) RUOLI & SICUREZZA
+- admin: tutto
+- member: operazioni standard
+- child: suggerimenti + visualizzazione
+
+Test:
+A6.7 Ruolo child → azioni bloccate
+
+---
+
+### H) MULTILINGUA
+- IT default
+- EN supportato
+- lingua coerente in chat, bottoni, azioni
+
+Test:
+A6.8 Cambio lingua → AI risponde correttamente
+
+---
+
+### I) ERRORI & FALLBACK
+- upload fallito
+- analisi fallita
+- API fallita
+
+UX:
+- spiegazione chiara
+- retry
+
+Test:
+A6.9 Error handling corretto
+
+---
+
+### J) AUDIT & LOGGING
+- log azioni AI
+- chi ha confermato cosa
+- timestamp
+
+---
+
+## OUTPUT OBBLIGATORIO (FORMATO RIGIDO)
+
+1) GATE 6 STATUS
+- Stato: PASS / FAIL
+- Bloccanti
+
+2) MATRICE FUNZIONALITÀ AI
+[Test-ID] [Feature] [Esito PASS/FAIL]
+
+3) REPORT TEST DETTAGLIATO
+Per A6.1 – A6.9:
+- Steps
+- Evidenza UI
+- Evidenza API
+- Evidenza DB
+- Esito
+
+4) SECURITY CHECK
+- Conferma obbligatoria: SI/NO
+- Ruoli rispettati: SI/NO
+- Nessuna azione silenziosa: SI/NO
+
+5) MULTILINGUA CHECK
+- IT OK
+- EN OK
+
+6) VERDETTO FINALE
+Scrivi ESATTAMENTE una sola riga:
+- “GATE 6 COMPLETATO: PASS”
+oppure
+- “GATE 6 COMPLETATO: FAIL”
+
+STOP
+Non scrivere altro.
