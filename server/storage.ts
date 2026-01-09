@@ -43,6 +43,7 @@ import {
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, isNull, gt, gte, lte, desc, lt, or } from "drizzle-orm";
+import { getDefaultPermissionsForRole } from "./permissions";
 
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
@@ -113,6 +114,9 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createUser(insertUser: InsertUser & { familyId: string; role?: UserRole }): Promise<User> {
+    const role = insertUser.role || "member";
+    const permissions = getDefaultPermissionsForRole(role);
+    
     const [user] = await db
       .insert(users)
       .values({
@@ -120,7 +124,13 @@ export class DatabaseStorage implements IStorage {
         password: insertUser.password,
         displayName: insertUser.displayName || insertUser.username,
         familyId: insertUser.familyId,
-        role: insertUser.role || "member",
+        role,
+        canViewCalendar: permissions.canViewCalendar,
+        canViewTasks: permissions.canViewTasks,
+        canViewShopping: permissions.canViewShopping,
+        canViewBudget: permissions.canViewBudget,
+        canViewPlaces: permissions.canViewPlaces,
+        canModifyItems: permissions.canModifyItems,
       })
       .returning();
     return user;
