@@ -116,13 +116,22 @@ export default function CalendarScreen() {
     color: EVENT_COLORS[0],
   });
 
-  const weekStart = currentWeekStart;
-  const weekEnd = getEndOfWeek(currentWeekStart);
+  const { weekStartIso, weekEndIso, weekEnd } = useMemo(() => {
+    const start = new Date(currentWeekStart);
+    const end = new Date(start);
+    end.setDate(end.getDate() + 6);
+    end.setHours(23, 59, 59, 999);
+    return {
+      weekStartIso: start.toISOString(),
+      weekEndIso: end.toISOString(),
+      weekEnd: end,
+    };
+  }, [currentWeekStart]);
 
   const { data: events, isLoading, error, refetch } = useQuery<Event[]>({
-    queryKey: ["/api/events", weekStart.toISOString(), weekEnd.toISOString()],
+    queryKey: ["/api/events", weekStartIso, weekEndIso],
     queryFn: async () => {
-      const url = `/api/events?from=${weekStart.toISOString()}&to=${weekEnd.toISOString()}`;
+      const url = `/api/events?from=${weekStartIso}&to=${weekEndIso}`;
       const response = await apiRequest("GET", url) as Response;
       return response.json();
     },
@@ -181,12 +190,12 @@ export default function CalendarScreen() {
   const weekDays = useMemo(() => {
     const days: Date[] = [];
     for (let i = 0; i < 7; i++) {
-      const d = new Date(weekStart);
+      const d = new Date(currentWeekStart);
       d.setDate(d.getDate() + i);
       days.push(d);
     }
     return days;
-  }, [weekStart]);
+  }, [currentWeekStart]);
 
   const selectedDayEvents = useMemo(() => {
     if (!events) return [];
