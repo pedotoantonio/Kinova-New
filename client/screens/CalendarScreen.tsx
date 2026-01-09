@@ -49,6 +49,8 @@ const CATEGORIES: EventCategory[] = ["family", "course", "shift", "vacation", "h
 const RECURRENCE_FREQUENCIES: (RecurrenceFrequency | "none")[] = ["none", "daily", "weekly", "monthly"];
 const MAX_VISIBLE_EVENTS = 3;
 
+type ViewMode = "month" | "week";
+
 function getStartOfWeek(date: Date): Date {
   const d = new Date(date);
   const day = d.getDay();
@@ -64,6 +66,35 @@ function getEndOfWeek(date: Date): Date {
   end.setDate(end.getDate() + 6);
   end.setHours(23, 59, 59, 999);
   return end;
+}
+
+function getStartOfMonth(date: Date): Date {
+  const d = new Date(date.getFullYear(), date.getMonth(), 1);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+function getEndOfMonth(date: Date): Date {
+  const d = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+  d.setHours(23, 59, 59, 999);
+  return d;
+}
+
+function getMonthGridDays(date: Date): Date[] {
+  const firstDay = getStartOfMonth(date);
+  const lastDay = getEndOfMonth(date);
+  const startWeek = getStartOfWeek(firstDay);
+  
+  const days: Date[] = [];
+  const current = new Date(startWeek);
+  
+  while (current <= lastDay || days.length % 7 !== 0 || days.length < 35) {
+    days.push(new Date(current));
+    current.setDate(current.getDate() + 1);
+    if (days.length >= 42) break;
+  }
+  
+  return days;
 }
 
 function formatTime(date: Date): string {
@@ -145,7 +176,9 @@ export default function CalendarScreen() {
 
   const colors = isDark ? Colors.dark : Colors.light;
 
+  const [viewMode, setViewMode] = useState<ViewMode>("month");
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const [currentMonth, setCurrentMonth] = useState(new Date());
   const [currentWeekStart, setCurrentWeekStart] = useState(getStartOfWeek(new Date()));
   const [showEventModal, setShowEventModal] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
@@ -167,22 +200,34 @@ export default function CalendarScreen() {
     recurrenceEndDate: null,
   });
 
-  const { weekStartIso, weekEndIso, weekEnd } = useMemo(() => {
-    const start = new Date(currentWeekStart);
-    const end = new Date(start);
-    end.setDate(end.getDate() + 6);
-    end.setHours(23, 59, 59, 999);
-    return {
-      weekStartIso: start.toISOString(),
-      weekEndIso: end.toISOString(),
-      weekEnd: end,
-    };
-  }, [currentWeekStart]);
+  const { dateRangeStartIso, dateRangeEndIso } = useMemo(() => {
+    if (viewMode === "month") {
+      const monthDays = getMonthGridDays(currentMonth);
+      const start = monthDays[0];
+      const end = monthDays[monthDays.length - 1];
+      end.setHours(23, 59, 59, 999);
+      return {
+        dateRangeStartIso: start.toISOString(),
+        dateRangeEndIso: end.toISOString(),
+      };
+    } else {
+      const start = new Date(currentWeekStart);
+      const end = new Date(start);
+      end.setDate(end.getDate() + 6);
+      end.setHours(23, 59, 59, 999);
+      return {
+        dateRangeStartIso: start.toISOString(),
+        dateRangeEndIso: end.toISOString(),
+      };
+    }
+  }, [viewMode, currentMonth, currentWeekStart]);
+
+  const monthGridDays = useMemo(() => getMonthGridDays(currentMonth), [currentMonth]);
 
   const { data: events, isLoading, error, refetch } = useQuery<Event[]>({
-    queryKey: ["/api/events", weekStartIso, weekEndIso],
+    queryKey: ["/api/events", dateRangeStartIso, dateRangeEndIso],
     queryFn: async () => {
-      const url = `/api/events?from=${weekStartIso}&to=${weekEndIso}`;
+      const url = `/api/events?from=${dateRangeStartIso}&to=${dateRangeEndIso}`;
       return apiRequest<Event[]>("GET", url);
     },
     enabled: isAuthenticated,
@@ -289,10 +334,27 @@ export default function CalendarScreen() {
     setCurrentWeekStart(newStart);
   };
 
+  const goToPrevMonth = () => {
+    const newMonth = new Date(currentMonth);
+    newMonth.setMonth(newMonth.getMonth() - 1);
+    setCurrentMonth(newMonth);
+  };
+
+  const goToNextMonth = () => {
+    const newMonth = new Date(currentMonth);
+    newMonth.setMonth(newMonth.getMonth() + 1);
+    setCurrentMonth(newMonth);
+  };
+
   const goToToday = () => {
     const today = new Date();
-    setCurrentWeekStart(getStartOfWeek(today));
     setSelectedDate(today);
+    setCurrentMonth(today);
+    setCurrentWeekStart(getStartOfWeek(today));
+  };
+
+  const toggleViewMode = () => {
+    setViewMode(viewMode === "month" ? "week" : "month");
   };
 
   const openCreateEvent = () => {
@@ -443,18 +505,41 @@ export default function CalendarScreen() {
         }}
         scrollIndicatorInsets={{ bottom: insets.bottom }}
       >
-        <View style={styles.weekNav}>
-          <Pressable onPress={goToPrevWeek} style={styles.navButton}>
-            <Feather name="chevron-left" size={24} color={colors.text} />
-          </Pressable>
-          <Pressable onPress={goToToday}>
-            <ThemedText style={[styles.monthLabel, { color: colors.text }]}>
-              {t.calendar.months[currentWeekStart.getMonth()]} {currentWeekStart.getFullYear()}
-            </ThemedText>
-          </Pressable>
-          <Pressable onPress={goToNextWeek} style={styles.navButton}>
-            <Feather name="chevron-right" size={24} color={colors.text} />
-          </Pressable>
+        <View style={styles.calendarHeader}>
+          <View style={styles.weekNav}>
+            <Pressable onPress={viewMode === "month" ? goToPrevMonth : goToPrevWeek} style={styles.navButton}>
+              <Feather name="chevron-left" size={24} color={colors.text} />
+            </Pressable>
+            <Pressable onPress={goToToday}>
+              <ThemedText style={[styles.monthLabel, { color: colors.text }]}>
+                {t.calendar.months[viewMode === "month" ? currentMonth.getMonth() : currentWeekStart.getMonth()]}{" "}
+                {viewMode === "month" ? currentMonth.getFullYear() : currentWeekStart.getFullYear()}
+              </ThemedText>
+            </Pressable>
+            <Pressable onPress={viewMode === "month" ? goToNextMonth : goToNextWeek} style={styles.navButton}>
+              <Feather name="chevron-right" size={24} color={colors.text} />
+            </Pressable>
+          </View>
+          <View style={styles.viewToggle}>
+            <Pressable
+              style={[
+                styles.viewToggleButton,
+                viewMode === "month" && { backgroundColor: colors.primary },
+              ]}
+              onPress={() => setViewMode("month")}
+            >
+              <Feather name="grid" size={16} color={viewMode === "month" ? "#FFF" : colors.text} />
+            </Pressable>
+            <Pressable
+              style={[
+                styles.viewToggleButton,
+                viewMode === "week" && { backgroundColor: colors.primary },
+              ]}
+              onPress={() => setViewMode("week")}
+            >
+              <Feather name="list" size={16} color={viewMode === "week" ? "#FFF" : colors.text} />
+            </Pressable>
+          </View>
         </View>
 
         {hasActiveFilters ? (
@@ -468,67 +553,139 @@ export default function CalendarScreen() {
           </View>
         ) : null}
 
-        <View style={styles.weekRow}>
-          {weekDays.map((day, index) => {
-            const isSelected = isSameDay(day, selectedDate);
-            const isToday = isSameDay(day, new Date());
-            const dayEvents = getEventsForDay(day);
-            const eventCount = dayEvents.length;
-            const isWeekendDay = isWeekend(day);
-
-            return (
-              <Pressable
-                key={index}
-                style={[
-                  styles.dayCell,
-                  isWeekendDay && { backgroundColor: isDark ? "#1a2a25" : "#f5f9f8" },
-                  isSelected && { backgroundColor: colors.primary },
-                  isToday && !isSelected && { borderColor: colors.primary, borderWidth: 2 },
-                ]}
-                onPress={() => setSelectedDate(day)}
-                testID={`day-cell-${day.getDate()}`}
-              >
-                <ThemedText
-                  style={[
-                    styles.dayAbbr,
-                    { color: isSelected ? "#FFF" : isWeekendDay ? colors.primary : colors.textSecondary },
-                  ]}
-                >
-                  {dayAbbreviations[day.getDay()]}
-                </ThemedText>
-                <ThemedText
-                  style={[
-                    styles.dayNumber,
-                    { color: isSelected ? "#FFF" : colors.text },
-                  ]}
-                >
-                  {day.getDate()}
-                </ThemedText>
-                {eventCount > 0 ? (
-                  <View style={styles.eventCountContainer}>
-                    {eventCount <= MAX_VISIBLE_EVENTS ? (
-                      dayEvents.slice(0, MAX_VISIBLE_EVENTS).map((e, i) => (
-                        <View
-                          key={e.id}
-                          style={[
-                            styles.eventDot,
-                            { backgroundColor: isSelected ? "#FFF" : getEventColor(e), marginLeft: i > 0 ? 2 : 0 },
-                          ]}
-                        />
-                      ))
-                    ) : (
-                      <View style={[styles.eventCountBadge, { backgroundColor: isSelected ? "#FFF" : colors.primary }]}>
-                        <ThemedText style={[styles.eventCountText, { color: isSelected ? colors.primary : "#FFF" }]}>
-                          {eventCount}
-                        </ThemedText>
+        {viewMode === "month" ? (
+          <View style={styles.monthGrid}>
+            <View style={styles.weekdayHeader}>
+              {dayAbbreviations.map((abbr, i) => (
+                <View key={i} style={styles.weekdayCell}>
+                  <ThemedText style={[styles.weekdayText, { color: i === 0 || i === 6 ? colors.primary : colors.textSecondary }]}>
+                    {abbr}
+                  </ThemedText>
+                </View>
+              ))}
+            </View>
+            <View style={styles.monthDaysGrid}>
+              {monthGridDays.map((day, index) => {
+                const isSelected = isSameDay(day, selectedDate);
+                const isToday = isSameDay(day, new Date());
+                const dayEvents = getEventsForDay(day);
+                const eventCount = dayEvents.length;
+                const isWeekendDay = isWeekend(day);
+                const isCurrentMonth = day.getMonth() === currentMonth.getMonth();
+                
+                return (
+                  <Pressable
+                    key={index}
+                    style={[
+                      styles.monthDayCell,
+                      isWeekendDay && { backgroundColor: isDark ? "#1a2a25" : "#f5f9f8" },
+                      !isCurrentMonth && { opacity: 0.4 },
+                      isSelected && { backgroundColor: colors.primary },
+                      isToday && !isSelected && { borderColor: colors.primary, borderWidth: 2 },
+                    ]}
+                    onPress={() => {
+                      setSelectedDate(day);
+                      if (dayEvents.length > 0) {
+                        openDayEvents(day, dayEvents);
+                      }
+                    }}
+                    testID={`month-day-${day.getDate()}`}
+                  >
+                    <ThemedText
+                      style={[
+                        styles.monthDayNumber,
+                        { color: isSelected ? "#FFF" : colors.text },
+                      ]}
+                    >
+                      {day.getDate()}
+                    </ThemedText>
+                    {eventCount > 0 ? (
+                      <View style={styles.monthEventIndicators}>
+                        {eventCount <= 2 ? (
+                          dayEvents.slice(0, 2).map((e, i) => (
+                            <View
+                              key={e.id}
+                              style={[
+                                styles.monthEventDot,
+                                { backgroundColor: isSelected ? "#FFF" : getEventColor(e) },
+                              ]}
+                            />
+                          ))
+                        ) : (
+                          <ThemedText style={[styles.monthEventCount, { color: isSelected ? "#FFF" : colors.primary }]}>
+                            +{eventCount}
+                          </ThemedText>
+                        )}
                       </View>
-                    )}
-                  </View>
-                ) : null}
-              </Pressable>
-            );
-          })}
-        </View>
+                    ) : null}
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
+        ) : (
+          <View style={styles.weekRow}>
+            {weekDays.map((day, index) => {
+              const isSelected = isSameDay(day, selectedDate);
+              const isToday = isSameDay(day, new Date());
+              const dayEvents = getEventsForDay(day);
+              const eventCount = dayEvents.length;
+              const isWeekendDay = isWeekend(day);
+
+              return (
+                <Pressable
+                  key={index}
+                  style={[
+                    styles.dayCell,
+                    isWeekendDay && { backgroundColor: isDark ? "#1a2a25" : "#f5f9f8" },
+                    isSelected && { backgroundColor: colors.primary },
+                    isToday && !isSelected && { borderColor: colors.primary, borderWidth: 2 },
+                  ]}
+                  onPress={() => setSelectedDate(day)}
+                  testID={`day-cell-${day.getDate()}`}
+                >
+                  <ThemedText
+                    style={[
+                      styles.dayAbbr,
+                      { color: isSelected ? "#FFF" : isWeekendDay ? colors.primary : colors.textSecondary },
+                    ]}
+                  >
+                    {dayAbbreviations[day.getDay()]}
+                  </ThemedText>
+                  <ThemedText
+                    style={[
+                      styles.dayNumber,
+                      { color: isSelected ? "#FFF" : colors.text },
+                    ]}
+                  >
+                    {day.getDate()}
+                  </ThemedText>
+                  {eventCount > 0 ? (
+                    <View style={styles.eventCountContainer}>
+                      {eventCount <= MAX_VISIBLE_EVENTS ? (
+                        dayEvents.slice(0, MAX_VISIBLE_EVENTS).map((e, i) => (
+                          <View
+                            key={e.id}
+                            style={[
+                              styles.eventDot,
+                              { backgroundColor: isSelected ? "#FFF" : getEventColor(e), marginLeft: i > 0 ? 2 : 0 },
+                            ]}
+                          />
+                        ))
+                      ) : (
+                        <View style={[styles.eventCountBadge, { backgroundColor: isSelected ? "#FFF" : colors.primary }]}>
+                          <ThemedText style={[styles.eventCountText, { color: isSelected ? colors.primary : "#FFF" }]}>
+                            {eventCount}
+                          </ThemedText>
+                        </View>
+                      )}
+                    </View>
+                  ) : null}
+                </Pressable>
+              );
+            })}
+          </View>
+        )}
 
         <View style={styles.eventsSection}>
           <View style={styles.eventsSectionHeader}>
@@ -908,9 +1065,8 @@ const styles = StyleSheet.create({
   },
   weekNav: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: Spacing.lg,
+    gap: Spacing.md,
   },
   navButton: {
     padding: Spacing.sm,
@@ -1213,5 +1369,65 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
     borderRadius: BorderRadius.md,
+  },
+  calendarHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: Spacing.lg,
+  },
+  viewToggle: {
+    flexDirection: "row",
+    borderRadius: BorderRadius.md,
+    overflow: "hidden",
+  },
+  viewToggleButton: {
+    padding: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+  },
+  monthGrid: {
+    marginBottom: Spacing.lg,
+  },
+  weekdayHeader: {
+    flexDirection: "row",
+    marginBottom: Spacing.sm,
+  },
+  weekdayCell: {
+    flex: 1,
+    alignItems: "center",
+    paddingVertical: Spacing.xs,
+  },
+  weekdayText: {
+    ...Typography.small,
+    fontWeight: "600",
+  },
+  monthDaysGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+  },
+  monthDayCell: {
+    width: "14.28%",
+    aspectRatio: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: BorderRadius.sm,
+  },
+  monthDayNumber: {
+    ...Typography.small,
+    fontWeight: "500",
+  },
+  monthEventIndicators: {
+    flexDirection: "row",
+    gap: 2,
+    marginTop: 2,
+  },
+  monthEventDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+  },
+  monthEventCount: {
+    fontSize: 8,
+    fontWeight: "600",
   },
 });
