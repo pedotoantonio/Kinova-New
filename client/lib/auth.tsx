@@ -1,14 +1,21 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { getApiUrl } from "./query-client";
 
 const AUTH_TOKEN_KEY = "@kinova/auth_token";
+const REFRESH_TOKEN_KEY = "@kinova/refresh_token";
+const USER_ID_KEY = "@kinova/user_id";
+const FAMILY_ID_KEY = "@kinova/family_id";
+const TOKEN_EXPIRY_KEY = "@kinova/token_expiry";
+
+export type UserRole = "admin" | "member" | "child";
 
 interface User {
   id: string;
   username: string;
   displayName: string | null;
-  familyId: string | null;
+  familyId: string;
+  role: UserRole;
   avatarUrl?: string | null;
 }
 
@@ -20,6 +27,7 @@ interface AuthContextType {
   login: (username: string, password: string) => Promise<void>;
   register: (username: string, password: string, displayName?: string, familyName?: string) => Promise<void>;
   guestLogin: () => Promise<void>;
+  joinFamily: (code: string, username: string, password: string, displayName?: string) => Promise<void>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
 }
@@ -30,15 +38,83 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const refreshTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isRefreshing = useRef(false);
 
-  const saveToken = async (newToken: string) => {
-    await AsyncStorage.setItem(AUTH_TOKEN_KEY, newToken);
-    setToken(newToken);
+  const clearAllStorage = async () => {
+    await AsyncStorage.multiRemove([
+      AUTH_TOKEN_KEY,
+      REFRESH_TOKEN_KEY,
+      USER_ID_KEY,
+      FAMILY_ID_KEY,
+      TOKEN_EXPIRY_KEY,
+    ]);
   };
 
-  const clearToken = async () => {
-    await AsyncStorage.removeItem(AUTH_TOKEN_KEY);
+  const saveAuthData = async (accessToken: string, refreshToken: string, userData: User, expiresIn: number) => {
+    const expiresAt = Date.now() + expiresIn * 1000;
+    await AsyncStorage.multiSet([
+      [AUTH_TOKEN_KEY, accessToken],
+      [REFRESH_TOKEN_KEY, refreshToken],
+      [USER_ID_KEY, userData.id],
+      [FAMILY_ID_KEY, userData.familyId],
+      [TOKEN_EXPIRY_KEY, String(expiresAt)],
+    ]);
+    setToken(accessToken);
+    setUser(userData);
+    scheduleRefresh(expiresIn * 1000);
+  };
+
+  const scheduleRefresh = (expiresInMs: number) => {
+    if (refreshTimeoutRef.current) {
+      clearTimeout(refreshTimeoutRef.current);
+    }
+    const refreshTime = Math.max(expiresInMs - 60000, 10000);
+    refreshTimeoutRef.current = setTimeout(() => {
+      performRefresh();
+    }, refreshTime);
+  };
+
+  const performRefresh = async () => {
+    if (isRefreshing.current) return;
+    isRefreshing.current = true;
+
+    try {
+      const refreshToken = await AsyncStorage.getItem(REFRESH_TOKEN_KEY);
+      if (!refreshToken) {
+        await handleLogout();
+        return;
+      }
+
+      const baseUrl = getApiUrl();
+      const res = await fetch(new URL("/api/auth/refresh", baseUrl).href, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ refreshToken }),
+      });
+
+      if (!res.ok) {
+        await handleLogout();
+        return;
+      }
+
+      const data = await res.json();
+      await saveAuthData(data.accessToken, data.refreshToken, data.user, data.expiresIn);
+    } catch (error) {
+      console.error("Token refresh failed:", error);
+      await handleLogout();
+    } finally {
+      isRefreshing.current = false;
+    }
+  };
+
+  const handleLogout = async () => {
+    if (refreshTimeoutRef.current) {
+      clearTimeout(refreshTimeoutRef.current);
+    }
+    await clearAllStorage();
     setToken(null);
+    setUser(null);
   };
 
   const fetchUser = useCallback(async (authToken: string): Promise<User | null> => {
@@ -57,29 +133,54 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const refreshUser = useCallback(async () => {
     if (!token) return;
     const userData = await fetchUser(token);
-    setUser(userData);
+    if (userData) {
+      setUser(userData);
+    }
   }, [token, fetchUser]);
 
   useEffect(() => {
     const loadStoredAuth = async () => {
       try {
-        const storedToken = await AsyncStorage.getItem(AUTH_TOKEN_KEY);
-        if (storedToken) {
+        const [[, storedToken], [, storedRefreshToken], [, expiryStr]] = await AsyncStorage.multiGet([
+          AUTH_TOKEN_KEY,
+          REFRESH_TOKEN_KEY,
+          TOKEN_EXPIRY_KEY,
+        ]);
+
+        if (!storedToken || !storedRefreshToken) {
+          await clearAllStorage();
+          return;
+        }
+
+        const expiry = expiryStr ? parseInt(expiryStr, 10) : 0;
+        const now = Date.now();
+
+        if (expiry > now) {
           const userData = await fetchUser(storedToken);
           if (userData) {
             setToken(storedToken);
             setUser(userData);
+            scheduleRefresh(expiry - now);
           } else {
-            await AsyncStorage.removeItem(AUTH_TOKEN_KEY);
+            await performRefresh();
           }
+        } else {
+          await performRefresh();
         }
       } catch (error) {
         console.error("Failed to load auth:", error);
+        await clearAllStorage();
       } finally {
         setIsLoading(false);
       }
     };
     loadStoredAuth();
+
+    return () => {
+      if (refreshTimeoutRef.current) {
+        clearTimeout(refreshTimeoutRef.current);
+      }
+    };
   }, [fetchUser]);
 
   const login = async (username: string, password: string) => {
@@ -96,8 +197,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     const data = await res.json();
-    await saveToken(data.accessToken);
-    setUser(data.user);
+    await saveAuthData(data.accessToken, data.refreshToken, data.user, data.expiresIn);
   };
 
   const register = async (username: string, password: string, displayName?: string, familyName?: string) => {
@@ -114,8 +214,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     const data = await res.json();
-    await saveToken(data.accessToken);
-    setUser(data.user);
+    await saveAuthData(data.accessToken, data.refreshToken, data.user, data.expiresIn);
   };
 
   const guestLogin = async () => {
@@ -131,24 +230,47 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     const data = await res.json();
-    await saveToken(data.accessToken);
-    setUser(data.user);
+    await saveAuthData(data.accessToken, data.refreshToken, data.user, data.expiresIn);
+  };
+
+  const joinFamily = async (code: string, username: string, password: string, displayName?: string) => {
+    const baseUrl = getApiUrl();
+    const res = await fetch(new URL("/api/family/join", baseUrl).href, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code, username, password, displayName }),
+    });
+
+    if (!res.ok) {
+      const data = await res.json();
+      throw new Error(data.error || "Failed to join family");
+    }
+
+    const data = await res.json();
+    await saveAuthData(data.accessToken, data.refreshToken, data.user, data.expiresIn);
   };
 
   const logout = async () => {
-    if (token) {
+    const currentToken = token;
+    const refreshToken = await AsyncStorage.getItem(REFRESH_TOKEN_KEY);
+
+    if (currentToken) {
       try {
         const baseUrl = getApiUrl();
         await fetch(new URL("/api/auth/logout", baseUrl).href, {
           method: "POST",
-          headers: { Authorization: `Bearer ${token}` },
+          headers: {
+            Authorization: `Bearer ${currentToken}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ refreshToken }),
         });
       } catch {
         // ignore logout errors
       }
     }
-    await clearToken();
-    setUser(null);
+
+    await handleLogout();
   };
 
   return (
@@ -161,6 +283,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         login,
         register,
         guestLogin,
+        joinFamily,
         logout,
         refreshUser,
       }}
@@ -180,4 +303,8 @@ export function useAuth() {
 
 export function getAuthToken(): Promise<string | null> {
   return AsyncStorage.getItem(AUTH_TOKEN_KEY);
+}
+
+export function getRefreshToken(): Promise<string | null> {
+  return AsyncStorage.getItem(REFRESH_TOKEN_KEY);
 }

@@ -1,5 +1,5 @@
 import React from "react";
-import { View, FlatList, StyleSheet, ActivityIndicator, Pressable } from "react-native";
+import { View, FlatList, StyleSheet, ActivityIndicator } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
@@ -7,7 +7,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Feather } from "@expo/vector-icons";
 
 import { useTheme } from "@/hooks/useTheme";
-import { useAuth } from "@/lib/auth";
+import { useAuth, UserRole } from "@/lib/auth";
 import { Colors, Spacing, BorderRadius, Typography } from "@/constants/theme";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
@@ -18,6 +18,7 @@ interface FamilyMember {
   username: string;
   displayName: string | null;
   avatarUrl: string | null;
+  role: UserRole;
 }
 
 interface Family {
@@ -25,6 +26,18 @@ interface Family {
   name: string;
   createdAt: string;
 }
+
+const ROLE_LABELS: Record<UserRole, string> = {
+  admin: "Admin",
+  member: "Member",
+  child: "Child",
+};
+
+const ROLE_COLORS: Record<UserRole, string> = {
+  admin: "#2F7F6D",
+  member: "#6FB7A8",
+  child: "#A8D8CC",
+};
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
@@ -65,11 +78,16 @@ export default function HomeScreen() {
           @{item.username}
         </ThemedText>
       </View>
-      {item.id === user?.id && (
-        <View style={[styles.youBadge, { backgroundColor: colors.secondary }]}>
-          <ThemedText style={styles.youBadgeText}>You</ThemedText>
+      <View style={styles.badges}>
+        <View style={[styles.roleBadge, { backgroundColor: ROLE_COLORS[item.role] }]}>
+          <ThemedText style={styles.roleBadgeText}>{ROLE_LABELS[item.role]}</ThemedText>
         </View>
-      )}
+        {item.id === user?.id ? (
+          <View style={[styles.youBadge, { backgroundColor: colors.secondary }]}>
+            <ThemedText style={styles.youBadgeText}>You</ThemedText>
+          </View>
+        ) : null}
+      </View>
     </Card>
   );
 
@@ -195,6 +213,21 @@ const styles = StyleSheet.create({
   },
   memberUsername: {
     ...Typography.caption,
+  },
+  badges: {
+    flexDirection: "column",
+    alignItems: "flex-end",
+    gap: Spacing.xs,
+  },
+  roleBadge: {
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.xs,
+    borderRadius: BorderRadius.xs,
+  },
+  roleBadgeText: {
+    color: "#FFFFFF",
+    ...Typography.small,
+    fontWeight: "600",
   },
   youBadge: {
     paddingHorizontal: Spacing.sm,

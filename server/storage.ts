@@ -1,16 +1,29 @@
-import { type User, type InsertUser, type Family, type InsertFamily, users, families } from "@shared/schema";
+import { 
+  type User, 
+  type InsertUser, 
+  type Family, 
+  type InsertFamily, 
+  type FamilyInvite,
+  type UserRole,
+  users, 
+  families,
+  familyInvites 
+} from "@shared/schema";
 import { db } from "./db";
-import { eq } from "drizzle-orm";
-import { randomUUID } from "crypto";
+import { eq, and, isNull, gt } from "drizzle-orm";
 
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
-  createUser(user: InsertUser & { familyId?: string }): Promise<User>;
+  createUser(user: InsertUser & { familyId: string; role?: UserRole }): Promise<User>;
   updateUser(id: string, data: Partial<User>): Promise<User | undefined>;
   getFamily(id: string): Promise<Family | undefined>;
   createFamily(family: InsertFamily): Promise<Family>;
   getFamilyMembers(familyId: string): Promise<User[]>;
+  createInvite(data: { familyId: string; code: string; role: UserRole; expiresAt: Date; createdBy: string; email?: string }): Promise<FamilyInvite>;
+  getInviteByCode(code: string): Promise<FamilyInvite | undefined>;
+  acceptInvite(inviteId: string, userId: string): Promise<FamilyInvite | undefined>;
+  getActiveInvitesByFamily(familyId: string): Promise<FamilyInvite[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -24,7 +37,7 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  async createUser(insertUser: InsertUser & { familyId?: string }): Promise<User> {
+  async createUser(insertUser: InsertUser & { familyId: string; role?: UserRole }): Promise<User> {
     const [user] = await db
       .insert(users)
       .values({
@@ -32,6 +45,7 @@ export class DatabaseStorage implements IStorage {
         password: insertUser.password,
         displayName: insertUser.displayName || insertUser.username,
         familyId: insertUser.familyId,
+        role: insertUser.role || "member",
       })
       .returning();
     return user;
@@ -63,6 +77,67 @@ export class DatabaseStorage implements IStorage {
 
   async getFamilyMembers(familyId: string): Promise<User[]> {
     return db.select().from(users).where(eq(users.familyId, familyId));
+  }
+
+  async createInvite(data: { 
+    familyId: string; 
+    code: string; 
+    role: UserRole; 
+    expiresAt: Date; 
+    createdBy: string;
+    email?: string;
+  }): Promise<FamilyInvite> {
+    const [invite] = await db
+      .insert(familyInvites)
+      .values({
+        familyId: data.familyId,
+        code: data.code,
+        role: data.role,
+        expiresAt: data.expiresAt,
+        createdBy: data.createdBy,
+        email: data.email,
+      })
+      .returning();
+    return invite;
+  }
+
+  async getInviteByCode(code: string): Promise<FamilyInvite | undefined> {
+    const [invite] = await db
+      .select()
+      .from(familyInvites)
+      .where(
+        and(
+          eq(familyInvites.code, code),
+          isNull(familyInvites.acceptedAt),
+          gt(familyInvites.expiresAt, new Date())
+        )
+      );
+    return invite;
+  }
+
+  async acceptInvite(inviteId: string, userId: string): Promise<FamilyInvite | undefined> {
+    const [invite] = await db
+      .update(familyInvites)
+      .set({
+        acceptedAt: new Date(),
+        acceptedBy: userId,
+      })
+      .where(eq(familyInvites.id, inviteId))
+      .returning();
+    return invite;
+  }
+
+  async getActiveInvitesByFamily(familyId: string): Promise<FamilyInvite[]> {
+    return db
+      .select()
+      .from(familyInvites)
+      .where(
+        and(
+          eq(familyInvites.familyId, familyId),
+          isNull(familyInvites.acceptedAt),
+          gt(familyInvites.expiresAt, new Date())
+        )
+      );
   }
 }
 

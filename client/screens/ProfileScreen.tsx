@@ -10,7 +10,7 @@ import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollV
 import { ThemedText } from "@/components/ThemedText";
 import { Card } from "@/components/Card";
 import { useTheme } from "@/hooks/useTheme";
-import { useAuth } from "@/lib/auth";
+import { useAuth, UserRole } from "@/lib/auth";
 import { Colors, Spacing, BorderRadius, Typography } from "@/constants/theme";
 import { queryClient } from "@/lib/query-client";
 
@@ -115,6 +115,20 @@ export default function ProfileScreen() {
             </ThemedText>
             <ThemedText style={[styles.infoValue, { color: colors.text }]}>
               {user.familyId || "None"}
+            </ThemedText>
+          </View>
+        </View>
+        
+        <View style={[styles.divider, { backgroundColor: colors.backgroundSecondary }]} />
+        
+        <View style={styles.infoRow}>
+          <Feather name="shield" size={20} color={colors.textSecondary} />
+          <View style={styles.infoContent}>
+            <ThemedText style={[styles.infoLabel, { color: colors.textSecondary }]}>
+              Role
+            </ThemedText>
+            <ThemedText style={[styles.infoValue, { color: colors.text }]}>
+              {user.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : "Member"}
             </ThemedText>
           </View>
         </View>
