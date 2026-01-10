@@ -24,6 +24,14 @@ import {
   type NotificationType,
   type NotificationCategory,
   type EventCategory,
+  type AdminRole,
+  type DbAdminUser,
+  type DbAdminSession,
+  type DbAdminAuditLog,
+  type DbDonationLog,
+  type DbAiUsageLog,
+  type DbNotificationLog,
+  type DbAiConfig,
   users, 
   families,
   places,
@@ -41,10 +49,17 @@ import {
   notifications,
   notificationSettings,
   pushTokens,
-  loginAttempts
+  loginAttempts,
+  adminUsers,
+  adminSessions,
+  adminAuditLogs,
+  donationLogs,
+  aiUsageLogs,
+  notificationLogs,
+  aiConfig
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, isNull, gt, gte, lte, desc, lt, or } from "drizzle-orm";
+import { eq, and, isNull, gt, gte, lte, desc, lt, or, sql, count, like, asc, sum } from "drizzle-orm";
 import { getDefaultPermissionsForRole } from "./permissions";
 
 export interface IStorage {
@@ -107,6 +122,44 @@ export interface IStorage {
   createPlace(data: Omit<DbPlace, "id" | "createdAt" | "updatedAt">): Promise<DbPlace>;
   updatePlace(id: string, familyId: string, data: Partial<DbPlace>): Promise<DbPlace | undefined>;
   deletePlace(id: string, familyId: string): Promise<boolean>;
+  
+  getAdminUser(id: string): Promise<DbAdminUser | undefined>;
+  getAdminByEmail(email: string): Promise<DbAdminUser | undefined>;
+  createAdminUser(data: Omit<DbAdminUser, "id" | "createdAt" | "updatedAt">): Promise<DbAdminUser>;
+  updateAdminUser(id: string, data: Partial<DbAdminUser>): Promise<DbAdminUser | undefined>;
+  countAdminUsers(): Promise<number>;
+  
+  getAdminSession(token: string): Promise<DbAdminSession | undefined>;
+  createAdminSession(data: Omit<DbAdminSession, "id" | "createdAt">): Promise<DbAdminSession>;
+  deleteAdminSession(token: string): Promise<boolean>;
+  deleteAdminSessionsByAdmin(adminId: string): Promise<boolean>;
+  
+  createAdminAuditLog(data: Omit<DbAdminAuditLog, "id" | "createdAt">): Promise<DbAdminAuditLog>;
+  getAdminAuditLogs(options?: { limit?: number; offset?: number; adminId?: string }): Promise<{ data: DbAdminAuditLog[]; total: number }>;
+  
+  getAdminDashboardStats(): Promise<{
+    totalUsers: number;
+    activeUsers: number;
+    totalFamilies: number;
+    activeFamilies: number;
+    activeTrials: number;
+    expiredTrials: number;
+    totalDonations: number;
+  }>;
+  
+  getAdminUsersList(options?: { limit?: number; offset?: number; search?: string }): Promise<{ data: User[]; total: number }>;
+  getAdminUserDetail(id: string): Promise<User | undefined>;
+  getAdminFamiliesList(options?: { limit?: number; offset?: number; search?: string; planType?: string }): Promise<{ data: Family[]; total: number }>;
+  getAdminFamilyDetail(id: string): Promise<{ family: Family; members: User[] } | undefined>;
+  
+  getAdminTrialsList(options?: { limit?: number; offset?: number; status?: "active" | "expired" }): Promise<{ data: Family[]; total: number }>;
+  getAdminDonationsList(options?: { limit?: number; offset?: number; status?: string }): Promise<{ data: DbDonationLog[]; total: number }>;
+  getAdminNotificationsList(options?: { limit?: number; offset?: number; status?: string }): Promise<{ data: DbNotificationLog[]; total: number }>;
+  getAdminPlacesList(options?: { limit?: number; offset?: number; search?: string }): Promise<{ data: DbPlace[]; total: number }>;
+  
+  getAiConfig(): Promise<DbAiConfig | undefined>;
+  updateAiConfig(data: Partial<DbAiConfig>): Promise<DbAiConfig | undefined>;
+  getAdminAiLogs(options?: { limit?: number; offset?: number; familyId?: string }): Promise<{ data: DbAiUsageLog[]; total: number }>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -993,6 +1046,384 @@ export class DatabaseStorage implements IStorage {
   async deletePlace(id: string, familyId: string): Promise<boolean> {
     await db.delete(places).where(and(eq(places.id, id), eq(places.familyId, familyId)));
     return true;
+  }
+
+  async getAdminUser(id: string): Promise<DbAdminUser | undefined> {
+    const [admin] = await db.select().from(adminUsers).where(eq(adminUsers.id, id));
+    return admin;
+  }
+
+  async getAdminByEmail(email: string): Promise<DbAdminUser | undefined> {
+    const [admin] = await db.select().from(adminUsers).where(eq(adminUsers.email, email.toLowerCase()));
+    return admin;
+  }
+
+  async createAdminUser(data: Omit<DbAdminUser, "id" | "createdAt" | "updatedAt">): Promise<DbAdminUser> {
+    const [admin] = await db
+      .insert(adminUsers)
+      .values({
+        email: data.email.toLowerCase(),
+        password: data.password,
+        displayName: data.displayName,
+        role: data.role,
+        isActive: data.isActive ?? true,
+        mfaSecret: data.mfaSecret,
+        mfaEnabled: data.mfaEnabled ?? false,
+        lastLoginAt: data.lastLoginAt,
+      })
+      .returning();
+    return admin;
+  }
+
+  async updateAdminUser(id: string, data: Partial<DbAdminUser>): Promise<DbAdminUser | undefined> {
+    const [admin] = await db
+      .update(adminUsers)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(adminUsers.id, id))
+      .returning();
+    return admin;
+  }
+
+  async countAdminUsers(): Promise<number> {
+    const result = await db.select({ count: count() }).from(adminUsers);
+    return result[0]?.count || 0;
+  }
+
+  async getAdminSession(token: string): Promise<DbAdminSession | undefined> {
+    const [session] = await db
+      .select()
+      .from(adminSessions)
+      .where(and(eq(adminSessions.token, token), gt(adminSessions.expiresAt, new Date())));
+    return session;
+  }
+
+  async createAdminSession(data: Omit<DbAdminSession, "id" | "createdAt">): Promise<DbAdminSession> {
+    const [session] = await db
+      .insert(adminSessions)
+      .values(data)
+      .returning();
+    return session;
+  }
+
+  async deleteAdminSession(token: string): Promise<boolean> {
+    await db.delete(adminSessions).where(eq(adminSessions.token, token));
+    return true;
+  }
+
+  async deleteAdminSessionsByAdmin(adminId: string): Promise<boolean> {
+    await db.delete(adminSessions).where(eq(adminSessions.adminId, adminId));
+    return true;
+  }
+
+  async createAdminAuditLog(data: Omit<DbAdminAuditLog, "id" | "createdAt">): Promise<DbAdminAuditLog> {
+    const [log] = await db
+      .insert(adminAuditLogs)
+      .values(data)
+      .returning();
+    return log;
+  }
+
+  async getAdminAuditLogs(options?: { limit?: number; offset?: number; adminId?: string }): Promise<{ data: DbAdminAuditLog[]; total: number }> {
+    const limit = options?.limit || 50;
+    const offset = options?.offset || 0;
+    
+    const conditions = [];
+    if (options?.adminId) {
+      conditions.push(eq(adminAuditLogs.adminId, options.adminId));
+    }
+
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
+    const [totalResult, data] = await Promise.all([
+      db.select({ count: count() }).from(adminAuditLogs).where(whereClause),
+      db
+        .select()
+        .from(adminAuditLogs)
+        .where(whereClause)
+        .orderBy(desc(adminAuditLogs.createdAt))
+        .limit(limit)
+        .offset(offset)
+    ]);
+
+    return { data, total: totalResult[0]?.count || 0 };
+  }
+
+  async getAdminDashboardStats(): Promise<{
+    totalUsers: number;
+    activeUsers: number;
+    totalFamilies: number;
+    activeFamilies: number;
+    activeTrials: number;
+    expiredTrials: number;
+    totalDonations: number;
+  }> {
+    const now = new Date();
+    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+    const [
+      totalUsersResult,
+      activeUsersResult,
+      totalFamiliesResult,
+      activeFamiliesResult,
+      activeTrialsResult,
+      expiredTrialsResult,
+      totalDonationsResult
+    ] = await Promise.all([
+      db.select({ count: count() }).from(users),
+      db.select({ count: count() }).from(sessions).where(gt(sessions.createdAt, thirtyDaysAgo)),
+      db.select({ count: count() }).from(families),
+      db.select({ count: count() }).from(families).where(eq(families.isActive, true)),
+      db.select({ count: count() }).from(families).where(
+        and(eq(families.planType, "trial"), gt(families.trialEndDate, now))
+      ),
+      db.select({ count: count() }).from(families).where(
+        and(eq(families.planType, "trial"), lte(families.trialEndDate, now))
+      ),
+      db.select({ total: sum(donationLogs.amount) }).from(donationLogs).where(eq(donationLogs.status, "completed"))
+    ]);
+
+    return {
+      totalUsers: totalUsersResult[0]?.count || 0,
+      activeUsers: activeUsersResult[0]?.count || 0,
+      totalFamilies: totalFamiliesResult[0]?.count || 0,
+      activeFamilies: activeFamiliesResult[0]?.count || 0,
+      activeTrials: activeTrialsResult[0]?.count || 0,
+      expiredTrials: expiredTrialsResult[0]?.count || 0,
+      totalDonations: Number(totalDonationsResult[0]?.total) || 0
+    };
+  }
+
+  async getAdminUsersList(options?: { limit?: number; offset?: number; search?: string }): Promise<{ data: User[]; total: number }> {
+    const limit = options?.limit || 50;
+    const offset = options?.offset || 0;
+
+    const conditions = [];
+    if (options?.search) {
+      conditions.push(
+        or(
+          like(users.email, `%${options.search}%`),
+          like(users.username, `%${options.search}%`),
+          like(users.displayName, `%${options.search}%`)
+        )
+      );
+    }
+
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
+    const [totalResult, data] = await Promise.all([
+      db.select({ count: count() }).from(users).where(whereClause),
+      db
+        .select()
+        .from(users)
+        .where(whereClause)
+        .orderBy(desc(users.createdAt))
+        .limit(limit)
+        .offset(offset)
+    ]);
+
+    return { data, total: totalResult[0]?.count || 0 };
+  }
+
+  async getAdminUserDetail(id: string): Promise<User | undefined> {
+    return this.getUser(id);
+  }
+
+  async getAdminFamiliesList(options?: { limit?: number; offset?: number; search?: string; planType?: string }): Promise<{ data: Family[]; total: number }> {
+    const limit = options?.limit || 50;
+    const offset = options?.offset || 0;
+
+    const conditions = [];
+    if (options?.search) {
+      conditions.push(like(families.name, `%${options.search}%`));
+    }
+    if (options?.planType) {
+      conditions.push(eq(families.planType, options.planType as "trial" | "donor" | "premium"));
+    }
+
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
+    const [totalResult, data] = await Promise.all([
+      db.select({ count: count() }).from(families).where(whereClause),
+      db
+        .select()
+        .from(families)
+        .where(whereClause)
+        .orderBy(desc(families.createdAt))
+        .limit(limit)
+        .offset(offset)
+    ]);
+
+    return { data, total: totalResult[0]?.count || 0 };
+  }
+
+  async getAdminFamilyDetail(id: string): Promise<{ family: Family; members: User[] } | undefined> {
+    const family = await this.getFamily(id);
+    if (!family) return undefined;
+
+    const members = await this.getFamilyMembers(id);
+    return { family, members };
+  }
+
+  async getAdminTrialsList(options?: { limit?: number; offset?: number; status?: "active" | "expired" }): Promise<{ data: Family[]; total: number }> {
+    const limit = options?.limit || 50;
+    const offset = options?.offset || 0;
+    const now = new Date();
+
+    const conditions = [eq(families.planType, "trial")];
+    if (options?.status === "active") {
+      conditions.push(gt(families.trialEndDate, now));
+    } else if (options?.status === "expired") {
+      conditions.push(lte(families.trialEndDate, now));
+    }
+
+    const whereClause = and(...conditions);
+
+    const [totalResult, data] = await Promise.all([
+      db.select({ count: count() }).from(families).where(whereClause),
+      db
+        .select()
+        .from(families)
+        .where(whereClause)
+        .orderBy(desc(families.trialEndDate))
+        .limit(limit)
+        .offset(offset)
+    ]);
+
+    return { data, total: totalResult[0]?.count || 0 };
+  }
+
+  async getAdminDonationsList(options?: { limit?: number; offset?: number; status?: string }): Promise<{ data: DbDonationLog[]; total: number }> {
+    const limit = options?.limit || 50;
+    const offset = options?.offset || 0;
+
+    const conditions = [];
+    if (options?.status) {
+      conditions.push(eq(donationLogs.status, options.status as "pending" | "completed" | "failed" | "refunded"));
+    }
+
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
+    const [totalResult, data] = await Promise.all([
+      db.select({ count: count() }).from(donationLogs).where(whereClause),
+      db
+        .select()
+        .from(donationLogs)
+        .where(whereClause)
+        .orderBy(desc(donationLogs.createdAt))
+        .limit(limit)
+        .offset(offset)
+    ]);
+
+    return { data, total: totalResult[0]?.count || 0 };
+  }
+
+  async getAdminNotificationsList(options?: { limit?: number; offset?: number; status?: string }): Promise<{ data: DbNotificationLog[]; total: number }> {
+    const limit = options?.limit || 50;
+    const offset = options?.offset || 0;
+
+    const conditions = [];
+    if (options?.status) {
+      conditions.push(eq(notificationLogs.status, options.status as "pending" | "sent" | "failed"));
+    }
+
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
+    const [totalResult, data] = await Promise.all([
+      db.select({ count: count() }).from(notificationLogs).where(whereClause),
+      db
+        .select()
+        .from(notificationLogs)
+        .where(whereClause)
+        .orderBy(desc(notificationLogs.createdAt))
+        .limit(limit)
+        .offset(offset)
+    ]);
+
+    return { data, total: totalResult[0]?.count || 0 };
+  }
+
+  async getAdminPlacesList(options?: { limit?: number; offset?: number; search?: string }): Promise<{ data: DbPlace[]; total: number }> {
+    const limit = options?.limit || 50;
+    const offset = options?.offset || 0;
+
+    const conditions = [];
+    if (options?.search) {
+      conditions.push(
+        or(
+          like(places.name, `%${options.search}%`),
+          like(places.address, `%${options.search}%`)
+        )
+      );
+    }
+
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
+    const [totalResult, data] = await Promise.all([
+      db.select({ count: count() }).from(places).where(whereClause),
+      db
+        .select()
+        .from(places)
+        .where(whereClause)
+        .orderBy(desc(places.createdAt))
+        .limit(limit)
+        .offset(offset)
+    ]);
+
+    return { data, total: totalResult[0]?.count || 0 };
+  }
+
+  async getAiConfig(): Promise<DbAiConfig | undefined> {
+    const [config] = await db.select().from(aiConfig).limit(1);
+    return config;
+  }
+
+  async updateAiConfig(data: Partial<DbAiConfig>): Promise<DbAiConfig | undefined> {
+    const existing = await this.getAiConfig();
+    if (existing) {
+      const [updated] = await db
+        .update(aiConfig)
+        .set({ ...data, updatedAt: new Date() })
+        .where(eq(aiConfig.id, existing.id))
+        .returning();
+      return updated;
+    } else {
+      const [created] = await db
+        .insert(aiConfig)
+        .values({
+          maxDailyRequests: data.maxDailyRequests ?? 100,
+          maxTokensPerRequest: data.maxTokensPerRequest ?? 4000,
+          suggestionThreshold: data.suggestionThreshold ?? 3,
+          isEnabled: data.isEnabled ?? true,
+          updatedBy: data.updatedBy,
+        })
+        .returning();
+      return created;
+    }
+  }
+
+  async getAdminAiLogs(options?: { limit?: number; offset?: number; familyId?: string }): Promise<{ data: DbAiUsageLog[]; total: number }> {
+    const limit = options?.limit || 50;
+    const offset = options?.offset || 0;
+
+    const conditions = [];
+    if (options?.familyId) {
+      conditions.push(eq(aiUsageLogs.familyId, options.familyId));
+    }
+
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
+    const [totalResult, data] = await Promise.all([
+      db.select({ count: count() }).from(aiUsageLogs).where(whereClause),
+      db
+        .select()
+        .from(aiUsageLogs)
+        .where(whereClause)
+        .orderBy(desc(aiUsageLogs.createdAt))
+        .limit(limit)
+        .offset(offset)
+    ]);
+
+    return { data, total: totalResult[0]?.count || 0 };
   }
 }
 

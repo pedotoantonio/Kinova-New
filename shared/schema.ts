@@ -4,6 +4,10 @@ import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod";
 
 export const userRoleEnum = pgEnum("user_role", ["admin", "member", "child"]);
+export const adminRoleEnum = pgEnum("admin_role", ["super_admin", "support_admin", "auditor"]);
+export const planTypeEnum = pgEnum("plan_type", ["trial", "donor", "premium"]);
+export const donationStatusEnum = pgEnum("donation_status", ["pending", "completed", "failed", "refunded"]);
+export const notificationLogStatusEnum = pgEnum("notification_log_status", ["pending", "sent", "failed"]);
 export const priorityEnum = pgEnum("priority", ["low", "medium", "high"]);
 export const placeCategoryEnum = pgEnum("place_category", [
   "home",
@@ -34,6 +38,10 @@ export const families = pgTable("families", {
   city: text("city"),
   cityLat: numeric("city_lat"),
   cityLon: numeric("city_lon"),
+  planType: planTypeEnum("plan_type").default("trial").notNull(),
+  trialStartDate: timestamp("trial_start_date").defaultNow(),
+  trialEndDate: timestamp("trial_end_date"),
+  isActive: boolean("is_active").default(true).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -373,3 +381,116 @@ export type DbNotification = typeof notifications.$inferSelect;
 export type DbNotificationSettings = typeof notificationSettings.$inferSelect;
 export type DbPushToken = typeof pushTokens.$inferSelect;
 export type DbLoginAttempt = typeof loginAttempts.$inferSelect;
+
+// ========== ADMIN CONSOLE TABLES ==========
+
+export const adminUsers = pgTable("admin_users", {
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  email: text("email").notNull().unique(),
+  password: text("password").notNull(),
+  displayName: text("display_name").notNull(),
+  role: adminRoleEnum("role").notNull(),
+  isActive: boolean("is_active").default(true).notNull(),
+  mfaSecret: text("mfa_secret"),
+  mfaEnabled: boolean("mfa_enabled").default(false).notNull(),
+  lastLoginAt: timestamp("last_login_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const adminSessions = pgTable("admin_sessions", {
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  token: text("token").notNull().unique(),
+  adminId: varchar("admin_id").references(() => adminUsers.id, { onDelete: "cascade" }).notNull(),
+  role: adminRoleEnum("role").notNull(),
+  ipAddress: text("ip_address"),
+  userAgent: text("user_agent"),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const adminAuditLogs = pgTable("admin_audit_logs", {
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  adminId: varchar("admin_id").references(() => adminUsers.id),
+  action: text("action").notNull(),
+  targetType: text("target_type"),
+  targetId: varchar("target_id"),
+  details: text("details"),
+  ipAddress: text("ip_address"),
+  result: text("result").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const donationLogs = pgTable("donation_logs", {
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  familyId: varchar("family_id").references(() => families.id),
+  amount: numeric("amount", { precision: 10, scale: 2 }).notNull(),
+  currency: text("currency").default("EUR").notNull(),
+  paymentProvider: text("payment_provider"),
+  paymentId: text("payment_id"),
+  status: donationStatusEnum("status").notNull(),
+  webhookData: text("webhook_data"),
+  validatedBy: varchar("validated_by").references(() => adminUsers.id),
+  validatedAt: timestamp("validated_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const aiUsageLogs = pgTable("ai_usage_logs", {
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id, { onDelete: "cascade" }),
+  familyId: varchar("family_id").references(() => families.id, { onDelete: "cascade" }),
+  requestType: text("request_type"),
+  tokensUsed: integer("tokens_used"),
+  responseTimeMs: integer("response_time_ms"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const notificationLogs = pgTable("notification_logs", {
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id, { onDelete: "cascade" }),
+  type: text("type").notNull(),
+  title: text("title"),
+  body: text("body"),
+  status: notificationLogStatusEnum("status").notNull(),
+  errorMessage: text("error_message"),
+  retryCount: integer("retry_count").default(0).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const aiConfig = pgTable("ai_config", {
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  maxDailyRequests: integer("max_daily_requests").default(100).notNull(),
+  maxTokensPerRequest: integer("max_tokens_per_request").default(4000).notNull(),
+  suggestionThreshold: integer("suggestion_threshold").default(3).notNull(),
+  isEnabled: boolean("is_enabled").default(true).notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  updatedBy: varchar("updated_by").references(() => adminUsers.id),
+});
+
+// Admin Console Types
+export type AdminRole = "super_admin" | "support_admin" | "auditor";
+export type PlanType = "trial" | "donor" | "premium";
+export type DonationStatus = "pending" | "completed" | "failed" | "refunded";
+export type NotificationLogStatus = "pending" | "sent" | "failed";
+
+export type DbAdminUser = typeof adminUsers.$inferSelect;
+export type DbAdminSession = typeof adminSessions.$inferSelect;
+export type DbAdminAuditLog = typeof adminAuditLogs.$inferSelect;
+export type DbDonationLog = typeof donationLogs.$inferSelect;
+export type DbAiUsageLog = typeof aiUsageLogs.$inferSelect;
+export type DbNotificationLog = typeof notificationLogs.$inferSelect;
+export type DbAiConfig = typeof aiConfig.$inferSelect;
