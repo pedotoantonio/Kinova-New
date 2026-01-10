@@ -508,31 +508,60 @@ function AiConfig({ role }) {
   );
 }
 
-function PaymentSettings({ role }) {
+function PaymentSettings() {
   const [settings, setSettings] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    api.get('/payments/settings').then(setSettings).finally(() => setLoading(false));
+    api.get('/payments/settings').then(data => {
+      setSettings({
+        ...data,
+        freeDonationMinAmount: data.freeDonationMinAmount?.toString() || '1',
+        freeDonationMaxAmount: data.freeDonationMaxAmount?.toString() || '500',
+        freeDonationSuggestedAmounts: Array.isArray(data.freeDonationSuggestedAmounts) 
+          ? data.freeDonationSuggestedAmounts.join(',') 
+          : (data.freeDonationSuggestedAmounts || '5,10,25,50')
+      });
+    }).finally(() => setLoading(false));
   }, []);
 
   const handleSave = async () => {
     setSaving(true);
     setSaved(false);
+    setError('');
     try {
+      const minAmount = parseInt(settings.freeDonationMinAmount, 10) || 1;
+      const maxAmount = parseInt(settings.freeDonationMaxAmount, 10) || 500;
+      const suggestedAmounts = settings.freeDonationSuggestedAmounts
+        .split(',')
+        .map(s => parseInt(s.trim(), 10))
+        .filter(n => !isNaN(n) && n > 0);
+      
+      if (minAmount <= 0 || maxAmount <= 0) {
+        setError('Amounts must be positive numbers');
+        return;
+      }
+      if (minAmount > maxAmount) {
+        setError('Min amount cannot exceed max amount');
+        return;
+      }
+
       await api.patch('/payments/settings', {
         freeDonationEnabled: settings.freeDonationEnabled,
-        freeDonationMinAmount: settings.freeDonationMinAmount,
-        freeDonationMaxAmount: settings.freeDonationMaxAmount,
-        freeDonationSuggestedAmounts: settings.freeDonationSuggestedAmounts,
+        freeDonationMinAmount: minAmount,
+        freeDonationMaxAmount: maxAmount,
+        freeDonationSuggestedAmounts: suggestedAmounts,
         fixedPlansEnabled: settings.fixedPlansEnabled,
         subscriptionsEnabled: settings.subscriptionsEnabled,
         currency: settings.currency
       });
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
+    } catch (err) {
+      setError(err.message || 'Failed to save settings');
     } finally {
       setSaving(false);
     }
@@ -604,7 +633,8 @@ function PaymentSettings({ role }) {
 
     h('div', { style: { display: 'flex', gap: '1rem', alignItems: 'center', marginTop: '1rem' } },
       h(Button, { onClick: handleSave, disabled: saving }, saving ? t('common.loading') : t('common.save')),
-      saved && h('span', { style: { color: 'var(--success)' } }, t('payments.saved'))
+      saved && h('span', { style: { color: 'var(--success)' } }, t('payments.saved')),
+      error && h('span', { style: styles.error }, error)
     )
   );
 }
@@ -694,7 +724,7 @@ function AdminApp() {
     view === 'families' && h(Families, { role: admin.role }),
     view === 'trials' && h(Trials, { role: admin.role }),
     view === 'donations' && h(Donations),
-    view === 'payments' && h(PaymentSettings, { role: admin.role }),
+    view === 'payments' && h(PaymentSettings),
     view === 'audit' && h(AuditLog),
     view === 'ai' && h(AiConfig, { role: admin.role })
   );
