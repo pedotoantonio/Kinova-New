@@ -185,3 +185,48 @@ Preferred communication style: Simple, everyday language.
 - `server/admin-routes.ts`: Admin API endpoints and RBAC middleware
 - `server/admin/index.html`: Admin PWA entry point
 - `server/admin/app.js`: Admin React SPA
+
+### Logging Infrastructure (January 2026)
+
+**Session & Error Logging System**:
+- Professional logging infrastructure for tracking app usage and debugging
+- Hierarchical error code taxonomy: `KINOVA::DOMAIN::CODE` pattern
+- Bilingual error messages (Italian default, English option)
+
+**Database Schema**:
+- `session_logs` table: userId, familyId, deviceId, platform, appVersion, osVersion, locale, status (started/ended/crashed), startedAt, endedAt, terminationReason
+- `error_logs` table: sessionId, userId, familyId, requestId, category, severity (info/warning/error/critical), code, message, userMessage, component, stackTrace, context, resolved, resolvedAt, resolvedBy
+
+**Error Code Categories**:
+- AUTH: Authentication and authorization errors
+- NETWORK: Connection and timeout errors
+- PAYMENT: Stripe and payment processing errors
+- ASSISTANT: AI assistant errors
+- CALENDAR, TASKS, SHOPPING, BUDGET: Feature-specific errors
+- FAMILY: Family management errors
+- GENERAL: Fallback and validation errors
+
+**API Endpoints** (`/api/logs/*`):
+- `POST /api/logs/session/start`: Start session tracking
+- `POST /api/logs/session/end`: End session tracking
+- `POST /api/logs/session/crash`: Log app crash
+- `POST /api/logs/error`: Log structured error with code and context
+- `GET /api/logs/error-codes`: Get available error codes and messages
+
+**Admin Endpoints** (`/api/admin/logs/*`):
+- `GET /api/admin/logs/sessions`: List session logs with filtering
+- `GET /api/admin/logs/errors`: List error logs with filtering
+- `GET /api/admin/logs/errors/stats`: Error statistics (total, unresolved, today)
+- `POST /api/admin/logs/errors/:id/resolve`: Mark error as resolved (super_admin, support_admin)
+
+**Client-Side Logging** (`client/lib/logging.ts`):
+- `startSession()`: Initialize session tracking
+- `endSession()`: End current session
+- `logSessionCrash()`: Report app crash
+- `logError()`: Log structured error with automatic locale detection
+- `getErrorMessage()`: Get localized error message for code
+
+**Key Files**:
+- `server/logging-routes.ts`: Logging API endpoints and error taxonomy
+- `client/lib/logging.ts`: Client-side logging utility
+- `server/admin/app.js`: Admin panel with Logs section
