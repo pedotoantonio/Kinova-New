@@ -446,11 +446,18 @@ export default function AssistantScreen() {
 
     try {
       const formData = new FormData();
-      formData.append("file", {
-        uri,
-        name: filename,
-        type: mimeType,
-      } as unknown as Blob);
+      
+      if (Platform.OS === "web") {
+        const blobResponse = await fetch(uri);
+        const blob = await blobResponse.blob();
+        formData.append("file", blob, filename);
+      } else {
+        formData.append("file", {
+          uri,
+          name: filename,
+          type: mimeType,
+        } as unknown as Blob);
+      }
 
       const token = await AsyncStorage.getItem(AUTH_TOKEN_KEY);
       
