@@ -590,6 +590,14 @@ export default function AssistantScreen() {
     setAttachments(prev => prev.filter(a => a.id !== id));
   };
 
+  const stripActionTags = (text: string): string => {
+    return text
+      .replace(/\[AZIONE_PROPOSTA:\s*[^\]]+\]/g, "")
+      .replace(/\[PROPOSED_ACTION:\s*[^\]]+\]/g, "")
+      .replace(/\n{3,}/g, "\n\n")
+      .trim();
+  };
+
   const scrollToBottom = useCallback(() => {
     flatListRef.current?.scrollToEnd({ animated: true });
   }, []);
@@ -639,14 +647,14 @@ export default function AssistantScreen() {
             ]}
           >
             <Text style={[styles.messageText, isUser ? { color: "#FFFFFF" } : { color: theme.text }]}>
-              {item.content}
+              {isUser ? item.content : stripActionTags(item.content)}
             </Text>
           </View>
         </Pressable>
         
         {isSelected ? (
           <Animated.View entering={FadeIn.duration(150)} style={[styles.messageMenu, isUser && styles.messageMenuUser]}>
-            <Pressable style={styles.messageMenuItem} onPress={() => handleCopyMessage(item.content)}>
+            <Pressable style={styles.messageMenuItem} onPress={() => handleCopyMessage(isUser ? item.content : stripActionTags(item.content))}>
               <Feather name="copy" size={16} color={theme.text} />
               <Text style={[styles.messageMenuText, { color: theme.text }]}>{t.assistant.copy}</Text>
             </Pressable>
@@ -678,7 +686,7 @@ export default function AssistantScreen() {
       <View style={styles.messageRow}>
         <View style={[styles.messageBubble, { backgroundColor: theme.surface }]}>
           <Text style={[styles.messageText, { color: theme.text }]}>
-            {streamingContent || t.assistant.thinking}
+            {streamingContent ? stripActionTags(streamingContent) : t.assistant.thinking}
           </Text>
           {isStreaming ? <ActivityIndicator size="small" color={theme.primary} style={styles.streamingIndicator} /> : null}
         </View>
