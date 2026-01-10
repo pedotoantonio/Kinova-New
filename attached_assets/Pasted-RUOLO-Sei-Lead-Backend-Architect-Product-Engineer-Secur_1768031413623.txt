@@ -1,0 +1,196 @@
+RUOLO
+Sei Lead Backend Architect + Product Engineer + Security Engineer + QA Lead.
+Devi implementare e verificare il modello di utilizzo principale di Kinova:
+una singola app, usata da più membri della stessa famiglia,
+con visibilità e permessi differenti.
+Expo è il banco di test principale.
+
+OBIETTIVO
+Rendere la gestione familiare:
+- strutturata
+- sicura
+- intuitiva
+- coerente su tutta l’app
+Senza rompere i gate successivi.
+
+---
+
+## A) CREAZIONE FAMIGLIA (PRIMO EVENTO OBBLIGATORIO)
+
+Dopo la registrazione/login iniziale:
+- se l’utente NON ha una familyId:
+  - l’app DEVE forzare la schermata “Crea famiglia”
+  - nessun accesso ad altre schermate è consentito
+
+Creazione famiglia richiede:
+- nome famiglia
+- avatar/colore (opzionale)
+- lingua default (IT)
+
+Il creatore diventa:
+- ruolo: **ADMIN**
+- primo membro della famiglia
+
+Test:
+T1B.1 Registrazione → obbligo creazione famiglia
+T1B.2 Nessun accesso app senza familyId
+
+---
+
+## B) RUOLI FAMILIARI (CORE)
+
+Definire ruoli **interni alla famiglia**:
+
+### 👑 ADMIN
+- vede tutto
+- crea/modifica eventi
+- assegna task
+- gestisce membri
+- configura visibilità
+
+### 👤 MEMBER
+- vede eventi familiari
+- vede task assegnati e generali
+- NON vede budget (default)
+- NON gestisce membri
+
+### 🧒 CHILD
+- vede:
+  - solo eventi che lo riguardano
+  - solo task assegnati a lui
+- NON vede:
+  - budget
+  - task di altri
+- UI semplificata
+
+Test:
+T1B.3 Ruolo admin → visibilità completa
+T1B.4 Ruolo child → visibilità limitata
+
+---
+
+## C) PERMESSI GRANULARI (NON SOLO RUOLI)
+
+Ogni membro può avere **flag aggiuntivi**, ad esempio:
+- canViewCalendar
+- canViewTasks
+- canViewShopping
+- canViewBudget
+- canModifyItems
+
+Questi flag:
+- sovrascrivono i default del ruolo
+- sono configurabili SOLO dall’admin
+
+Test:
+T1B.5 Permessi personalizzati → visibilità corretta
+
+---
+
+## D) FILTRAGGIO DATI (CRITICO)
+
+Ogni query backend deve:
+1. filtrare per familyId
+2. filtrare per ruolo
+3. filtrare per permessi
+
+Esempi:
+- child:
+  - SELECT task WHERE assignedTo = userId
+- member:
+  - SELECT task WHERE familyId = X
+- budget:
+  - SELECT solo se canViewBudget = true
+
+Test:
+T1B.6 Tentativo accesso dati non autorizzati → 403
+
+---
+
+## E) UI ADATTIVA PER RUOLO
+
+L’interfaccia deve:
+- nascondere sezioni non autorizzate
+- non mostrare placeholder di dati vietati
+- adattare linguaggio (specialmente per child)
+
+Test:
+T1B.7 UI cambia in base al ruolo
+
+---
+
+## F) INVITO MEMBRI (INTERNO ALLA FAMIGLIA)
+
+Admin può:
+- invitare nuovi membri
+- assegnare ruolo iniziale
+- assegnare permessi base
+
+Il nuovo membro:
+- entra nella famiglia esistente
+- NON crea una nuova famiglia
+
+Test:
+T1B.8 Invito → membro correttamente associato
+
+---
+
+## G) INTEGRAZIONE CON AI
+
+L’assistente AI deve:
+- conoscere ruolo e permessi
+- NON menzionare dati non visibili
+- NON suggerire azioni non consentite
+
+Test:
+T1B.9 AI rispetta visibilità e ruolo
+
+---
+
+## H) MULTILINGUA (IT / EN)
+
+- ruoli tradotti
+- messaggi chiari
+- fallback IT
+
+Test:
+T1B.10 Cambio lingua → UI corretta
+
+---
+
+## OUTPUT OBBLIGATORIO (FORMATO RIGIDO)
+
+1) GATE 1 BIS STATUS
+- Stato: PASS / FAIL
+- Bloccanti (se FAIL)
+
+2) MATRICE RUOLI & VISIBILITÀ
+[Test-ID] [Ruolo] [Permesso] [Visibile SI/NO] [Esito]
+
+3) REPORT TEST DETTAGLIATO
+Per T1B.1 – T1B.10:
+- Steps
+- API evidence
+- DB evidence
+- UI evidence
+- Esito PASS/FAIL
+
+4) SECURITY CHECK
+- familyId enforcement: OK/NO
+- permessi granulari: OK/NO
+- nessuna fuga dati: OK/NO
+
+5) CHECKLIST GATE 1 BIS
+- Creazione famiglia obbligatoria: SI/NO
+- Ruoli corretti: SI/NO
+- Permessi granulari: SI/NO
+- UI adattiva: SI/NO
+- AI compatibile: SI/NO
+
+6) VERDETTO FINALE
+Scrivi ESATTAMENTE una sola riga:
+- “GATE 1 BIS COMPLETATO: PASS”
+oppure
+- “GATE 1 BIS COMPLETATO: FAIL”
+
+STOP
