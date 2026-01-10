@@ -423,6 +423,27 @@ export default function ProfileScreen() {
         </Pressable>
       </Card>
 
+      <Card style={styles.settingsCard}>
+        <Pressable
+          style={styles.settingsRow}
+          onPress={() => navigation.navigate("Donation" as never)}
+          testID="button-donation"
+        >
+          <View style={styles.settingsRowLeft}>
+            <Feather name="heart" size={20} color={colors.primary} />
+            <View style={styles.settingsRowContent}>
+              <ThemedText style={[styles.settingsLabel, { color: colors.textSecondary }]}>
+                {t.donation.title}
+              </ThemedText>
+              <ThemedText style={[styles.settingsValue, { color: colors.text }]}>
+                {t.donation.subtitle}
+              </ThemedText>
+            </View>
+          </View>
+          <Feather name="chevron-right" size={20} color={colors.textSecondary} />
+        </Pressable>
+      </Card>
+
       <Pressable
         style={({ pressed }) => [
           styles.logoutButton,

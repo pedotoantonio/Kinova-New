@@ -5,6 +5,7 @@ import ProfileScreen from "@/screens/ProfileScreen";
 import NotificationSettingsScreen from "@/screens/NotificationSettingsScreen";
 import FamilyMembersScreen from "@/screens/FamilyMembersScreen";
 import QRScannerScreen from "@/screens/QRScannerScreen";
+import DonationScreen from "@/screens/DonationScreen";
 import { useScreenOptions } from "@/hooks/useScreenOptions";
 import { useI18n } from "@/lib/i18n";
 
@@ -13,6 +14,7 @@ export type ProfileStackParamList = {
   NotificationSettings: undefined;
   FamilyMembers: undefined;
   QRScanner: undefined;
+  Donation: undefined;
 };
 
 const Stack = createNativeStackNavigator<ProfileStackParamList>();
@@ -49,6 +51,13 @@ export default function ProfileStackNavigator() {
         component={QRScannerScreen}
         options={{
           title: t.family.scanQR,
+        }}
+      />
+      <Stack.Screen
+        name="Donation"
+        component={DonationScreen}
+        options={{
+          title: t.donation.title,
         }}
       />
     </Stack.Navigator>
