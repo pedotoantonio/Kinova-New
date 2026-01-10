@@ -5,6 +5,7 @@ import { BlurView } from "expo-blur";
 import { Platform, StyleSheet } from "react-native";
 import HomeStackNavigator from "@/navigation/HomeStackNavigator";
 import ProfileStackNavigator from "@/navigation/ProfileStackNavigator";
+import NotesStackNavigator from "@/navigation/NotesStackNavigator";
 import CalendarScreen from "@/screens/CalendarScreen";
 import ListsScreen from "@/screens/ListsScreen";
 import BudgetScreen from "@/screens/BudgetScreen";
@@ -18,6 +19,7 @@ export type MainTabParamList = {
   HomeTab: undefined;
   CalendarTab: undefined;
   ListsTab: undefined;
+  NotesTab: undefined;
   BudgetTab: undefined;
   AssistantTab: undefined;
   ProfileTab: undefined;
@@ -107,6 +109,16 @@ export default function MainTabNavigator() {
           }}
         />
       ) : null}
+      <Tab.Screen
+        name="NotesTab"
+        component={NotesStackNavigator}
+        options={{
+          title: t.notes.title,
+          tabBarIcon: ({ color, size }) => (
+            <Feather name={AppIcons.notes} size={size} color={color} />
+          ),
+        }}
+      />
       {permissions.canViewBudget ? (
         <Tab.Screen
           name="BudgetTab"

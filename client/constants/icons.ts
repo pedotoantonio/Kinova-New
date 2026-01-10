@@ -11,6 +11,7 @@ export const AppIcons = {
   shopping: "shopping-cart" as FeatherIconName,
   budget: "dollar-sign" as FeatherIconName,
   assistant: "message-circle" as FeatherIconName,
+  notes: "file-text" as FeatherIconName,
   notifications: "bell" as FeatherIconName,
   places: "map-pin" as FeatherIconName,
   family: "users" as FeatherIconName,
