@@ -48,7 +48,7 @@ export default function ProfileScreen() {
   const tabBarHeight = useBottomTabBarHeight();
   const { theme, isDark } = useTheme();
   const { user, logout, isLoading, isAuthenticated } = useAuth();
-  const { t, language } = useI18n();
+  const { t, language, setLanguage } = useI18n();
   const navigation = useNavigation();
 
   const colors = isDark ? Colors.dark : Colors.light;
@@ -424,6 +424,69 @@ export default function ProfileScreen() {
       </Card>
 
       <Card style={styles.settingsCard}>
+        <View style={styles.settingsRow}>
+          <View style={styles.settingsRowLeft}>
+            <Feather name="globe" size={20} color={colors.primary} />
+            <View style={styles.settingsRowContent}>
+              <ThemedText style={[styles.settingsLabel, { color: colors.textSecondary }]}>
+                {t.profile.language}
+              </ThemedText>
+            </View>
+          </View>
+          <View style={styles.languageSelector}>
+            <Pressable
+              style={[
+                styles.languageOption,
+                { 
+                  backgroundColor: language === "it" ? colors.primary : colors.backgroundSecondary,
+                  borderTopLeftRadius: BorderRadius.sm,
+                  borderBottomLeftRadius: BorderRadius.sm,
+                },
+              ]}
+              onPress={() => {
+                setLanguage("it");
+                if (Platform.OS !== "web") {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                }
+              }}
+              testID="button-language-it"
+            >
+              <ThemedText style={[
+                styles.languageOptionText,
+                { color: language === "it" ? colors.buttonText : colors.text }
+              ]}>
+                IT
+              </ThemedText>
+            </Pressable>
+            <Pressable
+              style={[
+                styles.languageOption,
+                { 
+                  backgroundColor: language === "en" ? colors.primary : colors.backgroundSecondary,
+                  borderTopRightRadius: BorderRadius.sm,
+                  borderBottomRightRadius: BorderRadius.sm,
+                },
+              ]}
+              onPress={() => {
+                setLanguage("en");
+                if (Platform.OS !== "web") {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                }
+              }}
+              testID="button-language-en"
+            >
+              <ThemedText style={[
+                styles.languageOptionText,
+                { color: language === "en" ? colors.buttonText : colors.text }
+              ]}>
+                EN
+              </ThemedText>
+            </Pressable>
+          </View>
+        </View>
+      </Card>
+
+      <Card style={styles.settingsCard}>
         <Pressable
           style={styles.settingsRow}
           onPress={() => navigation.navigate("Donation" as never)}
@@ -769,6 +832,17 @@ const styles = StyleSheet.create({
   settingsValue: {
     ...Typography.body,
     fontWeight: "500",
+  },
+  languageSelector: {
+    flexDirection: "row",
+  },
+  languageOption: {
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.sm,
+  },
+  languageOptionText: {
+    ...Typography.body,
+    fontWeight: "600",
   },
   modalOverlay: {
     flex: 1,
