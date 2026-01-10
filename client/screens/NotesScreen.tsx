@@ -194,6 +194,11 @@ export default function NotesScreen() {
   };
 
   const renderNoteItem = ({ item, index }: { item: Note; index: number }) => {
+    const tapGesture = Gesture.Tap()
+      .onEnd(() => {
+        scheduleOnRN(handleNotePress, item);
+      });
+
     const swipeGesture = Gesture.Pan()
       .activeOffsetX([-20, 20])
       .onEnd((event) => {
@@ -202,8 +207,10 @@ export default function NotesScreen() {
         }
       });
 
+    const composedGestures = Gesture.Race(tapGesture, swipeGesture);
+
     return (
-      <GestureDetector gesture={swipeGesture}>
+      <GestureDetector gesture={composedGestures}>
         <Animated.View entering={FadeInDown.delay(index * 50).duration(200)}>
           <Pressable onPress={() => handleNotePress(item)}>
             <Card style={styles.noteCard}>
