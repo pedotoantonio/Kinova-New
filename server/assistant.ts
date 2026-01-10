@@ -4,6 +4,8 @@ import { storage } from "./storage";
 import type { UserRole } from "@shared/schema";
 import fs from "node:fs";
 import path from "node:path";
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const pdfParse = require("pdf-parse");
 
 const openai = new OpenAI({
   apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
@@ -252,6 +254,18 @@ REGOLE SPECIALI:
 
 RICERCA INFORMAZIONI:
 Puoi cercare informazioni per rispondere su: ricette, notizie, meteo, eventi locali, prezzi indicativi prodotti.
+
+📄 LETTURA DOCUMENTI:
+Puoi leggere e analizzare documenti che l'utente ti invia:
+• PDF: Bollette, fatture, contratti, documenti scolastici, certificati - estraggo il testo e propongo azioni appropriate
+• IMMAGINI: Scontrini, ricevute, foto di documenti - analizzo con la visione e estraggo dati
+• TESTO: File .txt, .csv - leggo e interpreto il contenuto
+
+Quando ricevi un documento:
+1. Analizza il contenuto estratto automaticamente
+2. Riassumi le informazioni principali (importi, date, scadenze)
+3. Proponi azioni pertinenti: creare spese, eventi per scadenze, task per azioni da fare, note per memorizzare
+4. Chiedi conferma prima di ogni azione
 `
     : `
 IMPORTANT RULES:
@@ -320,6 +334,18 @@ SPECIAL RULES:
 
 INFORMATION SEARCH:
 You can search for information about: recipes, news, weather, local events, indicative product prices.
+
+📄 DOCUMENT READING:
+You can read and analyze documents that the user sends:
+• PDF: Bills, invoices, contracts, school documents, certificates - I extract the text and propose appropriate actions
+• IMAGES: Receipts, photos of documents - I analyze with vision and extract data
+• TEXT: .txt, .csv files - I read and interpret the content
+
+When you receive a document:
+1. Analyze the automatically extracted content
+2. Summarize key information (amounts, dates, deadlines)
+3. Propose relevant actions: create expenses, events for deadlines, tasks for actions to take, notes to remember
+4. Ask for confirmation before each action
 `;
 
   if (isChild) {
@@ -1089,6 +1115,61 @@ Respond conversationally but efficiently, like ChatGPT would.`;
 
       if (mimeType === "text/plain" || mimeType === "text/csv") {
         extractedText = fileData.toString("utf-8").slice(0, 10000);
+      }
+
+      if (mimeType === "application/pdf") {
+        try {
+          const pdfData = await pdfParse(fileData);
+          const pdfText = pdfData.text.slice(0, 15000);
+          
+          if (pdfText.trim().length > 50) {
+            const pdfAnalysisResponse = await openai.chat.completions.create({
+              model: "gpt-4.1-mini",
+              max_completion_tokens: 1024,
+              messages: [
+                {
+                  role: "system",
+                  content: `Sei un assistente specializzato nell'analisi di documenti PDF per un'app familiare. Analizza il testo estratto e restituisci SOLO un JSON valido con questa struttura:
+{
+  "type": "invoice|school_document|bill|contract|receipt|generic_document",
+  "data": {
+    "title": "titolo o descrizione del documento",
+    "amount": numero o null (se presente un importo),
+    "date": "YYYY-MM-DD" o null (data principale del documento),
+    "dueDate": "YYYY-MM-DD" o null (scadenza se presente),
+    "category": "utilities|education|health|transport|insurance|finance|legal|other",
+    "vendor": "nome ente/azienda emittente",
+    "summary": "breve riassunto del contenuto (max 100 parole)",
+    "keyPoints": ["punto chiave 1", "punto chiave 2"],
+    "notes": "note aggiuntive rilevanti"
+  },
+  "suggestedActions": ["create_expense", "create_event", "create_task", "create_note"]
+}
+
+Analizza bollette, fatture, contratti, documenti scolastici, certificati, comunicazioni ufficiali. Estrai date importanti, importi, scadenze. Suggerisci azioni appropriate come creare spese, eventi calendario per scadenze, task per azioni da fare.`
+                },
+                {
+                  role: "user",
+                  content: `Analizza questo documento PDF:\n\n${pdfText}`
+                }
+              ],
+            });
+
+            const pdfAnalysisContent = pdfAnalysisResponse.choices[0]?.message?.content || "";
+            const jsonMatch = pdfAnalysisContent.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+              analysisResult = JSON.parse(jsonMatch[0]);
+              extractedText = JSON.stringify(analysisResult, null, 2);
+            } else {
+              extractedText = pdfText;
+            }
+          } else {
+            extractedText = "PDF senza testo leggibile. Potrebbe essere un documento scansionato.";
+          }
+        } catch (pdfError) {
+          console.error("PDF parsing error:", pdfError);
+          extractedText = "Errore nella lettura del PDF.";
+        }
       }
 
       if (mimeType.startsWith("image/")) {
