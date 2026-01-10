@@ -346,9 +346,22 @@ export default function ProfileScreen() {
 
         <View style={[styles.divider, { backgroundColor: colors.backgroundSecondary }]} />
 
-        <ThemedText style={[styles.membersTitle, { color: colors.textSecondary }]}>
-          {t.profile.familyMembers} ({members.length})
-        </ThemedText>
+        <View style={styles.membersHeader}>
+          <ThemedText style={[styles.membersTitle, { color: colors.textSecondary }]}>
+            {t.profile.familyMembers} ({members.length})
+          </ThemedText>
+          {user.role === "admin" ? (
+            <Pressable
+              onPress={() => navigation.navigate("FamilyMembers" as never)}
+              hitSlop={8}
+              testID="button-manage-members"
+            >
+              <ThemedText style={[styles.manageMembersLink, { color: colors.primary }]}>
+                {language === "it" ? "Gestisci" : "Manage"}
+              </ThemedText>
+            </Pressable>
+          ) : null}
+        </View>
 
         {members.length > 0 ? (
           <View style={styles.membersList}>
@@ -808,10 +821,19 @@ const styles = StyleSheet.create({
     ...Typography.body,
     fontWeight: "500",
   },
-  membersTitle: {
-    ...Typography.caption,
+  membersHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginTop: Spacing.sm,
     marginBottom: Spacing.md,
+  },
+  membersTitle: {
+    ...Typography.caption,
+  },
+  manageMembersLink: {
+    ...Typography.caption,
+    fontWeight: "600",
   },
   membersList: {
     gap: Spacing.sm,
