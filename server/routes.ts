@@ -661,6 +661,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/family/invite/accept", authMiddleware, async (req: AuthRequest, res: Response) => {
+    try {
+      const { code } = req.body;
+
+      if (!code) {
+        return res.status(400).json({ error: "Invite code required" });
+      }
+
+      const invite = await storage.getInviteByCode(code);
+      if (!invite) {
+        return res.status(404).json({ error: "Invalid or expired invite code" });
+      }
+
+      if (invite.expiresAt < new Date()) {
+        return res.status(410).json({ error: "Invite code has expired" });
+      }
+
+      if (invite.acceptedAt) {
+        return res.status(410).json({ error: "Invite code has already been used" });
+      }
+
+      const user = await storage.getUser(req.auth!.userId);
+      if (!user) {
+        return res.status(401).json({ error: "User not found" });
+      }
+
+      await storage.updateUser(user.id, {
+        familyId: invite.familyId,
+        role: invite.role,
+        canViewCalendar: invite.canViewCalendar,
+        canViewTasks: invite.canViewTasks,
+        canViewShopping: invite.canViewShopping,
+        canViewBudget: invite.canViewBudget,
+        canViewPlaces: invite.canViewPlaces,
+        canModifyItems: invite.canModifyItems,
+      });
+
+      await storage.acceptInvite(invite.id, user.id);
+
+      await storage.deleteSessionsByUser(user.id);
+
+      const updatedUser = await storage.getUser(user.id);
+      const tokenData = await issueTokens(updatedUser!.id, updatedUser!.familyId, updatedUser!.role);
+
+      res.json({
+        ...tokenData,
+        user: {
+          id: updatedUser!.id,
+          username: updatedUser!.username,
+          displayName: updatedUser!.displayName,
+          familyId: updatedUser!.familyId,
+          role: updatedUser!.role,
+          permissions: extractPermissions(updatedUser!),
+        },
+      });
+    } catch (error) {
+      console.error("Accept invite error:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   app.delete("/api/family/members/:memberId", authMiddleware, requireRoles("admin"), async (req: AuthRequest, res: Response) => {
     try {
       const { memberId } = req.params;

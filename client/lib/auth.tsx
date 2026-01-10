@@ -47,6 +47,7 @@ interface AuthContextType {
   register: (username: string, password: string, displayName?: string, familyName?: string) => Promise<void>;
   guestLogin: () => Promise<void>;
   joinFamily: (code: string, username: string, password: string, displayName?: string) => Promise<void>;
+  acceptInvite: (code: string) => Promise<void>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
 }
@@ -274,6 +275,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await saveAuthData(data.accessToken, data.refreshToken, data.user, data.expiresIn);
   };
 
+  const acceptInvite = async (code: string) => {
+    const currentToken = token;
+    if (!currentToken) {
+      throw new Error("Not authenticated");
+    }
+
+    const baseUrl = getApiUrl();
+    const res = await fetch(new URL("/api/family/invite/accept", baseUrl).href, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${currentToken}`,
+      },
+      body: JSON.stringify({ code }),
+    });
+
+    if (!res.ok) {
+      const data = await res.json();
+      throw new Error(data.error || "Failed to accept invite");
+    }
+
+    const data = await res.json();
+    await saveAuthData(data.accessToken, data.refreshToken, data.user, data.expiresIn);
+  };
+
   const logout = async () => {
     const currentToken = token;
     const refreshToken = await AsyncStorage.getItem(REFRESH_TOKEN_KEY);
@@ -308,6 +334,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         register,
         guestLogin,
         joinFamily,
+        acceptInvite,
         logout,
         refreshUser,
       }}

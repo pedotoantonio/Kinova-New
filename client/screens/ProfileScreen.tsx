@@ -357,7 +357,7 @@ export default function ProfileScreen() {
               testID="button-manage-members"
             >
               <ThemedText style={[styles.manageMembersLink, { color: colors.primary }]}>
-                {language === "it" ? "Gestisci" : "Manage"}
+                {t.family.manageMembers}
               </ThemedText>
             </Pressable>
           ) : null}
@@ -409,6 +409,18 @@ export default function ProfileScreen() {
             </Pressable>
           </>
         ) : null}
+
+        <View style={[styles.divider, { backgroundColor: colors.backgroundSecondary }]} />
+        <Pressable
+          style={[styles.scanQRButton, { borderColor: colors.primary }]}
+          onPress={() => navigation.navigate("QRScanner" as never)}
+          testID="button-scan-qr"
+        >
+          <Feather name="camera" size={18} color={colors.primary} />
+          <ThemedText style={[styles.scanQRButtonText, { color: colors.primary }]}>
+            {t.family.scanQRToJoin}
+          </ThemedText>
+        </Pressable>
       </Card>
 
       <Pressable
@@ -880,6 +892,20 @@ const styles = StyleSheet.create({
     marginTop: Spacing.md,
   },
   inviteButtonText: {
+    ...Typography.body,
+    fontWeight: "600",
+  },
+  scanQRButton: {
+    flexDirection: "row",
+    height: Spacing.buttonHeight,
+    borderRadius: BorderRadius.sm,
+    borderWidth: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    gap: Spacing.sm,
+    marginTop: Spacing.md,
+  },
+  scanQRButtonText: {
     ...Typography.body,
     fontWeight: "600",
   },
