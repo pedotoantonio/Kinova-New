@@ -412,6 +412,7 @@ export function registerAssistantRoutes(app: Express, authMiddleware: (req: Auth
   });
 
   app.post("/api/assistant/chat", authMiddleware, async (req: AuthRequest, res: Response) => {
+    const startTime = Date.now();
     try {
       const { conversationId, content, attachments, language = "it" } = req.body;
 
@@ -460,11 +461,13 @@ export function registerAssistantRoutes(app: Express, authMiddleware: (req: Auth
       });
 
       let fullResponse = "";
+      let totalTokens = 0;
 
       for await (const chunk of stream) {
         const delta = chunk.choices[0]?.delta?.content || "";
         if (delta) {
           fullResponse += delta;
+          totalTokens += 1;
           res.write(`data: ${JSON.stringify({ content: delta })}\n\n`);
         }
       }
@@ -482,10 +485,29 @@ export function registerAssistantRoutes(app: Express, authMiddleware: (req: Auth
       }
 
       const proposedAction = extractProposedAction(fullResponse);
+      const responseTimeMs = Date.now() - startTime;
+      
+      await storage.createAiUsageLog({
+        userId: req.auth!.userId,
+        familyId: req.auth!.familyId,
+        requestType: proposedAction ? `chat_with_action:${proposedAction.type}` : "chat",
+        tokensUsed: Math.round(fullResponse.length / 4),
+        responseTimeMs,
+      });
+
       res.write(`data: ${JSON.stringify({ done: true, proposedAction })}\n\n`);
       res.end();
     } catch (error) {
       console.error("Chat error:", error);
+      const responseTimeMs = Date.now() - startTime;
+      try {
+        await storage.createAiUsageLog({
+          userId: req.auth!.userId,
+          familyId: req.auth!.familyId,
+          requestType: "chat_error",
+          responseTimeMs,
+        });
+      } catch {}
       if (res.headersSent) {
         res.write(`data: ${JSON.stringify({ error: "Errore durante la risposta" })}\n\n`);
         res.end();
@@ -782,6 +804,14 @@ export function registerAssistantRoutes(app: Express, authMiddleware: (req: Auth
       } catch (auditErr) {
         console.error("Audit log error:", auditErr);
       }
+
+      try {
+        await storage.createAiUsageLog({
+          userId: req.auth!.userId,
+          familyId: req.auth!.familyId,
+          requestType: `action_confirmed:${actionType}`,
+        });
+      } catch {}
 
       if (conversationId && result.success) {
         await storage.createAssistantMessage({

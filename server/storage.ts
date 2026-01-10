@@ -1401,6 +1401,26 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  async createAiUsageLog(data: { 
+    userId: string; 
+    familyId: string; 
+    requestType: string;
+    tokensUsed?: number;
+    responseTimeMs?: number;
+  }): Promise<DbAiUsageLog> {
+    const [log] = await db
+      .insert(aiUsageLogs)
+      .values({
+        userId: data.userId,
+        familyId: data.familyId,
+        requestType: data.requestType,
+        tokensUsed: data.tokensUsed || null,
+        responseTimeMs: data.responseTimeMs || null,
+      })
+      .returning();
+    return log;
+  }
+
   async getAdminAiLogs(options?: { limit?: number; offset?: number; familyId?: string }): Promise<{ data: DbAiUsageLog[]; total: number }> {
     const limit = options?.limit || 50;
     const offset = options?.offset || 0;

@@ -15,12 +15,14 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
+import { useRoute, RouteProp } from "@react-navigation/native";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
 import * as DocumentPicker from "expo-document-picker";
 import * as Clipboard from "expo-clipboard";
+import * as Linking from "expo-linking";
 import Animated, {
   FadeIn,
   FadeOut,
@@ -35,6 +37,14 @@ import { useI18n } from "@/lib/i18n";
 import { apiRequest, getApiUrl } from "@/lib/query-client";
 import { useAuth } from "@/lib/auth";
 import { useTheme } from "@/hooks/useTheme";
+
+type AssistantScreenParams = {
+  sharedContent?: {
+    type: "text" | "url" | "image" | "file";
+    text?: string;
+    url?: string;
+  };
+};
 
 interface Message {
   id: string;
@@ -88,12 +98,14 @@ const SUGGESTION_CHIPS = {
 export default function AssistantScreen() {
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
+  const route = useRoute<RouteProp<{ Assistant: AssistantScreenParams }, "Assistant">>();
   const { t, language } = useI18n();
   const { user } = useAuth();
   const { theme } = useTheme();
   const queryClient = useQueryClient();
   const flatListRef = useRef<FlatList>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const processedShareRef = useRef<string | null>(null);
 
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const [inputText, setInputText] = useState("");
@@ -107,8 +119,52 @@ export default function AssistantScreen() {
   const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
   const [lastUserMessage, setLastUserMessage] = useState<string>("");
   const [showCopiedToast, setShowCopiedToast] = useState(false);
+  const [sharedContentBanner, setSharedContentBanner] = useState<string | null>(null);
 
   const scrollButtonOpacity = useSharedValue(0);
+
+  useEffect(() => {
+    const sharedContent = route.params?.sharedContent;
+    if (sharedContent && sharedContent.text) {
+      const shareKey = `${sharedContent.type}:${sharedContent.text}:${sharedContent.url || ""}`;
+      if (processedShareRef.current !== shareKey) {
+        processedShareRef.current = shareKey;
+        const contentToProcess = sharedContent.url 
+          ? `${sharedContent.text}\n${sharedContent.url}`
+          : sharedContent.text;
+        setInputText(contentToProcess);
+        setSharedContentBanner(language === "it" ? "Contenuto ricevuto da un'altra app" : "Content received from another app");
+        setTimeout(() => setSharedContentBanner(null), 3000);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      }
+    }
+  }, [route.params?.sharedContent, language]);
+
+  useEffect(() => {
+    const handleDeepLink = (event: { url: string }) => {
+      try {
+        const { queryParams, path } = Linking.parse(event.url);
+        if (path === "share" || path?.startsWith("share")) {
+          let content = "";
+          if (queryParams?.text) content += String(queryParams.text);
+          if (queryParams?.url) content += (content ? "\n" : "") + String(queryParams.url);
+          if (content) {
+            setInputText(content);
+            setSharedContentBanner(language === "it" ? "Contenuto ricevuto" : "Content received");
+            setTimeout(() => setSharedContentBanner(null), 3000);
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          }
+        }
+      } catch {}
+    };
+
+    const subscription = Linking.addEventListener("url", handleDeepLink);
+    Linking.getInitialURL().then((url) => {
+      if (url) handleDeepLink({ url });
+    });
+
+    return () => subscription.remove();
+  }, [language]);
 
   const { data: activeConversation, refetch: refetchConversation } = useQuery<Conversation>({
     queryKey: ["/api/assistant/conversations", activeConversationId],
@@ -690,6 +746,13 @@ export default function AssistantScreen() {
         </Animated.View>
       ) : null}
 
+      {sharedContentBanner ? (
+        <Animated.View entering={FadeIn} exiting={FadeOut} style={[styles.shareBanner, { backgroundColor: theme.primary }]}>
+          <Feather name="share-2" size={16} color="#FFFFFF" />
+          <Text style={styles.shareBannerText}>{sharedContentBanner}</Text>
+        </Animated.View>
+      ) : null}
+
       {pendingAction ? renderActionConfirmation() : null}
 
       {attachments.length > 0 ? (
@@ -970,6 +1033,27 @@ const styles = StyleSheet.create({
   },
   toastText: {
     ...Typography.body,
+  },
+  shareBanner: {
+    position: "absolute",
+    top: 120,
+    alignSelf: "center",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.xs,
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+    borderRadius: BorderRadius.lg,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  shareBannerText: {
+    ...Typography.body,
+    color: "#FFFFFF",
+    fontWeight: "600" as const,
   },
   inputContainer: {
     position: "absolute",

@@ -10,7 +10,26 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.kinova.app"
+      "bundleIdentifier": "com.kinova.app",
+      "infoPlist": {
+        "CFBundleDocumentTypes": [
+          {
+            "CFBundleTypeName": "PDF Document",
+            "CFBundleTypeRole": "Viewer",
+            "LSHandlerRank": "Alternate",
+            "LSItemContentTypes": ["com.adobe.pdf"]
+          },
+          {
+            "CFBundleTypeName": "Images",
+            "CFBundleTypeRole": "Viewer",
+            "LSHandlerRank": "Alternate",
+            "LSItemContentTypes": ["public.image"]
+          }
+        ],
+        "UTExportedTypeDeclarations": [],
+        "NSPhotoLibraryUsageDescription": "Kinova needs access to your photo library to analyze receipts and documents.",
+        "NSCameraUsageDescription": "Kinova needs access to your camera to scan receipts and documents."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -21,7 +40,38 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.kinova.app"
+      "package": "com.kinova.app",
+      "intentFilters": [
+        {
+          "action": "android.intent.action.SEND",
+          "category": ["android.intent.category.DEFAULT"],
+          "data": [
+            { "mimeType": "text/plain" },
+            { "mimeType": "text/*" }
+          ]
+        },
+        {
+          "action": "android.intent.action.SEND",
+          "category": ["android.intent.category.DEFAULT"],
+          "data": [
+            { "mimeType": "image/*" }
+          ]
+        },
+        {
+          "action": "android.intent.action.SEND",
+          "category": ["android.intent.category.DEFAULT"],
+          "data": [
+            { "mimeType": "application/pdf" }
+          ]
+        },
+        {
+          "action": "android.intent.action.VIEW",
+          "category": ["android.intent.category.DEFAULT", "android.intent.category.BROWSABLE"],
+          "data": [
+            { "scheme": "kinova", "host": "share" }
+          ]
+        }
+      ]
     },
     "web": {
       "output": "single",
