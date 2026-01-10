@@ -9,6 +9,9 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  Modal,
+  ScrollView,
+  Dimensions,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
@@ -68,6 +71,7 @@ export default function NotesScreen() {
   const [isAddingNote, setIsAddingNote] = useState(false);
   const [newNoteTitle, setNewNoteTitle] = useState("");
   const [selectedColor, setSelectedColor] = useState<NoteColor>("default");
+  const [selectedNote, setSelectedNote] = useState<Note | null>(null);
 
   const colors = isDark ? Colors.dark : Colors.light;
 
@@ -167,8 +171,16 @@ export default function NotesScreen() {
   }, [t, deleteNoteMutation]);
 
   const handleNotePress = useCallback((note: Note) => {
-    navigation.navigate("NoteDetail", { noteId: note.id });
-  }, [navigation]);
+    setSelectedNote(note);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  }, []);
+
+  const handleEditNote = useCallback(() => {
+    if (selectedNote) {
+      setSelectedNote(null);
+      navigation.navigate("NoteDetail", { noteId: selectedNote.id });
+    }
+  }, [navigation, selectedNote]);
 
   const getRelatedTypeLabel = (type: NoteRelatedType | null | undefined): string => {
     if (!type) return "";
@@ -283,6 +295,93 @@ export default function NotesScreen() {
     </View>
   );
 
+  const renderNoteModal = () => {
+    if (!selectedNote) return null;
+    
+    return (
+      <Modal
+        visible={true}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setSelectedNote(null)}
+      >
+        <Pressable
+          style={styles.modalOverlay}
+          onPress={() => setSelectedNote(null)}
+        >
+          <Pressable
+            style={[
+              styles.modalContent,
+              { backgroundColor: theme.surface },
+            ]}
+            onPress={(e) => e.stopPropagation()}
+          >
+            <View style={styles.modalHeader}>
+              <View
+                style={[
+                  styles.modalColorBar,
+                  { backgroundColor: NOTE_COLORS[selectedNote.color] || NOTE_COLORS.default },
+                ]}
+              />
+              <View style={styles.modalHeaderActions}>
+                {selectedNote.pinned ? (
+                  <Feather name="star" size={20} color="#EAB308" />
+                ) : null}
+                <Pressable
+                  style={[styles.modalEditButton, { backgroundColor: theme.primary }]}
+                  onPress={handleEditNote}
+                >
+                  <Feather name="edit-2" size={16} color="#FFFFFF" />
+                  <ThemedText style={styles.modalEditButtonText}>
+                    {t.common.edit || "Modifica"}
+                  </ThemedText>
+                </Pressable>
+                <Pressable
+                  style={styles.modalCloseButton}
+                  onPress={() => setSelectedNote(null)}
+                >
+                  <Feather name="x" size={24} color={theme.text} />
+                </Pressable>
+              </View>
+            </View>
+            
+            <ScrollView
+              style={styles.modalScrollContent}
+              showsVerticalScrollIndicator={false}
+            >
+              <ThemedText style={[styles.modalTitle, { color: theme.text }]}>
+                {selectedNote.title}
+              </ThemedText>
+              
+              {selectedNote.content ? (
+                <ThemedText style={[styles.modalBody, { color: theme.textSecondary }]}>
+                  {selectedNote.content}
+                </ThemedText>
+              ) : (
+                <ThemedText style={[styles.modalEmptyContent, { color: theme.textSecondary }]}>
+                  {"Nessun contenuto"}
+                </ThemedText>
+              )}
+              
+              {selectedNote.relatedType ? (
+                <View style={[styles.modalRelatedBadge, { backgroundColor: theme.backgroundDefault }]}>
+                  <Feather
+                    name={FILTER_ICONS[selectedNote.relatedType] as any}
+                    size={14}
+                    color={theme.textSecondary}
+                  />
+                  <ThemedText style={[styles.modalRelatedText, { color: theme.textSecondary }]}>
+                    {getRelatedTypeLabel(selectedNote.relatedType)}
+                  </ThemedText>
+                </View>
+              ) : null}
+            </ScrollView>
+          </Pressable>
+        </Pressable>
+      </Modal>
+    );
+  };
+
   if (!isAuthenticated) {
     return (
       <ThemedView style={[styles.container, { paddingTop: headerHeight + Spacing.xl }]}>
@@ -375,7 +474,7 @@ export default function NotesScreen() {
             exiting={FadeOutUp.duration(200)}
             style={[
               styles.addNoteContainer,
-              { backgroundColor: theme.background, bottom: tabBarHeight + Spacing.md },
+              { backgroundColor: theme.backgroundDefault, bottom: tabBarHeight + Spacing.md },
             ]}
           >
             <View style={[styles.addNoteCard, { backgroundColor: theme.surface }]}>
@@ -431,6 +530,8 @@ export default function NotesScreen() {
             <Feather name="plus" size={24} color="#FFFFFF" />
           </Pressable>
         ) : null}
+        
+        {renderNoteModal()}
       </ThemedView>
     </KeyboardAvoidingView>
   );
@@ -611,5 +712,85 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.sm,
     borderRadius: BorderRadius.md,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: Spacing.lg,
+  },
+  modalContent: {
+    width: "100%",
+    maxWidth: 400,
+    maxHeight: Dimensions.get("window").height * 0.75,
+    borderRadius: BorderRadius.xl,
+    overflow: "hidden",
+  },
+  modalHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: Spacing.md,
+    paddingLeft: 0,
+  },
+  modalColorBar: {
+    width: 6,
+    height: 40,
+    borderTopRightRadius: 3,
+    borderBottomRightRadius: 3,
+  },
+  modalHeaderActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+  },
+  modalEditButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.md,
+    gap: Spacing.xs,
+  },
+  modalEditButtonText: {
+    ...Typography.small,
+    color: "#FFFFFF",
+    fontWeight: "600",
+  },
+  modalCloseButton: {
+    padding: Spacing.sm,
+  },
+  modalScrollContent: {
+    paddingHorizontal: Spacing.lg,
+    paddingBottom: Spacing.xl,
+  },
+  modalTitle: {
+    fontSize: 24,
+    fontWeight: "700",
+    marginBottom: Spacing.md,
+  },
+  modalBody: {
+    fontSize: 18,
+    lineHeight: 28,
+    marginBottom: Spacing.lg,
+  },
+  modalEmptyContent: {
+    fontSize: 16,
+    fontStyle: "italic",
+    marginBottom: Spacing.lg,
+  },
+  modalRelatedBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-start",
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.md,
+    gap: Spacing.sm,
+    marginBottom: Spacing.lg,
+  },
+  modalRelatedText: {
+    ...Typography.small,
   },
 });
