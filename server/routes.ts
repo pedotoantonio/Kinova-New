@@ -5,6 +5,17 @@ import { randomUUID, randomBytes, scryptSync, timingSafeEqual } from "crypto";
 import type { UserRole } from "@shared/schema";
 import { createNotification, createFamilyNotification, deleteNotificationsForEntity } from "./notification-service";
 import { extractPermissions, getDefaultPermissionsForRole } from "./permissions";
+import {
+  validatePassword,
+  validateEmail,
+  hashPassword,
+  verifyPassword,
+  generateSecureToken,
+  RATE_LIMIT_MAX_ATTEMPTS,
+  RATE_LIMIT_WINDOW_MINUTES,
+  EMAIL_VERIFICATION_EXPIRY_HOURS,
+  PASSWORD_RESET_EXPIRY_MINUTES,
+} from "./auth-utils";
 
 const ACCESS_TOKEN_EXPIRY_MS = 15 * 60 * 1000;
 const REFRESH_TOKEN_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000;
@@ -12,21 +23,6 @@ const INVITE_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000;
 
 function createToken(): string {
   return randomBytes(32).toString("base64url");
-}
-
-function hashPassword(password: string): string {
-  const salt = randomBytes(16).toString("hex");
-  const hash = scryptSync(password, salt, 64).toString("hex");
-  return `${salt}:${hash}`;
-}
-
-function verifyPassword(password: string, stored: string): boolean {
-  if (stored.includes(":")) {
-    const [salt, hash] = stored.split(":");
-    const testHash = scryptSync(password, salt, 64).toString("hex");
-    return timingSafeEqual(Buffer.from(hash), Buffer.from(testHash));
-  }
-  return Buffer.from(password).toString("base64") === stored;
 }
 
 function generateInviteCode(): string {
@@ -188,58 +184,109 @@ function requireRoles(...allowedRoles: UserRole[]) {
 export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/auth/register", async (req: Request, res: Response) => {
     try {
-      const { username, password, displayName, familyName } = req.body;
+      const { email, password, displayName, familyName, acceptTerms } = req.body;
 
-      if (!username || !password) {
-        return res.status(400).json({ error: "Username and password required" });
+      if (!email || !password) {
+        return res.status(400).json({ error: { code: "MISSING_FIELDS", message: "Email and password required" } });
       }
 
-      const existingUser = await storage.getUserByUsername(username);
+      if (!acceptTerms) {
+        return res.status(400).json({ error: { code: "TERMS_NOT_ACCEPTED", message: "You must accept the terms and privacy policy" } });
+      }
+
+      if (!validateEmail(email)) {
+        return res.status(400).json({ error: { code: "INVALID_EMAIL", message: "Invalid email format" } });
+      }
+
+      const passwordValidation = validatePassword(password);
+      if (!passwordValidation.valid) {
+        return res.status(400).json({ 
+          error: { 
+            code: "WEAK_PASSWORD", 
+            message: "Password does not meet requirements",
+            details: passwordValidation.errors,
+            strength: passwordValidation.strength
+          } 
+        });
+      }
+
+      const existingUser = await storage.getUserByEmail(email);
       if (existingUser) {
-        return res.status(409).json({ error: "Username already exists" });
+        return res.status(409).json({ error: { code: "EMAIL_EXISTS", message: "An account with this email already exists" } });
       }
 
-      const family = await storage.createFamily({ name: familyName || `${username}'s Family` });
+      const emailVerificationToken = generateSecureToken();
+      const emailVerificationExpires = new Date(Date.now() + EMAIL_VERIFICATION_EXPIRY_HOURS * 60 * 60 * 1000);
+
+      const username = email.split("@")[0] + "_" + randomBytes(4).toString("hex");
+      const family = await storage.createFamily({ name: familyName || `${displayName || email.split("@")[0]}'s Family` });
 
       const user = await storage.createUser({
+        email,
         username,
         password: hashPassword(password),
-        displayName: displayName || username,
+        displayName: displayName || email.split("@")[0],
         familyId: family.id,
         role: "admin",
+        emailVerificationToken,
+        emailVerificationExpires,
       });
 
       const tokenData = await issueTokens(user.id, user.familyId, user.role);
+
+      console.log(`[EMAIL VERIFICATION] Token for ${email}: ${emailVerificationToken}`);
 
       res.status(201).json({
         ...tokenData,
         user: {
           id: user.id,
+          email: user.email,
           username: user.username,
           displayName: user.displayName,
           familyId: user.familyId,
           role: user.role,
+          emailVerified: user.emailVerified,
           permissions: extractPermissions(user),
         },
+        requiresEmailVerification: true,
       });
     } catch (error) {
       console.error("Register error:", error);
-      res.status(500).json({ error: "Internal server error" });
+      res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Internal server error" } });
     }
   });
 
   app.post("/api/auth/login", async (req: Request, res: Response) => {
     try {
-      const { username, password } = req.body;
+      const { email, password } = req.body;
+      const ipAddress = req.ip || req.socket.remoteAddress || null;
 
-      if (!username || !password) {
-        return res.status(400).json({ error: "Username and password required" });
+      if (!email || !password) {
+        return res.status(400).json({ error: { code: "MISSING_FIELDS", message: "Email and password required" } });
       }
 
-      const user = await storage.getUserByUsername(username);
+      const recentAttempts = await storage.getRecentLoginAttempts(email, RATE_LIMIT_WINDOW_MINUTES);
+      if (recentAttempts.length >= RATE_LIMIT_MAX_ATTEMPTS) {
+        const oldestAttempt = recentAttempts[recentAttempts.length - 1];
+        const resetTime = new Date(oldestAttempt.createdAt.getTime() + RATE_LIMIT_WINDOW_MINUTES * 60 * 1000);
+        const minutesLeft = Math.ceil((resetTime.getTime() - Date.now()) / 60000);
+        
+        return res.status(429).json({ 
+          error: { 
+            code: "RATE_LIMITED", 
+            message: "Too many login attempts. Please try again later.",
+            retryAfterMinutes: minutesLeft
+          } 
+        });
+      }
+
+      const user = await storage.getUserByEmail(email);
       if (!user || !verifyPassword(password, user.password)) {
-        return res.status(401).json({ error: "Invalid credentials" });
+        await storage.recordLoginAttempt(email, ipAddress, false);
+        return res.status(401).json({ error: { code: "INVALID_CREDENTIALS", message: "Invalid credentials" } });
       }
+
+      await storage.recordLoginAttempt(email, ipAddress, true);
 
       const tokenData = await issueTokens(user.id, user.familyId, user.role);
 
@@ -247,51 +294,176 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...tokenData,
         user: {
           id: user.id,
+          email: user.email,
           username: user.username,
           displayName: user.displayName,
           familyId: user.familyId,
           role: user.role,
+          emailVerified: user.emailVerified,
           permissions: extractPermissions(user),
         },
       });
     } catch (error) {
       console.error("Login error:", error);
-      res.status(500).json({ error: "Internal server error" });
+      res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Internal server error" } });
     }
   });
 
-  app.post("/api/auth/guest", async (req: Request, res: Response) => {
+  app.post("/api/auth/verify-email", async (req: Request, res: Response) => {
     try {
-      const guestId = randomUUID().slice(0, 8);
-      const username = `guest_${guestId}`;
+      const { token } = req.body;
 
-      const family = await storage.createFamily({ name: `Guest Family ${guestId}` });
+      if (!token) {
+        return res.status(400).json({ error: { code: "MISSING_TOKEN", message: "Verification token required" } });
+      }
 
-      const user = await storage.createUser({
-        username,
-        password: hashPassword(guestId),
-        displayName: `Guest ${guestId}`,
-        familyId: family.id,
-        role: "admin",
+      const user = await storage.getUserByEmailVerificationToken(token);
+      if (!user) {
+        return res.status(400).json({ error: { code: "INVALID_TOKEN", message: "Invalid or expired verification token" } });
+      }
+
+      if (user.emailVerificationExpires && new Date(user.emailVerificationExpires) < new Date()) {
+        return res.status(400).json({ error: { code: "TOKEN_EXPIRED", message: "Verification token has expired" } });
+      }
+
+      await storage.updateUser(user.id, {
+        emailVerified: true,
+        emailVerificationToken: null,
+        emailVerificationExpires: null,
       });
 
-      const tokenData = await issueTokens(user.id, user.familyId, user.role);
-
-      res.status(201).json({
-        ...tokenData,
-        user: {
-          id: user.id,
-          username: user.username,
-          displayName: user.displayName,
-          familyId: user.familyId,
-          role: user.role,
-          permissions: extractPermissions(user),
-        },
-      });
+      res.json({ success: true, message: "Email verified successfully" });
     } catch (error) {
-      console.error("Guest login error:", error);
-      res.status(500).json({ error: "Internal server error" });
+      console.error("Email verification error:", error);
+      res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Internal server error" } });
     }
+  });
+
+  app.post("/api/auth/resend-verification", authMiddleware, async (req: AuthRequest, res: Response) => {
+    try {
+      const user = await storage.getUser(req.auth!.userId);
+      if (!user) {
+        return res.status(404).json({ error: { code: "USER_NOT_FOUND", message: "User not found" } });
+      }
+
+      if (user.emailVerified) {
+        return res.status(400).json({ error: { code: "ALREADY_VERIFIED", message: "Email is already verified" } });
+      }
+
+      const emailVerificationToken = generateSecureToken();
+      const emailVerificationExpires = new Date(Date.now() + EMAIL_VERIFICATION_EXPIRY_HOURS * 60 * 60 * 1000);
+
+      await storage.updateUser(user.id, {
+        emailVerificationToken,
+        emailVerificationExpires,
+      });
+
+      console.log(`[EMAIL VERIFICATION] New token for ${user.email}: ${emailVerificationToken}`);
+
+      res.json({ success: true, message: "Verification email sent" });
+    } catch (error) {
+      console.error("Resend verification error:", error);
+      res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Internal server error" } });
+    }
+  });
+
+  app.post("/api/auth/forgot-password", async (req: Request, res: Response) => {
+    try {
+      const { email } = req.body;
+
+      if (!email) {
+        return res.status(400).json({ error: { code: "MISSING_EMAIL", message: "Email required" } });
+      }
+
+      const user = await storage.getUserByEmail(email);
+      
+      if (user) {
+        const passwordResetToken = generateSecureToken();
+        const passwordResetExpires = new Date(Date.now() + PASSWORD_RESET_EXPIRY_MINUTES * 60 * 1000);
+
+        await storage.updateUser(user.id, {
+          passwordResetToken,
+          passwordResetExpires,
+        });
+
+        console.log(`[PASSWORD RESET] Token for ${email}: ${passwordResetToken}`);
+      }
+
+      res.json({ success: true, message: "If an account exists with this email, a password reset link has been sent" });
+    } catch (error) {
+      console.error("Forgot password error:", error);
+      res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Internal server error" } });
+    }
+  });
+
+  app.post("/api/auth/reset-password", async (req: Request, res: Response) => {
+    try {
+      const { token, password } = req.body;
+
+      if (!token || !password) {
+        return res.status(400).json({ error: { code: "MISSING_FIELDS", message: "Token and new password required" } });
+      }
+
+      const passwordValidation = validatePassword(password);
+      if (!passwordValidation.valid) {
+        return res.status(400).json({ 
+          error: { 
+            code: "WEAK_PASSWORD", 
+            message: "Password does not meet requirements",
+            details: passwordValidation.errors,
+            strength: passwordValidation.strength
+          } 
+        });
+      }
+
+      const user = await storage.getUserByPasswordResetToken(token);
+      if (!user) {
+        return res.status(400).json({ error: { code: "INVALID_TOKEN", message: "Invalid or expired reset token" } });
+      }
+
+      if (user.passwordResetExpires && new Date(user.passwordResetExpires) < new Date()) {
+        return res.status(400).json({ error: { code: "TOKEN_EXPIRED", message: "Reset token has expired" } });
+      }
+
+      await storage.deleteSessionsByUser(user.id);
+
+      await storage.updateUser(user.id, {
+        password: hashPassword(password),
+        passwordResetToken: null,
+        passwordResetExpires: null,
+      });
+
+      res.json({ success: true, message: "Password reset successfully" });
+    } catch (error) {
+      console.error("Reset password error:", error);
+      res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Internal server error" } });
+    }
+  });
+
+  app.post("/api/auth/logout-all", authMiddleware, async (req: AuthRequest, res: Response) => {
+    try {
+      await storage.deleteSessionsByUser(req.auth!.userId);
+      res.json({ success: true, message: "Logged out from all devices" });
+    } catch (error) {
+      console.error("Logout all error:", error);
+      res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Internal server error" } });
+    }
+  });
+
+  app.get("/api/auth/password-policy", async (req: Request, res: Response) => {
+    res.json({
+      minLength: 8,
+      requirements: ["uppercase", "lowercase", "number", "symbol"],
+    });
+  });
+
+  app.post("/api/auth/validate-password", async (req: Request, res: Response) => {
+    const { password } = req.body;
+    if (!password) {
+      return res.status(400).json({ error: { code: "MISSING_PASSWORD", message: "Password required" } });
+    }
+    const result = validatePassword(password);
+    res.json(result);
   });
 
   app.post("/api/auth/refresh", async (req: Request, res: Response) => {
@@ -330,16 +502,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...newTokens,
         user: {
           id: user.id,
+          email: user.email,
           username: user.username,
           displayName: user.displayName,
           familyId: user.familyId,
           role: user.role,
+          emailVerified: user.emailVerified,
           permissions: extractPermissions(user),
         },
       });
     } catch (error) {
       console.error("Refresh error:", error);
-      res.status(500).json({ error: "Internal server error" });
+      res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Internal server error" } });
     }
   });
 
@@ -367,21 +541,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const user = await storage.getUser(req.auth!.userId);
       if (!user) {
-        return res.status(401).json({ error: "User not found" });
+        return res.status(401).json({ error: { code: "USER_NOT_FOUND", message: "User not found" } });
       }
 
       res.json({
         id: user.id,
+        email: user.email,
         username: user.username,
         displayName: user.displayName,
         familyId: user.familyId,
         role: user.role,
         avatarUrl: user.avatarUrl,
+        emailVerified: user.emailVerified,
         permissions: extractPermissions(user),
       });
     } catch (error) {
       console.error("Get me error:", error);
-      res.status(500).json({ error: "Internal server error" });
+      res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Internal server error" } });
     }
   });
 
@@ -598,38 +774,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/family/join", async (req: Request, res: Response) => {
     try {
-      const { code, username, password, displayName } = req.body;
+      const { code, email, password, displayName, acceptTerms } = req.body;
 
       if (!code) {
-        return res.status(400).json({ error: "Invite code required" });
+        return res.status(400).json({ error: { code: "MISSING_CODE", message: "Invite code required" } });
       }
 
       const invite = await storage.getInviteByCode(code);
       if (!invite) {
-        return res.status(404).json({ error: "Invalid or expired invite code" });
+        return res.status(404).json({ error: { code: "INVALID_CODE", message: "Invalid or expired invite code" } });
       }
 
       if (invite.expiresAt < new Date()) {
-        return res.status(410).json({ error: "Invite code has expired" });
+        return res.status(410).json({ error: { code: "CODE_EXPIRED", message: "Invite code has expired" } });
       }
 
       if (invite.acceptedAt) {
-        return res.status(410).json({ error: "Invite code has already been used" });
+        return res.status(410).json({ error: { code: "CODE_USED", message: "Invite code has already been used" } });
       }
 
-      if (!username || !password) {
-        return res.status(400).json({ error: "Username and password required" });
+      if (!email || !password) {
+        return res.status(400).json({ error: { code: "MISSING_FIELDS", message: "Email and password required" } });
       }
 
-      const existingUser = await storage.getUserByUsername(username);
+      if (!acceptTerms) {
+        return res.status(400).json({ error: { code: "TERMS_NOT_ACCEPTED", message: "You must accept the terms and privacy policy" } });
+      }
+
+      if (!validateEmail(email)) {
+        return res.status(400).json({ error: { code: "INVALID_EMAIL", message: "Invalid email format" } });
+      }
+
+      const passwordValidation = validatePassword(password);
+      if (!passwordValidation.valid) {
+        return res.status(400).json({ 
+          error: { 
+            code: "WEAK_PASSWORD", 
+            message: "Password does not meet requirements",
+            details: passwordValidation.errors,
+            strength: passwordValidation.strength
+          } 
+        });
+      }
+
+      const existingUser = await storage.getUserByEmail(email);
       if (existingUser) {
-        return res.status(409).json({ error: "Username already exists" });
+        return res.status(409).json({ error: { code: "EMAIL_EXISTS", message: "An account with this email already exists" } });
       }
+
+      const username = email.split("@")[0] + "_" + randomBytes(4).toString("hex");
 
       const user = await storage.createUserWithPermissions({
+        email,
         username,
         password: hashPassword(password),
-        displayName: invite.displayName || displayName || username,
+        displayName: invite.displayName || displayName || email.split("@")[0],
         familyId: invite.familyId,
         role: invite.role,
         canViewCalendar: invite.canViewCalendar,
@@ -648,16 +847,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...tokenData,
         user: {
           id: user.id,
+          email: user.email,
           username: user.username,
           displayName: user.displayName,
           familyId: user.familyId,
           role: user.role,
+          emailVerified: user.emailVerified,
           permissions: extractPermissions(user),
         },
       });
     } catch (error) {
       console.error("Join family error:", error);
-      res.status(500).json({ error: "Internal server error" });
+      res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Internal server error" } });
     }
   });
 

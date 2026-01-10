@@ -20,6 +20,7 @@ import {
   type DbNotification,
   type DbNotificationSettings,
   type DbPushToken,
+  type DbLoginAttempt,
   type NotificationType,
   type NotificationCategory,
   type EventCategory,
@@ -39,7 +40,8 @@ import {
   auditLogs,
   notifications,
   notificationSettings,
-  pushTokens
+  pushTokens,
+  loginAttempts
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, isNull, gt, gte, lte, desc, lt, or } from "drizzle-orm";
@@ -48,9 +50,14 @@ import { getDefaultPermissionsForRole } from "./permissions";
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
-  createUser(user: InsertUser & { familyId: string; role?: UserRole }): Promise<User>;
+  getUserByEmail(email: string): Promise<User | undefined>;
+  getUserByEmailVerificationToken(token: string): Promise<User | undefined>;
+  getUserByPasswordResetToken(token: string): Promise<User | undefined>;
+  createUser(user: InsertUser & { familyId: string; role?: UserRole; email: string }): Promise<User>;
   updateUser(id: string, data: Partial<User>): Promise<User | undefined>;
   deleteUser(id: string): Promise<boolean>;
+  recordLoginAttempt(email: string, ipAddress: string | null, success: boolean): Promise<DbLoginAttempt>;
+  getRecentLoginAttempts(email: string, minutes: number): Promise<DbLoginAttempt[]>;
   getFamily(id: string): Promise<Family | undefined>;
   createFamily(family: InsertFamily): Promise<Family>;
   updateFamily(id: string, data: Partial<Family>): Promise<Family | undefined>;
@@ -113,18 +120,37 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  async createUser(insertUser: InsertUser & { familyId: string; role?: UserRole }): Promise<User> {
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.email, email.toLowerCase()));
+    return user;
+  }
+
+  async getUserByEmailVerificationToken(token: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.emailVerificationToken, token));
+    return user;
+  }
+
+  async getUserByPasswordResetToken(token: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.passwordResetToken, token));
+    return user;
+  }
+
+  async createUser(insertUser: InsertUser & { familyId: string; role?: UserRole; email: string; emailVerificationToken?: string; emailVerificationExpires?: Date }): Promise<User> {
     const role = insertUser.role || "member";
     const permissions = getDefaultPermissionsForRole(role);
     
     const [user] = await db
       .insert(users)
       .values({
+        email: insertUser.email.toLowerCase(),
         username: insertUser.username,
         password: insertUser.password,
         displayName: insertUser.displayName || insertUser.username,
         familyId: insertUser.familyId,
         role,
+        emailVerified: false,
+        emailVerificationToken: insertUser.emailVerificationToken,
+        emailVerificationExpires: insertUser.emailVerificationExpires,
         canViewCalendar: permissions.canViewCalendar,
         canViewTasks: permissions.canViewTasks,
         canViewShopping: permissions.canViewShopping,
@@ -136,7 +162,35 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
+  async recordLoginAttempt(email: string, ipAddress: string | null, success: boolean): Promise<DbLoginAttempt> {
+    const [attempt] = await db
+      .insert(loginAttempts)
+      .values({
+        email: email.toLowerCase(),
+        ipAddress,
+        success,
+      })
+      .returning();
+    return attempt;
+  }
+
+  async getRecentLoginAttempts(email: string, minutes: number): Promise<DbLoginAttempt[]> {
+    const cutoff = new Date(Date.now() - minutes * 60 * 1000);
+    const attempts = await db
+      .select()
+      .from(loginAttempts)
+      .where(
+        and(
+          eq(loginAttempts.email, email.toLowerCase()),
+          gt(loginAttempts.createdAt, cutoff),
+          eq(loginAttempts.success, false)
+        )
+      );
+    return attempts;
+  }
+
   async createUserWithPermissions(data: {
+    email: string;
     username: string;
     password: string;
     displayName?: string;
@@ -155,6 +209,7 @@ export class DatabaseStorage implements IStorage {
     const [user] = await db
       .insert(users)
       .values({
+        email: data.email.toLowerCase(),
         username: data.username,
         password: data.password,
         displayName: data.displayName || data.username,
@@ -163,6 +218,7 @@ export class DatabaseStorage implements IStorage {
         birthDate: data.birthDate,
         familyId: data.familyId,
         role: data.role,
+        emailVerified: false,
         canViewCalendar: data.canViewCalendar,
         canViewTasks: data.canViewTasks,
         canViewShopping: data.canViewShopping,

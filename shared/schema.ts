@@ -57,6 +57,7 @@ export const users = pgTable("users", {
   id: varchar("id")
     .primaryKey()
     .default(sql`gen_random_uuid()`),
+  email: text("email").notNull().unique(),
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
   firstName: text("first_name"),
@@ -66,6 +67,11 @@ export const users = pgTable("users", {
   avatarUrl: text("avatar_url"),
   role: userRoleEnum("role").default("member").notNull(),
   familyId: varchar("family_id").references(() => families.id).notNull(),
+  emailVerified: boolean("email_verified").default(false).notNull(),
+  emailVerificationToken: text("email_verification_token"),
+  emailVerificationExpires: timestamp("email_verification_expires"),
+  passwordResetToken: text("password_reset_token"),
+  passwordResetExpires: timestamp("password_reset_expires"),
   canViewCalendar: boolean("can_view_calendar").default(true).notNull(),
   canViewTasks: boolean("can_view_tasks").default(true).notNull(),
   canViewShopping: boolean("can_view_shopping").default(true).notNull(),
@@ -351,8 +357,19 @@ export const pushTokens = pgTable("push_tokens", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+export const loginAttempts = pgTable("login_attempts", {
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  email: text("email").notNull(),
+  ipAddress: text("ip_address"),
+  success: boolean("success").default(false).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 export type NotificationType = typeof notificationTypeEnum.enumValues[number];
 export type NotificationCategory = typeof notificationCategoryEnum.enumValues[number];
 export type DbNotification = typeof notifications.$inferSelect;
 export type DbNotificationSettings = typeof notificationSettings.$inferSelect;
 export type DbPushToken = typeof pushTokens.$inferSelect;
+export type DbLoginAttempt = typeof loginAttempts.$inferSelect;

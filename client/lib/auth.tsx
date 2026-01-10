@@ -30,11 +30,13 @@ const DEFAULT_PERMISSIONS: UserPermissions = {
 
 interface User {
   id: string;
+  email: string;
   username: string;
   displayName: string | null;
   familyId: string;
   role: UserRole;
   avatarUrl?: string | null;
+  emailVerified: boolean;
   permissions: UserPermissions;
 }
 
@@ -43,12 +45,12 @@ interface AuthContextType {
   token: string | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  login: (username: string, password: string) => Promise<void>;
-  register: (username: string, password: string, displayName?: string, familyName?: string) => Promise<void>;
-  guestLogin: () => Promise<void>;
-  joinFamily: (code: string, username: string, password: string, displayName?: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<void>;
+  register: (email: string, password: string, displayName?: string, acceptTerms?: boolean, familyName?: string) => Promise<void>;
+  joinFamily: (code: string, email: string, password: string, displayName?: string, acceptTerms?: boolean) => Promise<void>;
   acceptInvite: (code: string) => Promise<void>;
   logout: () => Promise<void>;
+  logoutAll: () => Promise<void>;
   refreshUser: () => Promise<void>;
 }
 
@@ -208,71 +210,94 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, [fetchUser]);
 
-  const login = async (username: string, password: string) => {
+  const login = async (email: string, password: string) => {
     const baseUrl = getApiUrl();
     const res = await fetch(new URL("/api/auth/login", baseUrl).href, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, password }),
+      body: JSON.stringify({ email, password }),
     });
 
     if (!res.ok) {
       const data = await res.json();
-      throw new Error(data.error || "Login failed");
+      const error = data.error;
+      if (typeof error === "object" && error.code) {
+        const err = new Error(error.message || "Login failed") as any;
+        err.code = error.code;
+        err.retryAfterMinutes = error.retryAfterMinutes;
+        throw err;
+      }
+      throw new Error(error || "Login failed");
     }
 
     const data = await res.json();
     await saveAuthData(data.accessToken, data.refreshToken, data.user, data.expiresIn);
   };
 
-  const register = async (username: string, password: string, displayName?: string, familyName?: string) => {
+  const register = async (email: string, password: string, displayName?: string, acceptTerms: boolean = false, familyName?: string) => {
     const baseUrl = getApiUrl();
     const res = await fetch(new URL("/api/auth/register", baseUrl).href, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, password, displayName, familyName }),
+      body: JSON.stringify({ email, password, displayName, familyName, acceptTerms }),
     });
 
     if (!res.ok) {
       const data = await res.json();
-      throw new Error(data.error || "Registration failed");
+      const error = data.error;
+      if (typeof error === "object" && error.code) {
+        const err = new Error(error.message || "Registration failed") as any;
+        err.code = error.code;
+        err.details = error.details;
+        throw err;
+      }
+      throw new Error(error || "Registration failed");
     }
 
     const data = await res.json();
     await saveAuthData(data.accessToken, data.refreshToken, data.user, data.expiresIn);
   };
 
-  const guestLogin = async () => {
-    const baseUrl = getApiUrl();
-    const res = await fetch(new URL("/api/auth/guest", baseUrl).href, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-    });
-
-    if (!res.ok) {
-      const data = await res.json();
-      throw new Error(data.error || "Guest login failed");
-    }
-
-    const data = await res.json();
-    await saveAuthData(data.accessToken, data.refreshToken, data.user, data.expiresIn);
-  };
-
-  const joinFamily = async (code: string, username: string, password: string, displayName?: string) => {
+  const joinFamily = async (code: string, email: string, password: string, displayName?: string, acceptTerms: boolean = false) => {
     const baseUrl = getApiUrl();
     const res = await fetch(new URL("/api/family/join", baseUrl).href, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ code, username, password, displayName }),
+      body: JSON.stringify({ code, email, password, displayName, acceptTerms }),
     });
 
     if (!res.ok) {
       const data = await res.json();
-      throw new Error(data.error || "Failed to join family");
+      const error = data.error;
+      if (typeof error === "object" && error.code) {
+        const err = new Error(error.message || "Failed to join family") as any;
+        err.code = error.code;
+        throw err;
+      }
+      throw new Error(error || "Failed to join family");
     }
 
     const data = await res.json();
     await saveAuthData(data.accessToken, data.refreshToken, data.user, data.expiresIn);
+  };
+
+  const logoutAll = async () => {
+    const currentToken = token;
+    if (currentToken) {
+      try {
+        const baseUrl = getApiUrl();
+        await fetch(new URL("/api/auth/logout-all", baseUrl).href, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${currentToken}`,
+            "Content-Type": "application/json",
+          },
+        });
+      } catch {
+        // ignore logout errors
+      }
+    }
+    await handleLogout();
   };
 
   const acceptInvite = async (code: string) => {
@@ -332,10 +357,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isAuthenticated: !!user,
         login,
         register,
-        guestLogin,
         joinFamily,
         acceptInvite,
         logout,
+        logoutAll,
         refreshUser,
       }}
     >

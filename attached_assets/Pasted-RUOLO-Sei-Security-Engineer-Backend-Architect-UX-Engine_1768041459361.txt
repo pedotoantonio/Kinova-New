@@ -1,0 +1,159 @@
+RUOLO
+Sei Security Engineer + Backend Architect + UX Engineer + QA Lead.
+Devi progettare un sistema di autenticazione professionale per Kinova,
+adatto a un’app familiare con dati sensibili.
+Expo è il banco di test principale.
+
+OBIETTIVO
+Implementare un sistema di autenticazione:
+- sicuro
+- moderno
+- recuperabile
+- user-friendly
+- pronto per produzione reale
+
+---
+
+## A) REGISTRAZIONE UTENTE (MIGLIORATA)
+
+La registrazione deve includere:
+- email (verificata)
+- password
+- accettazione termini/privacy
+
+Password policy:
+- minimo 8 caratteri
+- almeno 1 maiuscola
+- almeno 1 minuscola
+- almeno 1 numero
+- almeno 1 simbolo
+- hashing bcrypt/argon2
+
+UX:
+- password strength meter
+- messaggi chiari
+- nessun tecnicismo
+
+Test:
+T1T.2 Password debole → rifiutata
+T1T.3 Password forte → accettata
+
+---
+
+## B) VERIFICA EMAIL
+
+Dopo registrazione:
+- inviare email di verifica
+- limitare alcune funzioni fino a verifica completata
+- token con scadenza
+
+Test:
+T1T.4 Email non verificata → accesso limitato
+
+---
+
+## C) LOGIN SICURO
+
+- email + password
+- rate limiting
+- messaggi di errore non informativi
+- refresh token sicuro
+
+Test:
+T1T.5 Tentativi multipli → rate limit
+
+---
+
+## D) RECUPERO PASSWORD (OBBLIGATORIO)
+
+Implementare:
+- “Password dimenticata”
+- invio link sicuro
+- token temporaneo
+- reset password
+
+Regole:
+- token monouso
+- scadenza breve
+- nessuna info sensibile in chiaro
+
+Test:
+T1T.6 Recupero password → completato
+
+---
+
+## E) GESTIONE SESSIONI
+
+- logout da tutti i dispositivi
+- invalidazione refresh token
+- session tracking server-side
+
+Test:
+T1T.7 Logout globale → sessioni terminate
+
+---
+
+## F) SICUREZZA AVANZATA BASE
+
+- protezione brute-force
+- hashing forte
+- HTTPS obbligatorio
+- nessun dato sensibile in log
+
+Test:
+T1T.8 Tentativo bypass → FAIL
+
+---
+
+## G) INTEGRAZIONE CON FAMIGLIA
+
+Regole:
+- nessuna famiglia senza utente verificato
+- nessun utente senza famiglia (dopo onboarding)
+- inviti solo a email registrate
+
+Test:
+T1T.9 Invito → utente associato correttamente
+
+---
+
+## H) MULTILINGUA (IT / EN)
+
+- messaggi auth localizzati
+- fallback IT
+
+Test:
+T1T.10 Cambio lingua → auth coerente
+
+---
+
+## OUTPUT OBBLIGATORIO (FORMATO RIGIDO)
+
+1) GATE 1 TER STATUS
+- Stato: PASS / FAIL
+- Bloccanti (se FAIL)
+
+2) MATRICE AUTH
+[Test-ID] [Funzione] [Esito PASS/FAIL]
+
+3) REPORT TEST DETTAGLIATO
+Per T1T.1 – T1T.10:
+- Steps
+- API evidence
+- DB evidence
+- UI evidence
+- Esito
+
+4) SECURITY CHECK
+- Guest rimosso: SI/NO
+- Password policy: OK/NO
+- Recupero password: OK/NO
+- Rate limit: OK/NO
+
+5) VERDETTO FINALE
+Scrivi ESATTAMENTE una sola riga:
+- “GATE 1 TER COMPLETATO: PASS”
+oppure
+- “GATE 1 TER COMPLETATO: FAIL”
+
+STOP
