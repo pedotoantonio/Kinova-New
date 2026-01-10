@@ -4,12 +4,13 @@ const { createRoot } = ReactDOM;
 const T = {
   it: {
     login: { title: 'Kinova Admin', email: 'Email', password: 'Password', submit: 'Accedi', error: 'Credenziali non valide', rateLimit: 'Troppi tentativi. Riprova tra {min} minuti.' },
-    nav: { dashboard: 'Dashboard', users: 'Utenti', families: 'Famiglie', trials: 'Trial', donations: 'Donazioni', audit: 'Audit Log', ai: 'AI Config', logout: 'Esci' },
+    nav: { dashboard: 'Dashboard', users: 'Utenti', families: 'Famiglie', trials: 'Trial', donations: 'Donazioni', payments: 'Pagamenti', audit: 'Audit Log', ai: 'AI Config', logout: 'Esci' },
     dashboard: { title: 'Dashboard', totalUsers: 'Utenti totali', activeUsers: 'Utenti attivi', totalFamilies: 'Famiglie totali', activeFamilies: 'Famiglie attive', activeTrials: 'Trial attivi', expiredTrials: 'Trial scaduti', totalDonations: 'Donazioni totali' },
     users: { title: 'Gestione Utenti', search: 'Cerca utenti...', email: 'Email', name: 'Nome', role: 'Ruolo', family: 'Famiglia', created: 'Creato', actions: 'Azioni', resetSessions: 'Reset sessioni', delete: 'Elimina', confirmDelete: 'Sei sicuro di voler eliminare questo utente?' },
     families: { title: 'Gestione Famiglie', search: 'Cerca famiglie...', name: 'Nome', members: 'Membri', plan: 'Piano', status: 'Stato', trialEnd: 'Fine trial', active: 'Attivo', inactive: 'Inattivo', deactivate: 'Disattiva' },
     trials: { title: 'Gestione Trial', family: 'Famiglia', startDate: 'Inizio', endDate: 'Fine', status: 'Stato', extend: 'Estendi', extendDays: 'Giorni da aggiungere', expired: 'Scaduto', active: 'Attivo' },
     donations: { title: 'Donazioni', family: 'Famiglia', amount: 'Importo', date: 'Data', status: 'Stato' },
+    payments: { title: 'Impostazioni Pagamenti', freeDonation: 'Donazioni Libere', fixedPlans: 'Piani Fissi', subscriptions: 'Abbonamenti', enabled: 'Abilitato', minAmount: 'Importo Minimo', maxAmount: 'Importo Massimo', suggestedAmounts: 'Importi Suggeriti', currency: 'Valuta', saved: 'Impostazioni salvate', comingSoon: 'Prossimamente' },
     audit: { title: 'Audit Log', admin: 'Admin', action: 'Azione', target: 'Target', result: 'Risultato', ip: 'IP', date: 'Data' },
     ai: { title: 'Configurazione AI', model: 'Modello', maxTokens: 'Max Token', enabled: 'Abilitato', save: 'Salva', saved: 'Configurazione salvata' },
     common: { loading: 'Caricamento...', error: 'Errore', noData: 'Nessun dato', previous: 'Precedente', next: 'Successivo', save: 'Salva', cancel: 'Annulla', confirm: 'Conferma' },
@@ -17,12 +18,13 @@ const T = {
   },
   en: {
     login: { title: 'Kinova Admin', email: 'Email', password: 'Password', submit: 'Login', error: 'Invalid credentials', rateLimit: 'Too many attempts. Retry in {min} minutes.' },
-    nav: { dashboard: 'Dashboard', users: 'Users', families: 'Families', trials: 'Trials', donations: 'Donations', audit: 'Audit Log', ai: 'AI Config', logout: 'Logout' },
+    nav: { dashboard: 'Dashboard', users: 'Users', families: 'Families', trials: 'Trials', donations: 'Donations', payments: 'Payments', audit: 'Audit Log', ai: 'AI Config', logout: 'Logout' },
     dashboard: { title: 'Dashboard', totalUsers: 'Total Users', activeUsers: 'Active Users', totalFamilies: 'Total Families', activeFamilies: 'Active Families', activeTrials: 'Active Trials', expiredTrials: 'Expired Trials', totalDonations: 'Total Donations' },
     users: { title: 'User Management', search: 'Search users...', email: 'Email', name: 'Name', role: 'Role', family: 'Family', created: 'Created', actions: 'Actions', resetSessions: 'Reset sessions', delete: 'Delete', confirmDelete: 'Are you sure you want to delete this user?' },
     families: { title: 'Family Management', search: 'Search families...', name: 'Name', members: 'Members', plan: 'Plan', status: 'Status', trialEnd: 'Trial End', active: 'Active', inactive: 'Inactive', deactivate: 'Deactivate' },
     trials: { title: 'Trial Management', family: 'Family', startDate: 'Start', endDate: 'End', status: 'Status', extend: 'Extend', extendDays: 'Days to add', expired: 'Expired', active: 'Active' },
     donations: { title: 'Donations', family: 'Family', amount: 'Amount', date: 'Date', status: 'Status' },
+    payments: { title: 'Payment Settings', freeDonation: 'Free Donations', fixedPlans: 'Fixed Plans', subscriptions: 'Subscriptions', enabled: 'Enabled', minAmount: 'Minimum Amount', maxAmount: 'Maximum Amount', suggestedAmounts: 'Suggested Amounts', currency: 'Currency', saved: 'Settings saved', comingSoon: 'Coming Soon' },
     audit: { title: 'Audit Log', admin: 'Admin', action: 'Action', target: 'Target', result: 'Result', ip: 'IP', date: 'Date' },
     ai: { title: 'AI Configuration', model: 'Model', maxTokens: 'Max Tokens', enabled: 'Enabled', save: 'Save', saved: 'Configuration saved' },
     common: { loading: 'Loading...', error: 'Error', noData: 'No data', previous: 'Previous', next: 'Next', save: 'Save', cancel: 'Cancel', confirm: 'Confirm' },
@@ -506,6 +508,107 @@ function AiConfig({ role }) {
   );
 }
 
+function PaymentSettings({ role }) {
+  const [settings, setSettings] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    api.get('/payments/settings').then(setSettings).finally(() => setLoading(false));
+  }, []);
+
+  const handleSave = async () => {
+    setSaving(true);
+    setSaved(false);
+    try {
+      await api.patch('/payments/settings', {
+        freeDonationEnabled: settings.freeDonationEnabled,
+        freeDonationMinAmount: settings.freeDonationMinAmount,
+        freeDonationMaxAmount: settings.freeDonationMaxAmount,
+        freeDonationSuggestedAmounts: settings.freeDonationSuggestedAmounts,
+        fixedPlansEnabled: settings.fixedPlansEnabled,
+        subscriptionsEnabled: settings.subscriptionsEnabled,
+        currency: settings.currency
+      });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) return h('div', { style: { textAlign: 'center', padding: '2rem' } }, t('common.loading'));
+
+  return h('div', null,
+    h('h2', { style: styles.title }, t('payments.title')),
+    
+    h('div', { style: styles.card },
+      h('h3', { style: { marginBottom: '1rem', color: 'var(--primary)' } }, t('payments.freeDonation')),
+      h('div', { style: { ...styles.formGroup, display: 'flex', alignItems: 'center', gap: '0.5rem' } },
+        h('input', { 
+          type: 'checkbox', 
+          checked: settings?.freeDonationEnabled, 
+          onChange: e => setSettings(s => ({ ...s, freeDonationEnabled: e.target.checked })),
+          style: { width: '20px', height: '20px' }
+        }),
+        h('label', null, t('payments.enabled'))
+      ),
+      h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' } },
+        h('div', { style: styles.formGroup },
+          h('label', { style: styles.label }, t('payments.minAmount')),
+          h(Input, { type: 'number', value: settings?.freeDonationMinAmount || '', onChange: v => setSettings(s => ({ ...s, freeDonationMinAmount: v })) })
+        ),
+        h('div', { style: styles.formGroup },
+          h('label', { style: styles.label }, t('payments.maxAmount')),
+          h(Input, { type: 'number', value: settings?.freeDonationMaxAmount || '', onChange: v => setSettings(s => ({ ...s, freeDonationMaxAmount: v })) })
+        )
+      ),
+      h('div', { style: styles.formGroup },
+        h('label', { style: styles.label }, t('payments.suggestedAmounts') + ' (comma separated)'),
+        h(Input, { value: settings?.freeDonationSuggestedAmounts || '', onChange: v => setSettings(s => ({ ...s, freeDonationSuggestedAmounts: v })) })
+      ),
+      h('div', { style: styles.formGroup },
+        h('label', { style: styles.label }, t('payments.currency')),
+        h(Input, { value: settings?.currency || 'EUR', onChange: v => setSettings(s => ({ ...s, currency: v })) })
+      )
+    ),
+
+    h('div', { style: styles.card },
+      h('h3', { style: { marginBottom: '1rem', color: 'var(--text-muted)' } }, t('payments.fixedPlans')),
+      h('div', { style: { ...styles.formGroup, display: 'flex', alignItems: 'center', gap: '0.5rem' } },
+        h('input', { 
+          type: 'checkbox', 
+          checked: settings?.fixedPlansEnabled, 
+          onChange: e => setSettings(s => ({ ...s, fixedPlansEnabled: e.target.checked })),
+          style: { width: '20px', height: '20px' }
+        }),
+        h('label', null, t('payments.enabled'))
+      ),
+      h('p', { style: { color: 'var(--text-muted)', fontSize: '0.875rem' } }, t('payments.comingSoon'))
+    ),
+
+    h('div', { style: styles.card },
+      h('h3', { style: { marginBottom: '1rem', color: 'var(--text-muted)' } }, t('payments.subscriptions')),
+      h('div', { style: { ...styles.formGroup, display: 'flex', alignItems: 'center', gap: '0.5rem' } },
+        h('input', { 
+          type: 'checkbox', 
+          checked: settings?.subscriptionsEnabled, 
+          onChange: e => setSettings(s => ({ ...s, subscriptionsEnabled: e.target.checked })),
+          style: { width: '20px', height: '20px' }
+        }),
+        h('label', null, t('payments.enabled'))
+      ),
+      h('p', { style: { color: 'var(--text-muted)', fontSize: '0.875rem' } }, t('payments.comingSoon'))
+    ),
+
+    h('div', { style: { display: 'flex', gap: '1rem', alignItems: 'center', marginTop: '1rem' } },
+      h(Button, { onClick: handleSave, disabled: saving }, saving ? t('common.loading') : t('common.save')),
+      saved && h('span', { style: { color: 'var(--success)' } }, t('payments.saved'))
+    )
+  );
+}
+
 function AdminApp() {
   const [admin, setAdmin] = useState(null);
   const [view, setView] = useState('dashboard');
@@ -566,6 +669,7 @@ function AdminApp() {
     { id: 'families', label: t('nav.families') },
     { id: 'trials', label: t('nav.trials') },
     { id: 'donations', label: t('nav.donations') },
+    admin.role === 'super_admin' && { id: 'payments', label: t('nav.payments') },
     { id: 'audit', label: t('nav.audit') },
     admin.role === 'super_admin' && { id: 'ai', label: t('nav.ai') }
   ].filter(Boolean);
@@ -590,6 +694,7 @@ function AdminApp() {
     view === 'families' && h(Families, { role: admin.role }),
     view === 'trials' && h(Trials, { role: admin.role }),
     view === 'donations' && h(Donations),
+    view === 'payments' && h(PaymentSettings, { role: admin.role }),
     view === 'audit' && h(AuditLog),
     view === 'ai' && h(AiConfig, { role: admin.role })
   );

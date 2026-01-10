@@ -496,6 +496,90 @@ export function registerAdminRoutes(app: Express): void {
     }
   });
 
+  // ========== PAYMENT SETTINGS ROUTES ==========
+  
+  app.get("/api/admin/payments/settings", adminAuthMiddleware, requireAdminRoles("super_admin"), async (req: AdminAuthRequest, res: Response) => {
+    try {
+      const settings = await storage.getPaymentSettings();
+      res.json(settings);
+    } catch (error) {
+      console.error("Get payment settings error:", error);
+      res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Internal server error" } });
+    }
+  });
+
+  app.patch("/api/admin/payments/settings", adminAuthMiddleware, requireAdminRoles("super_admin"), async (req: AdminAuthRequest, res: Response) => {
+    try {
+      const ipAddress = req.ip || req.socket.remoteAddress || null;
+      await storage.updatePaymentSettings({ ...req.body, updatedBy: req.adminAuth!.adminId });
+      await logAuditAction(req.adminAuth!.adminId, "PAYMENT_SETTINGS_UPDATED", "payment_settings", null, "success", ipAddress, JSON.stringify(req.body));
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Update payment settings error:", error);
+      res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Internal server error" } });
+    }
+  });
+
+  app.get("/api/admin/payments/plans", adminAuthMiddleware, async (req: AdminAuthRequest, res: Response) => {
+    try {
+      const plans = await storage.getPaymentPlans();
+      res.json(plans);
+    } catch (error) {
+      console.error("Get payment plans error:", error);
+      res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Internal server error" } });
+    }
+  });
+
+  app.post("/api/admin/payments/plans", adminAuthMiddleware, requireAdminRoles("super_admin"), async (req: AdminAuthRequest, res: Response) => {
+    try {
+      const ipAddress = req.ip || req.socket.remoteAddress || null;
+      const plan = await storage.createPaymentPlan(req.body);
+      await logAuditAction(req.adminAuth!.adminId, "PAYMENT_PLAN_CREATED", "payment_plan", plan.id, "success", ipAddress, JSON.stringify(req.body));
+      res.status(201).json(plan);
+    } catch (error) {
+      console.error("Create payment plan error:", error);
+      res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Internal server error" } });
+    }
+  });
+
+  app.patch("/api/admin/payments/plans/:planId", adminAuthMiddleware, requireAdminRoles("super_admin"), async (req: AdminAuthRequest, res: Response) => {
+    try {
+      const ipAddress = req.ip || req.socket.remoteAddress || null;
+      await storage.updatePaymentPlan(req.params.planId, req.body);
+      await logAuditAction(req.adminAuth!.adminId, "PAYMENT_PLAN_UPDATED", "payment_plan", req.params.planId, "success", ipAddress, JSON.stringify(req.body));
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Update payment plan error:", error);
+      res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Internal server error" } });
+    }
+  });
+
+  app.delete("/api/admin/payments/plans/:planId", adminAuthMiddleware, requireAdminRoles("super_admin"), async (req: AdminAuthRequest, res: Response) => {
+    try {
+      const ipAddress = req.ip || req.socket.remoteAddress || null;
+      await storage.deletePaymentPlan(req.params.planId);
+      await logAuditAction(req.adminAuth!.adminId, "PAYMENT_PLAN_DELETED", "payment_plan", req.params.planId, "success", ipAddress);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Delete payment plan error:", error);
+      res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Internal server error" } });
+    }
+  });
+
+  app.get("/api/admin/donations", adminAuthMiddleware, async (req: AdminAuthRequest, res: Response) => {
+    try {
+      const { page = "1", limit = "50" } = req.query;
+      const donations = await storage.getDonationLogs({
+        offset: (parseInt(page as string) - 1) * parseInt(limit as string),
+        limit: parseInt(limit as string),
+      });
+      res.json(donations);
+    } catch (error) {
+      console.error("Get donations error:", error);
+      res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Internal server error" } });
+    }
+  });
+
   // ========== AUDIT ROUTES ==========
   
   app.get("/api/admin/audit", adminAuthMiddleware, async (req: AdminAuthRequest, res: Response) => {

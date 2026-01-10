@@ -481,6 +481,39 @@ export const aiConfig = pgTable("ai_config", {
   updatedBy: varchar("updated_by").references(() => adminUsers.id),
 });
 
+export const paymentSettings = pgTable("payment_settings", {
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  freeDonationEnabled: boolean("free_donation_enabled").default(true).notNull(),
+  freeDonationMinAmount: numeric("free_donation_min_amount", { precision: 10, scale: 2 }).default("1.00").notNull(),
+  freeDonationMaxAmount: numeric("free_donation_max_amount", { precision: 10, scale: 2 }).default("500.00").notNull(),
+  freeDonationSuggestedAmounts: text("free_donation_suggested_amounts").default("2,5,10,20").notNull(),
+  fixedPlansEnabled: boolean("fixed_plans_enabled").default(false).notNull(),
+  subscriptionsEnabled: boolean("subscriptions_enabled").default(false).notNull(),
+  currency: text("currency").default("EUR").notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  updatedBy: varchar("updated_by").references(() => adminUsers.id),
+});
+
+export const paymentPlans = pgTable("payment_plans", {
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  type: text("type").notNull(),
+  name: text("name").notNull(),
+  description: text("description"),
+  amount: numeric("amount", { precision: 10, scale: 2 }).notNull(),
+  currency: text("currency").default("EUR").notNull(),
+  interval: text("interval"),
+  stripePriceId: text("stripe_price_id"),
+  stripeProductId: text("stripe_product_id"),
+  isActive: boolean("is_active").default(true).notNull(),
+  sortOrder: integer("sort_order").default(0).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 // Admin Console Types
 export type AdminRole = "super_admin" | "support_admin" | "auditor";
 export type PlanType = "trial" | "donor" | "premium";
@@ -494,3 +527,5 @@ export type DbDonationLog = typeof donationLogs.$inferSelect;
 export type DbAiUsageLog = typeof aiUsageLogs.$inferSelect;
 export type DbNotificationLog = typeof notificationLogs.$inferSelect;
 export type DbAiConfig = typeof aiConfig.$inferSelect;
+export type DbPaymentSettings = typeof paymentSettings.$inferSelect;
+export type DbPaymentPlan = typeof paymentPlans.$inferSelect;

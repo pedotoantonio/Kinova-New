@@ -32,6 +32,8 @@ import {
   type DbAiUsageLog,
   type DbNotificationLog,
   type DbAiConfig,
+  type DbPaymentSettings,
+  type DbPaymentPlan,
   users, 
   families,
   places,
@@ -56,7 +58,9 @@ import {
   donationLogs,
   aiUsageLogs,
   notificationLogs,
-  aiConfig
+  aiConfig,
+  paymentSettings,
+  paymentPlans
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, isNull, gt, gte, lte, desc, lt, or, sql, count, like, asc, sum } from "drizzle-orm";
@@ -1439,6 +1443,68 @@ export class DatabaseStorage implements IStorage {
         .from(aiUsageLogs)
         .where(whereClause)
         .orderBy(desc(aiUsageLogs.createdAt))
+        .limit(limit)
+        .offset(offset)
+    ]);
+
+    return { data, total: totalResult[0]?.count || 0 };
+  }
+
+  async getPaymentSettings(): Promise<DbPaymentSettings | undefined> {
+    const [settings] = await db.select().from(paymentSettings).limit(1);
+    if (!settings) {
+      const [created] = await db.insert(paymentSettings).values({}).returning();
+      return created;
+    }
+    return settings;
+  }
+
+  async updatePaymentSettings(data: Partial<DbPaymentSettings>): Promise<DbPaymentSettings | undefined> {
+    const existing = await this.getPaymentSettings();
+    if (existing) {
+      const [updated] = await db
+        .update(paymentSettings)
+        .set({ ...data, updatedAt: new Date() })
+        .where(eq(paymentSettings.id, existing.id))
+        .returning();
+      return updated;
+    }
+    return undefined;
+  }
+
+  async getPaymentPlans(): Promise<DbPaymentPlan[]> {
+    return db.select().from(paymentPlans).orderBy(paymentPlans.sortOrder);
+  }
+
+  async createPaymentPlan(data: Omit<DbPaymentPlan, "id" | "createdAt" | "updatedAt">): Promise<DbPaymentPlan> {
+    const [plan] = await db.insert(paymentPlans).values(data).returning();
+    return plan;
+  }
+
+  async updatePaymentPlan(id: string, data: Partial<DbPaymentPlan>): Promise<DbPaymentPlan | undefined> {
+    const [plan] = await db
+      .update(paymentPlans)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(paymentPlans.id, id))
+      .returning();
+    return plan;
+  }
+
+  async deletePaymentPlan(id: string): Promise<boolean> {
+    await db.delete(paymentPlans).where(eq(paymentPlans.id, id));
+    return true;
+  }
+
+  async getDonationLogs(options?: { limit?: number; offset?: number }): Promise<{ data: DbDonationLog[]; total: number }> {
+    const limit = options?.limit || 50;
+    const offset = options?.offset || 0;
+
+    const [totalResult, data] = await Promise.all([
+      db.select({ count: count() }).from(donationLogs),
+      db
+        .select()
+        .from(donationLogs)
+        .orderBy(desc(donationLogs.createdAt))
         .limit(limit)
         .offset(offset)
     ]);

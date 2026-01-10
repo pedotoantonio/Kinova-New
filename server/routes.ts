@@ -2013,6 +2013,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const { registerAdminRoutes } = await import("./admin-routes");
   registerAdminRoutes(app);
 
+  const paymentRoutes = (await import("./payment-routes")).default;
+  app.use("/api/payments", paymentRoutes);
+
   const httpServer = createServer(app);
   return httpServer;
 }
