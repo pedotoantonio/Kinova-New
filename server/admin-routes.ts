@@ -134,7 +134,7 @@ async function logAuditAction(
       targetId,
       result,
       ipAddress,
-      details,
+      details: details || null,
     });
   } catch (error) {
     console.error("Failed to log audit action:", error);
@@ -270,11 +270,11 @@ export function registerAdminRoutes(app: Express): void {
   app.get("/api/admin/users", adminAuthMiddleware, async (req: AdminAuthRequest, res: Response) => {
     try {
       const { search, page = "1", limit = "20" } = req.query;
-      const users = await storage.getAdminUsersList(
-        search as string | undefined,
-        parseInt(page as string),
-        parseInt(limit as string)
-      );
+      const users = await storage.getAdminUsersList({
+        search: search as string | undefined,
+        offset: (parseInt(page as string) - 1) * parseInt(limit as string),
+        limit: parseInt(limit as string)
+      });
       res.json(users);
     } catch (error) {
       console.error("Get users error:", error);
@@ -339,11 +339,11 @@ export function registerAdminRoutes(app: Express): void {
   app.get("/api/admin/families", adminAuthMiddleware, async (req: AdminAuthRequest, res: Response) => {
     try {
       const { search, page = "1", limit = "20" } = req.query;
-      const families = await storage.getAdminFamiliesList(
-        search as string | undefined,
-        parseInt(page as string),
-        parseInt(limit as string)
-      );
+      const families = await storage.getAdminFamiliesList({
+        search: search as string | undefined,
+        offset: (parseInt(page as string) - 1) * parseInt(limit as string),
+        limit: parseInt(limit as string)
+      });
       res.json(families);
     } catch (error) {
       console.error("Get families error:", error);
@@ -477,7 +477,7 @@ export function registerAdminRoutes(app: Express): void {
   app.patch("/api/admin/ai/config", adminAuthMiddleware, requireAdminRoles("super_admin"), async (req: AdminAuthRequest, res: Response) => {
     try {
       const ipAddress = req.ip || req.socket.remoteAddress || null;
-      await storage.updateAiConfig(req.body, req.adminAuth!.adminId);
+      await storage.updateAiConfig({ ...req.body, updatedBy: req.adminAuth!.adminId });
       await logAuditAction(req.adminAuth!.adminId, "AI_CONFIG_UPDATED", "ai_config", null, "success", ipAddress, JSON.stringify(req.body));
       res.json({ success: true });
     } catch (error) {
@@ -500,13 +500,12 @@ export function registerAdminRoutes(app: Express): void {
   
   app.get("/api/admin/audit", adminAuthMiddleware, async (req: AdminAuthRequest, res: Response) => {
     try {
-      const { page = "1", limit = "50", action, adminId } = req.query;
-      const logs = await storage.getAdminAuditLogs(
-        parseInt(page as string),
-        parseInt(limit as string),
-        action as string | undefined,
-        adminId as string | undefined
-      );
+      const { page = "1", limit = "50", adminId } = req.query;
+      const logs = await storage.getAdminAuditLogs({
+        offset: (parseInt(page as string) - 1) * parseInt(limit as string),
+        limit: parseInt(limit as string),
+        adminId: adminId as string | undefined
+      });
       res.json(logs);
     } catch (error) {
       console.error("Get audit logs error:", error);
@@ -533,6 +532,10 @@ export function registerAdminRoutes(app: Express): void {
         password: hashPassword(password),
         displayName,
         role: "super_admin",
+        isActive: true,
+        mfaSecret: null,
+        mfaEnabled: false,
+        lastLoginAt: null,
       });
 
       const ipAddress = req.ip || req.socket.remoteAddress || null;
