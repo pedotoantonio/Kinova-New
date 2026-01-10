@@ -376,6 +376,7 @@ export default function AssistantScreen() {
       queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
       queryClient.invalidateQueries({ queryKey: ["/api/shopping"] });
       queryClient.invalidateQueries({ queryKey: ["/api/expenses"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/notes"] });
       
       setTimeout(() => {
         setStreamingContent("");
