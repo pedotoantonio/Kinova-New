@@ -114,6 +114,7 @@ export default function NotesScreen() {
       return apiRequest("POST", "/api/notes", data);
     },
     onSuccess: () => {
+      setFilter("all");
       queryClient.invalidateQueries({ queryKey: ["/api/notes"] });
       setNewNoteTitle("");
       setSelectedColor("default");
