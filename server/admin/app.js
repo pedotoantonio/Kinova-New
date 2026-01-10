@@ -4,7 +4,7 @@ const { createRoot } = ReactDOM;
 const T = {
   it: {
     login: { title: 'Kinova Admin', email: 'Email', password: 'Password', submit: 'Accedi', error: 'Credenziali non valide', rateLimit: 'Troppi tentativi. Riprova tra {min} minuti.' },
-    nav: { dashboard: 'Dashboard', users: 'Utenti', families: 'Famiglie', trials: 'Trial', donations: 'Donazioni', payments: 'Pagamenti', audit: 'Audit Log', ai: 'AI Config', logout: 'Esci' },
+    nav: { dashboard: 'Dashboard', users: 'Utenti', families: 'Famiglie', trials: 'Trial', donations: 'Donazioni', payments: 'Pagamenti', logs: 'Logs', audit: 'Audit Log', ai: 'AI Config', logout: 'Esci' },
     dashboard: { title: 'Dashboard', totalUsers: 'Utenti totali', activeUsers: 'Utenti attivi', totalFamilies: 'Famiglie totali', activeFamilies: 'Famiglie attive', activeTrials: 'Trial attivi', expiredTrials: 'Trial scaduti', totalDonations: 'Donazioni totali' },
     users: { title: 'Gestione Utenti', search: 'Cerca utenti...', email: 'Email', name: 'Nome', role: 'Ruolo', family: 'Famiglia', created: 'Creato', actions: 'Azioni', resetSessions: 'Reset sessioni', delete: 'Elimina', confirmDelete: 'Sei sicuro di voler eliminare questo utente?' },
     families: { title: 'Gestione Famiglie', search: 'Cerca famiglie...', name: 'Nome', members: 'Membri', plan: 'Piano', status: 'Stato', trialEnd: 'Fine trial', active: 'Attivo', inactive: 'Inattivo', deactivate: 'Disattiva' },
@@ -13,12 +13,13 @@ const T = {
     payments: { title: 'Impostazioni Pagamenti', freeDonation: 'Donazioni Libere', fixedPlans: 'Piani Fissi', subscriptions: 'Abbonamenti', enabled: 'Abilitato', minAmount: 'Importo Minimo', maxAmount: 'Importo Massimo', suggestedAmounts: 'Importi Suggeriti', currency: 'Valuta', saved: 'Impostazioni salvate', comingSoon: 'Prossimamente' },
     audit: { title: 'Audit Log', admin: 'Admin', action: 'Azione', target: 'Target', result: 'Risultato', ip: 'IP', date: 'Data' },
     ai: { title: 'Configurazione AI', model: 'Modello', maxTokens: 'Max Token', enabled: 'Abilitato', save: 'Salva', saved: 'Configurazione salvata' },
+    logs: { title: 'Logs Applicazione', sessions: 'Sessioni', errors: 'Errori', sessionId: 'ID Sessione', userId: 'Utente', platform: 'Piattaforma', status: 'Stato', started: 'Avviata', ended: 'Terminata', code: 'Codice', severity: 'Severità', category: 'Categoria', message: 'Messaggio', component: 'Componente', resolved: 'Risolto', resolve: 'Risolvi', unresolved: 'Non Risolto', filter: 'Filtra', all: 'Tutti', info: 'Info', warning: 'Warning', error: 'Errore', critical: 'Critico', statsTitle: 'Statistiche Errori', totalErrors: 'Errori Totali', unresolvedErrors: 'Non Risolti', todayErrors: 'Errori Oggi', topCodes: 'Codici Frequenti' },
     common: { loading: 'Caricamento...', error: 'Errore', noData: 'Nessun dato', previous: 'Precedente', next: 'Successivo', save: 'Salva', cancel: 'Annulla', confirm: 'Conferma' },
     setup: { title: 'Setup Iniziale', desc: 'Crea il primo account Super Admin', displayName: 'Nome visualizzato', create: 'Crea Admin' }
   },
   en: {
     login: { title: 'Kinova Admin', email: 'Email', password: 'Password', submit: 'Login', error: 'Invalid credentials', rateLimit: 'Too many attempts. Retry in {min} minutes.' },
-    nav: { dashboard: 'Dashboard', users: 'Users', families: 'Families', trials: 'Trials', donations: 'Donations', payments: 'Payments', audit: 'Audit Log', ai: 'AI Config', logout: 'Logout' },
+    nav: { dashboard: 'Dashboard', users: 'Users', families: 'Families', trials: 'Trials', donations: 'Donations', payments: 'Payments', logs: 'Logs', audit: 'Audit Log', ai: 'AI Config', logout: 'Logout' },
     dashboard: { title: 'Dashboard', totalUsers: 'Total Users', activeUsers: 'Active Users', totalFamilies: 'Total Families', activeFamilies: 'Active Families', activeTrials: 'Active Trials', expiredTrials: 'Expired Trials', totalDonations: 'Total Donations' },
     users: { title: 'User Management', search: 'Search users...', email: 'Email', name: 'Name', role: 'Role', family: 'Family', created: 'Created', actions: 'Actions', resetSessions: 'Reset sessions', delete: 'Delete', confirmDelete: 'Are you sure you want to delete this user?' },
     families: { title: 'Family Management', search: 'Search families...', name: 'Name', members: 'Members', plan: 'Plan', status: 'Status', trialEnd: 'Trial End', active: 'Active', inactive: 'Inactive', deactivate: 'Deactivate' },
@@ -27,6 +28,7 @@ const T = {
     payments: { title: 'Payment Settings', freeDonation: 'Free Donations', fixedPlans: 'Fixed Plans', subscriptions: 'Subscriptions', enabled: 'Enabled', minAmount: 'Minimum Amount', maxAmount: 'Maximum Amount', suggestedAmounts: 'Suggested Amounts', currency: 'Currency', saved: 'Settings saved', comingSoon: 'Coming Soon' },
     audit: { title: 'Audit Log', admin: 'Admin', action: 'Action', target: 'Target', result: 'Result', ip: 'IP', date: 'Date' },
     ai: { title: 'AI Configuration', model: 'Model', maxTokens: 'Max Tokens', enabled: 'Enabled', save: 'Save', saved: 'Configuration saved' },
+    logs: { title: 'Application Logs', sessions: 'Sessions', errors: 'Errors', sessionId: 'Session ID', userId: 'User', platform: 'Platform', status: 'Status', started: 'Started', ended: 'Ended', code: 'Code', severity: 'Severity', category: 'Category', message: 'Message', component: 'Component', resolved: 'Resolved', resolve: 'Resolve', unresolved: 'Unresolved', filter: 'Filter', all: 'All', info: 'Info', warning: 'Warning', error: 'Error', critical: 'Critical', statsTitle: 'Error Statistics', totalErrors: 'Total Errors', unresolvedErrors: 'Unresolved', todayErrors: 'Errors Today', topCodes: 'Top Codes' },
     common: { loading: 'Loading...', error: 'Error', noData: 'No data', previous: 'Previous', next: 'Next', save: 'Save', cancel: 'Cancel', confirm: 'Confirm' },
     setup: { title: 'Initial Setup', desc: 'Create the first Super Admin account', displayName: 'Display name', create: 'Create Admin' }
   }
@@ -639,6 +641,162 @@ function PaymentSettings() {
   );
 }
 
+function Logs({ role }) {
+  const [tab, setTab] = useState('errors');
+  const [sessions, setSessions] = useState({ data: [], total: 0 });
+  const [errors, setErrors] = useState({ data: [], total: 0 });
+  const [errorStats, setErrorStats] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [severityFilter, setSeverityFilter] = useState('all');
+  const [resolvedFilter, setResolvedFilter] = useState('all');
+
+  const loadSessions = useCallback(() => {
+    setLoading(true);
+    api.get(`/logs/sessions?limit=30&offset=${(page - 1) * 30}`)
+      .then(setSessions)
+      .finally(() => setLoading(false));
+  }, [page]);
+
+  const loadErrors = useCallback(() => {
+    setLoading(true);
+    const params = [`limit=30`, `offset=${(page - 1) * 30}`];
+    if (severityFilter !== 'all') params.push(`severity=${severityFilter}`);
+    if (resolvedFilter !== 'all') params.push(`resolved=${resolvedFilter === 'resolved'}`);
+    api.get(`/logs/errors?${params.join('&')}`)
+      .then(setErrors)
+      .finally(() => setLoading(false));
+  }, [page, severityFilter, resolvedFilter]);
+
+  const loadStats = () => {
+    api.get('/logs/errors/stats').then(setErrorStats);
+  };
+
+  useEffect(() => {
+    if (tab === 'sessions') loadSessions();
+    else loadErrors();
+    loadStats();
+  }, [tab, loadSessions, loadErrors]);
+
+  const handleResolve = async (errorId) => {
+    await api.post(`/logs/errors/${errorId}/resolve`);
+    loadErrors();
+    loadStats();
+  };
+
+  const formatDate = (date) => {
+    if (!date) return '-';
+    return new Date(date).toLocaleString();
+  };
+
+  const getSeverityBadge = (severity) => {
+    const types = { info: 'success', warning: 'warning', error: 'danger', critical: 'danger' };
+    return h(Badge, { type: types[severity] || 'warning' }, severity);
+  };
+
+  const getStatusBadge = (status) => {
+    const types = { started: 'success', ended: 'warning', crashed: 'danger' };
+    return h(Badge, { type: types[status] || 'warning' }, status);
+  };
+
+  const tabStyle = (active) => ({
+    padding: '0.75rem 1.5rem',
+    cursor: 'pointer',
+    borderBottom: active ? '3px solid var(--primary)' : '3px solid transparent',
+    fontWeight: active ? '600' : '400',
+    color: active ? 'var(--primary)' : 'var(--text-muted)'
+  });
+
+  const canResolve = role === 'super_admin' || role === 'support_admin';
+
+  return h('div', null,
+    h('h2', { style: styles.title }, t('logs.title')),
+    
+    errorStats && h('div', { style: { ...styles.card, ...styles.grid, marginBottom: '1.5rem' } },
+      h(Stat, { value: errorStats.total || 0, label: t('logs.totalErrors') }),
+      h(Stat, { value: errorStats.unresolved || 0, label: t('logs.unresolvedErrors') }),
+      h(Stat, { value: errorStats.today || 0, label: t('logs.todayErrors') })
+    ),
+
+    h('div', { style: { display: 'flex', borderBottom: '1px solid var(--border)', marginBottom: '1rem' } },
+      h('div', { style: tabStyle(tab === 'errors'), onClick: () => { setTab('errors'); setPage(1); } }, t('logs.errors')),
+      h('div', { style: tabStyle(tab === 'sessions'), onClick: () => { setTab('sessions'); setPage(1); } }, t('logs.sessions'))
+    ),
+
+    tab === 'errors' && h('div', { style: { display: 'flex', gap: '1rem', marginBottom: '1rem', flexWrap: 'wrap' } },
+      h('select', { 
+        value: severityFilter, 
+        onChange: e => { setSeverityFilter(e.target.value); setPage(1); },
+        style: { ...styles.input, width: 'auto' }
+      },
+        h('option', { value: 'all' }, t('logs.severity') + ': ' + t('logs.all')),
+        h('option', { value: 'info' }, t('logs.info')),
+        h('option', { value: 'warning' }, t('logs.warning')),
+        h('option', { value: 'error' }, t('logs.error')),
+        h('option', { value: 'critical' }, t('logs.critical'))
+      ),
+      h('select', { 
+        value: resolvedFilter, 
+        onChange: e => { setResolvedFilter(e.target.value); setPage(1); },
+        style: { ...styles.input, width: 'auto' }
+      },
+        h('option', { value: 'all' }, t('logs.resolved') + ': ' + t('logs.all')),
+        h('option', { value: 'unresolved' }, t('logs.unresolved')),
+        h('option', { value: 'resolved' }, t('logs.resolved'))
+      )
+    ),
+
+    h('div', { style: styles.card },
+      loading ? h('div', { style: { textAlign: 'center', padding: '2rem' } }, t('common.loading')) :
+      tab === 'sessions' ? 
+        h(Table, {
+          columns: [t('logs.sessionId'), t('logs.userId'), t('logs.platform'), t('logs.status'), t('logs.started'), t('logs.ended')],
+          data: sessions.data || [],
+          renderRow: (session) => h('tr', { key: session.id },
+            h('td', { style: { ...styles.td, fontFamily: 'monospace', fontSize: '0.75rem' } }, session.id?.slice(0, 8) + '...'),
+            h('td', { style: styles.td }, session.userId?.slice(0, 8) || '-'),
+            h('td', { style: styles.td }, session.platform || '-'),
+            h('td', { style: styles.td }, getStatusBadge(session.status)),
+            h('td', { style: styles.td }, formatDate(session.startedAt)),
+            h('td', { style: styles.td }, formatDate(session.endedAt))
+          )
+        }) :
+        h(Table, {
+          columns: [t('logs.code'), t('logs.severity'), t('logs.message'), t('logs.component'), 'Date', canResolve ? t('logs.resolve') : t('logs.status')],
+          data: errors.data || [],
+          renderRow: (err) => h('tr', { key: err.id },
+            h('td', { style: { ...styles.td, fontFamily: 'monospace', fontSize: '0.75rem', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis' } }, err.code),
+            h('td', { style: styles.td }, getSeverityBadge(err.severity)),
+            h('td', { style: { ...styles.td, maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis' } }, err.message),
+            h('td', { style: styles.td }, err.component || '-'),
+            h('td', { style: styles.td }, formatDate(err.createdAt)),
+            h('td', { style: styles.td }, 
+              err.resolved ? 
+                h(Badge, { type: 'success' }, t('logs.resolved')) :
+                canResolve ? 
+                  h(Button, { onClick: () => handleResolve(err.id), variant: 'secondary', style: { padding: '0.25rem 0.5rem', fontSize: '0.75rem' } }, t('logs.resolve')) :
+                  h(Badge, { type: 'danger' }, t('logs.unresolved'))
+            )
+          )
+        }),
+      
+      h('div', { style: { display: 'flex', justifyContent: 'space-between', marginTop: '1rem' } },
+        h(Button, { 
+          onClick: () => setPage(p => Math.max(1, p - 1)), 
+          disabled: page === 1,
+          variant: 'secondary'
+        }, t('common.previous')),
+        h('span', { style: { color: 'var(--text-muted)' } }, `${t('logs.filter')}: ${page}`),
+        h(Button, { 
+          onClick: () => setPage(p => p + 1), 
+          disabled: (tab === 'sessions' ? sessions.data : errors.data).length < 30,
+          variant: 'secondary'
+        }, t('common.next'))
+      )
+    )
+  );
+}
+
 function AdminApp() {
   const [admin, setAdmin] = useState(null);
   const [view, setView] = useState('dashboard');
@@ -700,6 +858,7 @@ function AdminApp() {
     { id: 'trials', label: t('nav.trials') },
     { id: 'donations', label: t('nav.donations') },
     admin.role === 'super_admin' && { id: 'payments', label: t('nav.payments') },
+    { id: 'logs', label: t('nav.logs') },
     { id: 'audit', label: t('nav.audit') },
     admin.role === 'super_admin' && { id: 'ai', label: t('nav.ai') }
   ].filter(Boolean);
@@ -725,6 +884,7 @@ function AdminApp() {
     view === 'trials' && h(Trials, { role: admin.role }),
     view === 'donations' && h(Donations),
     view === 'payments' && h(PaymentSettings),
+    view === 'logs' && h(Logs, { role: admin.role }),
     view === 'audit' && h(AuditLog),
     view === 'ai' && h(AiConfig, { role: admin.role })
   );

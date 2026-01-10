@@ -34,6 +34,11 @@ import {
   type DbAiConfig,
   type DbPaymentSettings,
   type DbPaymentPlan,
+  type DbSessionLog,
+  type DbErrorLog,
+  type LogCategory,
+  type LogSeverity,
+  type SessionStatus,
   users, 
   families,
   places,
@@ -60,7 +65,9 @@ import {
   notificationLogs,
   aiConfig,
   paymentSettings,
-  paymentPlans
+  paymentPlans,
+  sessionLogs,
+  errorLogs
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, isNull, gt, gte, lte, desc, lt, or, sql, count, like, asc, sum } from "drizzle-orm";
@@ -164,6 +171,18 @@ export interface IStorage {
   getAiConfig(): Promise<DbAiConfig | undefined>;
   updateAiConfig(data: Partial<DbAiConfig>): Promise<DbAiConfig | undefined>;
   getAdminAiLogs(options?: { limit?: number; offset?: number; familyId?: string }): Promise<{ data: DbAiUsageLog[]; total: number }>;
+  
+  // Session and Error Logging
+  createSessionLog(data: Omit<DbSessionLog, "id" | "createdAt">): Promise<DbSessionLog>;
+  updateSessionLog(id: string, data: Partial<DbSessionLog>): Promise<DbSessionLog | undefined>;
+  getSessionLog(id: string): Promise<DbSessionLog | undefined>;
+  getSessionLogs(options?: { limit?: number; offset?: number; userId?: string; familyId?: string; status?: string; from?: Date; to?: Date }): Promise<{ data: DbSessionLog[]; total: number }>;
+  
+  createErrorLog(data: Omit<DbErrorLog, "id" | "createdAt">): Promise<DbErrorLog>;
+  getErrorLog(id: string): Promise<DbErrorLog | undefined>;
+  getErrorLogs(options?: { limit?: number; offset?: number; userId?: string; familyId?: string; category?: string; severity?: string; resolved?: boolean; from?: Date; to?: Date }): Promise<{ data: DbErrorLog[]; total: number }>;
+  resolveErrorLog(id: string, adminId: string): Promise<DbErrorLog | undefined>;
+  getErrorStats(): Promise<{ total: number; critical: number; unresolved: number; byCategory: Record<string, number> }>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1510,6 +1529,124 @@ export class DatabaseStorage implements IStorage {
     ]);
 
     return { data, total: totalResult[0]?.count || 0 };
+  }
+
+  // Session and Error Logging Implementation
+  async createSessionLog(data: Omit<DbSessionLog, "id" | "createdAt">): Promise<DbSessionLog> {
+    const [log] = await db.insert(sessionLogs).values(data).returning();
+    return log;
+  }
+
+  async updateSessionLog(id: string, data: Partial<DbSessionLog>): Promise<DbSessionLog | undefined> {
+    const [log] = await db
+      .update(sessionLogs)
+      .set(data)
+      .where(eq(sessionLogs.id, id))
+      .returning();
+    return log;
+  }
+
+  async getSessionLog(id: string): Promise<DbSessionLog | undefined> {
+    const [log] = await db.select().from(sessionLogs).where(eq(sessionLogs.id, id));
+    return log;
+  }
+
+  async getSessionLogs(options?: { limit?: number; offset?: number; userId?: string; familyId?: string; status?: string; from?: Date; to?: Date }): Promise<{ data: DbSessionLog[]; total: number }> {
+    const limit = options?.limit || 50;
+    const offset = options?.offset || 0;
+
+    const conditions = [];
+    if (options?.userId) conditions.push(eq(sessionLogs.userId, options.userId));
+    if (options?.familyId) conditions.push(eq(sessionLogs.familyId, options.familyId));
+    if (options?.status) conditions.push(eq(sessionLogs.status, options.status as SessionStatus));
+    if (options?.from) conditions.push(gte(sessionLogs.startedAt, options.from));
+    if (options?.to) conditions.push(lte(sessionLogs.startedAt, options.to));
+
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
+    const [totalResult, data] = await Promise.all([
+      db.select({ count: count() }).from(sessionLogs).where(whereClause),
+      db
+        .select()
+        .from(sessionLogs)
+        .where(whereClause)
+        .orderBy(desc(sessionLogs.startedAt))
+        .limit(limit)
+        .offset(offset)
+    ]);
+
+    return { data, total: totalResult[0]?.count || 0 };
+  }
+
+  async createErrorLog(data: Omit<DbErrorLog, "id" | "createdAt">): Promise<DbErrorLog> {
+    const [log] = await db.insert(errorLogs).values(data).returning();
+    return log;
+  }
+
+  async getErrorLog(id: string): Promise<DbErrorLog | undefined> {
+    const [log] = await db.select().from(errorLogs).where(eq(errorLogs.id, id));
+    return log;
+  }
+
+  async getErrorLogs(options?: { limit?: number; offset?: number; userId?: string; familyId?: string; category?: string; severity?: string; resolved?: boolean; from?: Date; to?: Date }): Promise<{ data: DbErrorLog[]; total: number }> {
+    const limit = options?.limit || 50;
+    const offset = options?.offset || 0;
+
+    const conditions = [];
+    if (options?.userId) conditions.push(eq(errorLogs.userId, options.userId));
+    if (options?.familyId) conditions.push(eq(errorLogs.familyId, options.familyId));
+    if (options?.category) conditions.push(eq(errorLogs.category, options.category as LogCategory));
+    if (options?.severity) conditions.push(eq(errorLogs.severity, options.severity as LogSeverity));
+    if (options?.resolved !== undefined) conditions.push(eq(errorLogs.resolved, options.resolved));
+    if (options?.from) conditions.push(gte(errorLogs.createdAt, options.from));
+    if (options?.to) conditions.push(lte(errorLogs.createdAt, options.to));
+
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
+    const [totalResult, data] = await Promise.all([
+      db.select({ count: count() }).from(errorLogs).where(whereClause),
+      db
+        .select()
+        .from(errorLogs)
+        .where(whereClause)
+        .orderBy(desc(errorLogs.createdAt))
+        .limit(limit)
+        .offset(offset)
+    ]);
+
+    return { data, total: totalResult[0]?.count || 0 };
+  }
+
+  async resolveErrorLog(id: string, adminId: string): Promise<DbErrorLog | undefined> {
+    const [log] = await db
+      .update(errorLogs)
+      .set({ resolved: true, resolvedAt: new Date(), resolvedBy: adminId })
+      .where(eq(errorLogs.id, id))
+      .returning();
+    return log;
+  }
+
+  async getErrorStats(): Promise<{ total: number; critical: number; unresolved: number; byCategory: Record<string, number> }> {
+    const [totalResult] = await db.select({ count: count() }).from(errorLogs);
+    const [criticalResult] = await db.select({ count: count() }).from(errorLogs).where(eq(errorLogs.severity, "critical"));
+    const [unresolvedResult] = await db.select({ count: count() }).from(errorLogs).where(eq(errorLogs.resolved, false));
+    
+    const categoryResults = await db
+      .select({ category: errorLogs.category, count: count() })
+      .from(errorLogs)
+      .groupBy(errorLogs.category);
+    
+    const byCategory: Record<string, number> = {};
+    categoryResults.forEach(r => {
+      byCategory[r.category] = r.count;
+    });
+
+    return {
+      total: totalResult?.count || 0,
+      critical: criticalResult?.count || 0,
+      unresolved: unresolvedResult?.count || 0,
+      byCategory
+    };
   }
 }
 

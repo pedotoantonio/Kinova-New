@@ -640,4 +640,74 @@ export function registerAdminRoutes(app: Express): void {
       res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Internal server error" } });
     }
   });
+
+  // ========== SESSION & ERROR LOGS ==========
+
+  app.get("/api/admin/logs/sessions", adminAuthMiddleware, async (req: AdminAuthRequest, res: Response) => {
+    try {
+      const { limit, offset, userId, familyId, status, from, to } = req.query;
+      const result = await storage.getSessionLogs({
+        limit: limit ? parseInt(limit as string) : 50,
+        offset: offset ? parseInt(offset as string) : 0,
+        userId: userId as string | undefined,
+        familyId: familyId as string | undefined,
+        status: status as string | undefined,
+        from: from ? new Date(from as string) : undefined,
+        to: to ? new Date(to as string) : undefined,
+      });
+      res.json(result);
+    } catch (error) {
+      console.error("Get session logs error:", error);
+      res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Failed to get session logs" } });
+    }
+  });
+
+  app.get("/api/admin/logs/errors", adminAuthMiddleware, async (req: AdminAuthRequest, res: Response) => {
+    try {
+      const { limit, offset, userId, familyId, category, severity, resolved, from, to } = req.query;
+      const result = await storage.getErrorLogs({
+        limit: limit ? parseInt(limit as string) : 50,
+        offset: offset ? parseInt(offset as string) : 0,
+        userId: userId as string | undefined,
+        familyId: familyId as string | undefined,
+        category: category as string | undefined,
+        severity: severity as string | undefined,
+        resolved: resolved === "true" ? true : resolved === "false" ? false : undefined,
+        from: from ? new Date(from as string) : undefined,
+        to: to ? new Date(to as string) : undefined,
+      });
+      res.json(result);
+    } catch (error) {
+      console.error("Get error logs error:", error);
+      res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Failed to get error logs" } });
+    }
+  });
+
+  app.get("/api/admin/logs/errors/stats", adminAuthMiddleware, async (req: AdminAuthRequest, res: Response) => {
+    try {
+      const stats = await storage.getErrorStats();
+      res.json(stats);
+    } catch (error) {
+      console.error("Get error stats error:", error);
+      res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Failed to get error stats" } });
+    }
+  });
+
+  app.post("/api/admin/logs/errors/:id/resolve", adminAuthMiddleware, requireAdminRoles("super_admin", "support_admin"), async (req: AdminAuthRequest, res: Response) => {
+    try {
+      const { id } = req.params;
+      const resolved = await storage.resolveErrorLog(id, req.adminAuth!.adminId);
+      if (!resolved) {
+        return res.status(404).json({ error: "Error log not found" });
+      }
+      
+      const ipAddress = req.ip || req.socket.remoteAddress || null;
+      await logAuditAction(req.adminAuth!.adminId, "ERROR_LOG_RESOLVED", "error_log", id, "success", ipAddress);
+      
+      res.json(resolved);
+    } catch (error) {
+      console.error("Resolve error log error:", error);
+      res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Failed to resolve error" } });
+    }
+  });
 }

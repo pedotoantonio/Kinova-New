@@ -8,6 +8,20 @@ export const adminRoleEnum = pgEnum("admin_role", ["super_admin", "support_admin
 export const planTypeEnum = pgEnum("plan_type", ["trial", "donor", "premium"]);
 export const donationStatusEnum = pgEnum("donation_status", ["pending", "completed", "failed", "refunded"]);
 export const notificationLogStatusEnum = pgEnum("notification_log_status", ["pending", "sent", "failed"]);
+export const sessionStatusEnum = pgEnum("session_status", ["started", "active", "ended", "crashed"]);
+export const logSeverityEnum = pgEnum("log_severity", ["info", "warning", "error", "critical"]);
+export const logCategoryEnum = pgEnum("log_category", [
+  "auth",
+  "network", 
+  "payment",
+  "assistant",
+  "calendar",
+  "tasks",
+  "shopping",
+  "budget",
+  "family",
+  "general"
+]);
 export const priorityEnum = pgEnum("priority", ["low", "medium", "high"]);
 export const placeCategoryEnum = pgEnum("place_category", [
   "home",
@@ -514,6 +528,52 @@ export const paymentPlans = pgTable("payment_plans", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+// Session and Error Logging Tables
+export const sessionLogs = pgTable("session_logs", {
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id, { onDelete: "set null" }),
+  familyId: varchar("family_id").references(() => families.id, { onDelete: "set null" }),
+  deviceId: text("device_id"),
+  platform: text("platform"),
+  appVersion: text("app_version"),
+  osVersion: text("os_version"),
+  locale: text("locale"),
+  ipAddress: text("ip_address"),
+  userAgent: text("user_agent"),
+  status: sessionStatusEnum("status").default("started").notNull(),
+  startedAt: timestamp("started_at").defaultNow().notNull(),
+  endedAt: timestamp("ended_at"),
+  terminationReason: text("termination_reason"),
+  metadata: text("metadata"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const errorLogs = pgTable("error_logs", {
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  sessionId: varchar("session_id").references(() => sessionLogs.id, { onDelete: "set null" }),
+  userId: varchar("user_id").references(() => users.id, { onDelete: "set null" }),
+  familyId: varchar("family_id").references(() => families.id, { onDelete: "set null" }),
+  requestId: text("request_id"),
+  category: logCategoryEnum("category").default("general").notNull(),
+  severity: logSeverityEnum("severity").default("error").notNull(),
+  code: text("code").notNull(),
+  message: text("message").notNull(),
+  userMessage: text("user_message"),
+  component: text("component"),
+  stackTrace: text("stack_trace"),
+  context: text("context"),
+  ipAddress: text("ip_address"),
+  userAgent: text("user_agent"),
+  resolved: boolean("resolved").default(false).notNull(),
+  resolvedAt: timestamp("resolved_at"),
+  resolvedBy: varchar("resolved_by").references(() => adminUsers.id),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 // Admin Console Types
 export type AdminRole = "super_admin" | "support_admin" | "auditor";
 export type PlanType = "trial" | "donor" | "premium";
@@ -529,3 +589,10 @@ export type DbNotificationLog = typeof notificationLogs.$inferSelect;
 export type DbAiConfig = typeof aiConfig.$inferSelect;
 export type DbPaymentSettings = typeof paymentSettings.$inferSelect;
 export type DbPaymentPlan = typeof paymentPlans.$inferSelect;
+export type DbSessionLog = typeof sessionLogs.$inferSelect;
+export type DbErrorLog = typeof errorLogs.$inferSelect;
+
+// Log types
+export type SessionStatus = "started" | "active" | "ended" | "crashed";
+export type LogSeverity = "info" | "warning" | "error" | "critical";
+export type LogCategory = "auth" | "network" | "payment" | "assistant" | "calendar" | "tasks" | "shopping" | "budget" | "family" | "general";

@@ -2010,6 +2010,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const { registerAssistantRoutes } = await import("./assistant");
   registerAssistantRoutes(app, authMiddleware);
 
+  const { registerLoggingRoutes } = await import("./logging-routes");
+  registerLoggingRoutes(app, authMiddleware);
+
   const { registerAdminRoutes } = await import("./admin-routes");
   registerAdminRoutes(app);
 
