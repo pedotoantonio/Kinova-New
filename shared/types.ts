@@ -175,6 +175,41 @@ export interface CreateShoppingItemRequest {
   category?: string;
 }
 
+export type NoteColor = "default" | "red" | "orange" | "yellow" | "green" | "blue" | "purple" | "pink";
+export type NoteRelatedType = "event" | "task" | "expense" | "shopping_item";
+
+export interface Note {
+  id: string;
+  familyId: string;
+  title: string;
+  content?: string | null;
+  color: NoteColor;
+  pinned: boolean;
+  relatedType?: NoteRelatedType | null;
+  relatedId?: string | null;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateNoteRequest {
+  title: string;
+  content?: string;
+  color?: NoteColor;
+  pinned?: boolean;
+  relatedType?: NoteRelatedType;
+  relatedId?: string;
+}
+
+export interface UpdateNoteRequest {
+  title?: string;
+  content?: string | null;
+  color?: NoteColor;
+  pinned?: boolean;
+  relatedType?: NoteRelatedType | null;
+  relatedId?: string | null;
+}
+
 export interface UpdateShoppingItemRequest {
   name?: string;
   quantity?: number;

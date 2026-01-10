@@ -12,6 +12,7 @@ import {
   type DbTask,
   type DbShoppingItem,
   type DbExpense,
+  type DbNote,
   type DbSession,
   type DbAssistantConversation,
   type DbAssistantMessage,
@@ -48,6 +49,7 @@ import {
   tasks,
   shoppingItems,
   expenses,
+  notes,
   sessions,
   assistantConversations,
   assistantMessages,
@@ -70,7 +72,7 @@ import {
   errorLogs
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, isNull, gt, gte, lte, desc, lt, or, sql, count, like, asc, sum } from "drizzle-orm";
+import { eq, and, isNull, gt, gte, lte, desc, lt, or, sql, count, like, ilike, asc, sum } from "drizzle-orm";
 import { getDefaultPermissionsForRole } from "./permissions";
 
 export interface IStorage {
@@ -121,6 +123,13 @@ export interface IStorage {
   createExpense(data: Omit<DbExpense, "id" | "createdAt" | "updatedAt">): Promise<DbExpense>;
   updateExpense(id: string, familyId: string, data: Partial<DbExpense>): Promise<DbExpense | undefined>;
   deleteExpense(id: string, familyId: string): Promise<boolean>;
+  
+  getNotes(familyId: string, filters?: { relatedType?: string; relatedId?: string; pinned?: boolean; search?: string; limit?: number; offset?: number }): Promise<DbNote[]>;
+  getNote(id: string, familyId: string): Promise<DbNote | undefined>;
+  createNote(data: Omit<DbNote, "id" | "createdAt" | "updatedAt">): Promise<DbNote>;
+  updateNote(id: string, familyId: string, data: Partial<DbNote>): Promise<DbNote | undefined>;
+  deleteNote(id: string, familyId: string): Promise<boolean>;
+  getNotesByRelated(familyId: string, relatedType: string, relatedId: string): Promise<DbNote[]>;
   
   createSession(data: { token: string; userId: string; familyId: string; role: UserRole; type: "access" | "refresh"; expiresAt: Date }): Promise<DbSession>;
   getSession(token: string): Promise<DbSession | undefined>;
@@ -645,6 +654,84 @@ export class DatabaseStorage implements IStorage {
   async deleteExpense(id: string, familyId: string): Promise<boolean> {
     await db.delete(expenses).where(and(eq(expenses.id, id), eq(expenses.familyId, familyId)));
     return true;
+  }
+
+  async getNotes(familyId: string, filters?: { relatedType?: string; relatedId?: string; pinned?: boolean; search?: string; limit?: number; offset?: number }): Promise<DbNote[]> {
+    const conditions = [eq(notes.familyId, familyId)];
+    if (filters?.relatedType) {
+      conditions.push(eq(notes.relatedType, filters.relatedType as "event" | "task" | "expense" | "shopping_item"));
+    }
+    if (filters?.relatedId) {
+      conditions.push(eq(notes.relatedId, filters.relatedId));
+    }
+    if (filters?.pinned !== undefined) {
+      conditions.push(eq(notes.pinned, filters.pinned));
+    }
+    if (filters?.search) {
+      const searchTerm = `%${filters.search.toLowerCase()}%`;
+      conditions.push(
+        or(
+          ilike(notes.title, searchTerm),
+          ilike(notes.content, searchTerm)
+        ) as any
+      );
+    }
+    let query = db
+      .select()
+      .from(notes)
+      .where(and(...conditions))
+      .orderBy(desc(notes.pinned), desc(notes.updatedAt));
+    
+    if (filters?.limit) {
+      query = query.limit(filters.limit) as any;
+    }
+    if (filters?.offset) {
+      query = query.offset(filters.offset) as any;
+    }
+    
+    return query;
+  }
+
+  async getNote(id: string, familyId: string): Promise<DbNote | undefined> {
+    const [note] = await db
+      .select()
+      .from(notes)
+      .where(and(eq(notes.id, id), eq(notes.familyId, familyId)));
+    return note;
+  }
+
+  async createNote(data: Omit<DbNote, "id" | "createdAt" | "updatedAt">): Promise<DbNote> {
+    const [note] = await db
+      .insert(notes)
+      .values(data)
+      .returning();
+    return note;
+  }
+
+  async updateNote(id: string, familyId: string, data: Partial<DbNote>): Promise<DbNote | undefined> {
+    const [note] = await db
+      .update(notes)
+      .set({ ...data, updatedAt: new Date() })
+      .where(and(eq(notes.id, id), eq(notes.familyId, familyId)))
+      .returning();
+    return note;
+  }
+
+  async deleteNote(id: string, familyId: string): Promise<boolean> {
+    await db.delete(notes).where(and(eq(notes.id, id), eq(notes.familyId, familyId)));
+    return true;
+  }
+
+  async getNotesByRelated(familyId: string, relatedType: string, relatedId: string): Promise<DbNote[]> {
+    return db
+      .select()
+      .from(notes)
+      .where(and(
+        eq(notes.familyId, familyId),
+        eq(notes.relatedType, relatedType as "event" | "task" | "expense" | "shopping_item"),
+        eq(notes.relatedId, relatedId)
+      ))
+      .orderBy(desc(notes.createdAt));
   }
 
   async createSession(data: { 

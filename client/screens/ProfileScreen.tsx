@@ -316,6 +316,24 @@ export default function ProfileScreen() {
           </View>
           <Feather name="chevron-right" size={20} color={colors.textSecondary} />
         </Pressable>
+        
+        <View style={[styles.divider, { backgroundColor: colors.backgroundSecondary }]} />
+        
+        <Pressable
+          style={styles.settingsRow}
+          onPress={() => (navigation as any).navigate("Notes")}
+          testID="button-notes"
+        >
+          <View style={styles.settingsRowLeft}>
+            <Feather name="file-text" size={20} color={colors.primary} />
+            <View style={styles.settingsRowContent}>
+              <ThemedText style={[styles.settingsLabel, { color: colors.textSecondary }]}>
+                {t.notes.title}
+              </ThemedText>
+            </View>
+          </View>
+          <Feather name="chevron-right" size={20} color={colors.textSecondary} />
+        </Pressable>
       </Card>
 
       <Card style={styles.familyCard}>

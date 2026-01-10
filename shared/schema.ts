@@ -210,6 +210,25 @@ export const expenses = pgTable("expenses", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+export const noteRelatedTypeEnum = pgEnum("note_related_type", ["event", "task", "expense", "shopping_item"]);
+export const noteColorEnum = pgEnum("note_color", ["default", "red", "orange", "yellow", "green", "blue", "purple", "pink"]);
+
+export const notes = pgTable("notes", {
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  familyId: varchar("family_id").references(() => families.id, { onDelete: "cascade" }).notNull(),
+  title: text("title").notNull(),
+  content: text("content"),
+  color: noteColorEnum("color").default("default").notNull(),
+  pinned: boolean("pinned").default(false).notNull(),
+  relatedType: noteRelatedTypeEnum("related_type"),
+  relatedId: varchar("related_id"),
+  createdBy: varchar("created_by").references(() => users.id).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 export const tokenTypeEnum = pgEnum("token_type", ["access", "refresh"]);
 
 export const notificationTypeEnum = pgEnum("notification_type", [
@@ -277,6 +296,9 @@ export type DbEventRecurrence = typeof eventRecurrences.$inferSelect;
 export type DbTask = typeof tasks.$inferSelect;
 export type DbShoppingItem = typeof shoppingItems.$inferSelect;
 export type DbExpense = typeof expenses.$inferSelect;
+export type DbNote = typeof notes.$inferSelect;
+export type NoteColor = "default" | "red" | "orange" | "yellow" | "green" | "blue" | "purple" | "pink";
+export type NoteRelatedType = "event" | "task" | "expense" | "shopping_item";
 export type DbSession = typeof sessions.$inferSelect;
 
 export const assistantConversations = pgTable("assistant_conversations", {

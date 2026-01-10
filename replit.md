@@ -251,3 +251,40 @@ Preferred communication style: Simple, everyday language.
 **Key Files**:
 - `server/assistant.ts`: Document interpretation endpoint and vision analysis
 - `client/screens/AssistantScreen.tsx`: Auto-interpretation trigger in uploadFile()
+
+### Notes Feature (January 2026)
+
+**Full Notes System**:
+- Complete CRUD API for family notes
+- Polymorphic relations to link notes to events, tasks, expenses, or shopping items
+- 8 color options: default, red, orange, yellow, green, blue, purple, pink
+- Pinning support to prioritize important notes
+- Search and filtering by type (all, pinned, events, tasks, expenses, shopping)
+
+**Database Schema**:
+- `notes` table: id (UUID), familyId (FK), title, content, color (8 options), pinned, relatedType (event/task/expense/shopping_item/null), relatedId, createdBy (FK), createdAt, updatedAt
+
+**API Endpoints** (`/api/notes/*`):
+- `GET /api/notes`: List all notes for family (with search and filter params)
+- `POST /api/notes`: Create new note
+- `GET /api/notes/:id`: Get note by ID
+- `PUT /api/notes/:id`: Update note
+- `DELETE /api/notes/:id`: Delete note
+
+**AI Assistant Integration**:
+- `create_note` action for creating notes via assistant
+- Format: {"title":"...", "content":"...", "color":"default", "pinned":false}
+
+**Frontend Screens**:
+- NotesScreen: List view with search, filters, FAB for adding, color-coded cards
+- NoteDetailScreen: Detail/edit view with color picker, pin toggle, related entity display
+- Accessible from Profile → Notes menu item
+
+**Key Files**:
+- `shared/schema.ts`: Notes table definition with polymorphic relations
+- `server/storage.ts`: CRUD operations for notes
+- `server/routes.ts`: Notes API endpoints
+- `client/screens/NotesScreen.tsx`: Notes list with filtering
+- `client/screens/NoteDetailScreen.tsx`: Note detail/edit screen
+- `client/navigation/ProfileStackNavigator.tsx`: Notes screen registration
+- `client/lib/i18n.tsx`: Italian and English translations for notes

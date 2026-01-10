@@ -1690,6 +1690,290 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Notes API
+  app.get("/api/notes", authMiddleware, async (req: AuthRequest, res: Response) => {
+    try {
+      const { relatedType, relatedId, pinned, search, limit, offset } = req.query;
+      
+      const filters: { relatedType?: string; relatedId?: string; pinned?: boolean; search?: string; limit?: number; offset?: number } = {};
+      if (relatedType && typeof relatedType === "string") {
+        filters.relatedType = relatedType;
+      }
+      if (relatedId && typeof relatedId === "string") {
+        filters.relatedId = relatedId;
+      }
+      if (pinned !== undefined) {
+        filters.pinned = pinned === "true";
+      }
+      if (search && typeof search === "string") {
+        filters.search = search.trim();
+      }
+      if (limit && typeof limit === "string") {
+        const parsedLimit = parseInt(limit, 10);
+        if (!isNaN(parsedLimit) && parsedLimit > 0) {
+          filters.limit = Math.min(parsedLimit, 100);
+        }
+      }
+      if (offset && typeof offset === "string") {
+        const parsedOffset = parseInt(offset, 10);
+        if (!isNaN(parsedOffset) && parsedOffset >= 0) {
+          filters.offset = parsedOffset;
+        }
+      }
+
+      const notesList = await storage.getNotes(req.auth!.familyId, filters);
+      res.json(notesList.map(n => ({
+        id: n.id,
+        familyId: n.familyId,
+        title: n.title,
+        content: n.content,
+        color: n.color,
+        pinned: n.pinned,
+        relatedType: n.relatedType,
+        relatedId: n.relatedId,
+        createdBy: n.createdBy,
+        createdAt: n.createdAt.toISOString(),
+        updatedAt: n.updatedAt.toISOString(),
+      })));
+    } catch (error) {
+      console.error("Get notes error:", error);
+      res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Internal server error" } });
+    }
+  });
+
+  app.get("/api/notes/by-related/:type/:id", authMiddleware, async (req: AuthRequest, res: Response) => {
+    try {
+      const { type, id } = req.params;
+      const validTypes = ["event", "task", "expense", "shopping_item"];
+      if (!validTypes.includes(type)) {
+        return res.status(400).json({ error: { code: "BAD_REQUEST", message: "Invalid related type" } });
+      }
+
+      const notesList = await storage.getNotesByRelated(req.auth!.familyId, type, id);
+      res.json(notesList.map(n => ({
+        id: n.id,
+        familyId: n.familyId,
+        title: n.title,
+        content: n.content,
+        color: n.color,
+        pinned: n.pinned,
+        relatedType: n.relatedType,
+        relatedId: n.relatedId,
+        createdBy: n.createdBy,
+        createdAt: n.createdAt.toISOString(),
+        updatedAt: n.updatedAt.toISOString(),
+      })));
+    } catch (error) {
+      console.error("Get related notes error:", error);
+      res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Internal server error" } });
+    }
+  });
+
+  app.get("/api/notes/:id", authMiddleware, async (req: AuthRequest, res: Response) => {
+    try {
+      const note = await storage.getNote(req.params.id, req.auth!.familyId);
+      if (!note) {
+        return res.status(404).json({ error: { code: "NOT_FOUND", message: "Note not found" } });
+      }
+      res.json({
+        id: note.id,
+        familyId: note.familyId,
+        title: note.title,
+        content: note.content,
+        color: note.color,
+        pinned: note.pinned,
+        relatedType: note.relatedType,
+        relatedId: note.relatedId,
+        createdBy: note.createdBy,
+        createdAt: note.createdAt.toISOString(),
+        updatedAt: note.updatedAt.toISOString(),
+      });
+    } catch (error) {
+      console.error("Get note error:", error);
+      res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Internal server error" } });
+    }
+  });
+
+  app.post("/api/notes", authMiddleware, async (req: AuthRequest, res: Response) => {
+    try {
+      const user = await storage.getUser(req.auth!.userId);
+      if (!user || !user.canModifyItems) {
+        return res.status(403).json({ error: { code: "FORBIDDEN", message: "Non hai i permessi per creare note" } });
+      }
+
+      const { title, content, color, pinned, relatedType, relatedId } = req.body;
+      
+      if (!title || typeof title !== "string" || title.trim().length === 0) {
+        return res.status(400).json({ error: { code: "BAD_REQUEST", message: "Title is required" } });
+      }
+
+      if (relatedType && relatedId) {
+        const validTypes = ["event", "task", "expense", "shopping_item"];
+        if (!validTypes.includes(relatedType)) {
+          return res.status(400).json({ error: { code: "BAD_REQUEST", message: "Invalid related type" } });
+        }
+        
+        let exists = false;
+        switch (relatedType) {
+          case "event":
+            exists = !!(await storage.getEvent(relatedId, req.auth!.familyId));
+            break;
+          case "task":
+            exists = !!(await storage.getTask(relatedId, req.auth!.familyId));
+            break;
+          case "expense":
+            exists = !!(await storage.getExpense(relatedId, req.auth!.familyId));
+            break;
+          case "shopping_item":
+            exists = !!(await storage.getShoppingItem(relatedId, req.auth!.familyId));
+            break;
+        }
+        if (!exists) {
+          return res.status(400).json({ error: { code: "BAD_REQUEST", message: "Related entity not found" } });
+        }
+      }
+
+      const noteColors = ["default", "red", "orange", "yellow", "green", "blue", "purple", "pink"];
+      const noteColor = noteColors.includes(color) ? color : "default";
+
+      const note = await storage.createNote({
+        familyId: req.auth!.familyId,
+        title: title.trim(),
+        content: content || null,
+        color: noteColor,
+        pinned: pinned === true,
+        relatedType: relatedType || null,
+        relatedId: relatedId || null,
+        createdBy: req.auth!.userId,
+      });
+
+      res.status(201).json({
+        id: note.id,
+        familyId: note.familyId,
+        title: note.title,
+        content: note.content,
+        color: note.color,
+        pinned: note.pinned,
+        relatedType: note.relatedType,
+        relatedId: note.relatedId,
+        createdBy: note.createdBy,
+        createdAt: note.createdAt.toISOString(),
+        updatedAt: note.updatedAt.toISOString(),
+      });
+    } catch (error) {
+      console.error("Create note error:", error);
+      res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Internal server error" } });
+    }
+  });
+
+  app.patch("/api/notes/:id", authMiddleware, async (req: AuthRequest, res: Response) => {
+    try {
+      const user = await storage.getUser(req.auth!.userId);
+      if (!user || !user.canModifyItems) {
+        return res.status(403).json({ error: { code: "FORBIDDEN", message: "Non hai i permessi per modificare note" } });
+      }
+
+      const existingNote = await storage.getNote(req.params.id, req.auth!.familyId);
+      if (!existingNote) {
+        return res.status(404).json({ error: { code: "NOT_FOUND", message: "Note not found" } });
+      }
+
+      const { title, content, color, pinned, relatedType, relatedId } = req.body;
+      const updates: Record<string, unknown> = {};
+
+      if (title !== undefined) {
+        if (typeof title !== "string" || title.trim().length === 0) {
+          return res.status(400).json({ error: { code: "BAD_REQUEST", message: "Title cannot be empty" } });
+        }
+        updates.title = title.trim();
+      }
+      if (content !== undefined) updates.content = content;
+      if (color !== undefined) {
+        const noteColors = ["default", "red", "orange", "yellow", "green", "blue", "purple", "pink"];
+        if (noteColors.includes(color)) updates.color = color;
+      }
+      if (pinned !== undefined) updates.pinned = pinned === true;
+      
+      if (relatedType !== undefined || relatedId !== undefined) {
+        const newRelatedType = relatedType !== undefined ? relatedType : existingNote.relatedType;
+        const newRelatedId = relatedId !== undefined ? relatedId : existingNote.relatedId;
+        
+        if (newRelatedType && newRelatedId) {
+          const validRelatedTypes = ["event", "task", "expense", "shopping_item"];
+          if (!validRelatedTypes.includes(newRelatedType)) {
+            return res.status(400).json({ error: { code: "BAD_REQUEST", message: "Invalid related type" } });
+          }
+          
+          let relatedExists = false;
+          switch (newRelatedType) {
+            case "event":
+              relatedExists = !!(await storage.getEvent(newRelatedId, req.auth!.familyId));
+              break;
+            case "task":
+              relatedExists = !!(await storage.getTask(newRelatedId, req.auth!.familyId));
+              break;
+            case "expense":
+              relatedExists = !!(await storage.getExpense(newRelatedId, req.auth!.familyId));
+              break;
+            case "shopping_item":
+              relatedExists = !!(await storage.getShoppingItem(newRelatedId, req.auth!.familyId));
+              break;
+          }
+          
+          if (!relatedExists) {
+            return res.status(400).json({ error: { code: "BAD_REQUEST", message: "Related entity not found" } });
+          }
+          
+          updates.relatedType = newRelatedType;
+          updates.relatedId = newRelatedId;
+        } else if (!newRelatedType && !newRelatedId) {
+          updates.relatedType = null;
+          updates.relatedId = null;
+        } else {
+          return res.status(400).json({ error: { code: "BAD_REQUEST", message: "Both relatedType and relatedId must be provided together" } });
+        }
+      }
+
+      const note = await storage.updateNote(req.params.id, req.auth!.familyId, updates);
+      res.json({
+        id: note!.id,
+        familyId: note!.familyId,
+        title: note!.title,
+        content: note!.content,
+        color: note!.color,
+        pinned: note!.pinned,
+        relatedType: note!.relatedType,
+        relatedId: note!.relatedId,
+        createdBy: note!.createdBy,
+        createdAt: note!.createdAt.toISOString(),
+        updatedAt: note!.updatedAt.toISOString(),
+      });
+    } catch (error) {
+      console.error("Update note error:", error);
+      res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Internal server error" } });
+    }
+  });
+
+  app.delete("/api/notes/:id", authMiddleware, async (req: AuthRequest, res: Response) => {
+    try {
+      const user = await storage.getUser(req.auth!.userId);
+      if (!user || !user.canModifyItems) {
+        return res.status(403).json({ error: { code: "FORBIDDEN", message: "Non hai i permessi per eliminare note" } });
+      }
+
+      const existingNote = await storage.getNote(req.params.id, req.auth!.familyId);
+      if (!existingNote) {
+        return res.status(404).json({ error: { code: "NOT_FOUND", message: "Note not found" } });
+      }
+
+      await storage.deleteNote(req.params.id, req.auth!.familyId);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Delete note error:", error);
+      res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Internal server error" } });
+    }
+  });
+
   app.get("/api/places", authMiddleware, async (req: AuthRequest, res: Response) => {
     try {
       const category = req.query.category as string | undefined;

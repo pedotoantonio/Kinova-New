@@ -227,6 +227,11 @@ AZIONI DISPONIBILI:
 • complete_task: Completa un'attività
   {"id":"task-uuid"}
 
+📝 NOTE:
+• create_note: Crea una nota
+  {"title":"titolo","content":"contenuto","color":"default","pinned":false}
+  colori disponibili: default, red, orange, yellow, green, blue, purple, pink
+
 ESEMPI CORRETTI:
 
 1. UN prodotto con prezzo stimato:
@@ -289,6 +294,11 @@ AVAILABLE ACTIONS:
   {"title":"title","dueDate":"2026-01-15","priority":"medium","assignedTo":"member-uuid"}
 • complete_task: Completes a task
   {"id":"task-uuid"}
+
+📝 NOTES:
+• create_note: Creates a note
+  {"title":"title","content":"content","color":"default","pinned":false}
+  available colors: default, red, orange, yellow, green, blue, purple, pink
 
 CORRECT EXAMPLES:
 
@@ -787,6 +797,24 @@ export function registerAssistantRoutes(app: Express, authMiddleware: (req: Auth
         case "remove_shopping": {
           const deleted = await storage.deleteShoppingItem(actionData.id, req.auth!.familyId);
           result = { success: deleted, message: language === "it" ? "Prodotto rimosso dalla lista" : "Item removed from list" };
+          break;
+        }
+
+        case "create_note": {
+          const validColors = ["default", "red", "orange", "yellow", "green", "blue", "purple", "pink"] as const;
+          const color = validColors.includes(actionData.color) ? actionData.color : "default";
+          
+          const note = await storage.createNote({
+            familyId: req.auth!.familyId,
+            title: actionData.title,
+            content: actionData.content || null,
+            color,
+            pinned: actionData.pinned ?? actionData.isPinned ?? false,
+            relatedType: null,
+            relatedId: null,
+            createdBy: req.auth!.userId,
+          });
+          result = { success: true, message: language === "it" ? "Nota creata" : "Note created", data: note };
           break;
         }
 
