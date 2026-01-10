@@ -15,6 +15,9 @@ import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
+import Animated, { FadeInDown, FadeOutUp } from "react-native-reanimated";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import { scheduleOnRN } from "react-native-worklets";
 
 import { useTheme } from "@/hooks/useTheme";
 import { useAuth } from "@/lib/auth";
@@ -468,6 +471,18 @@ export default function CalendarScreen() {
     ]);
   };
 
+  const confirmDeleteEventSwipe = (event: Event) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    Alert.alert(t.calendar.deleteEvent, t.calendar.deleteConfirm, [
+      { text: t.common.cancel, style: "cancel" },
+      {
+        text: t.common.delete,
+        style: "destructive",
+        onPress: () => deleteEventMutation.mutate(event.id),
+      },
+    ]);
+  };
+
   const dayAbbreviations = [
     t.calendar.sun,
     t.calendar.mon,
@@ -752,63 +767,78 @@ export default function CalendarScreen() {
               const eventColor = getEventColor(event);
               const isMultiDay = isMultiDayEvent(event);
               
+              const tapGesture = Gesture.Tap().onEnd(() => {
+                scheduleOnRN(Haptics.impactAsync, Haptics.ImpactFeedbackStyle.Light);
+                scheduleOnRN(openEditEvent, event);
+              });
+              
+              const swipeGesture = Gesture.Pan()
+                .activeOffsetX(-50)
+                .onEnd((e) => {
+                  if (e.translationX < -100) {
+                    scheduleOnRN(confirmDeleteEventSwipe, event);
+                  }
+                });
+              
+              const composedGesture = Gesture.Race(tapGesture, swipeGesture);
+              
               return (
-                <Pressable
-                  key={event.id}
-                  onPress={() => openEditEvent(event)}
-                  testID={`event-card-${event.id}`}
-                >
-                  <Card style={isMultiDay ? [styles.eventCard, styles.multiDayCard] : styles.eventCard}>
-                    <View
-                      style={[
-                        styles.eventColorBar,
-                        { backgroundColor: eventColor },
-                        isMultiDay && styles.multiDayBar,
-                      ]}
-                    />
-                    <View style={styles.eventContent}>
-                      <View style={styles.eventHeader}>
-                        {event.shortCode ? (
-                          <View style={[styles.shortCodeBadge, { backgroundColor: eventColor + "20" }]}>
-                            <ThemedText style={[styles.shortCodeText, { color: eventColor }]}>
-                              {event.shortCode}
+                <GestureDetector key={event.id} gesture={composedGesture}>
+                  <Animated.View entering={FadeInDown} exiting={FadeOutUp}>
+                    <Pressable onPress={() => openEditEvent(event)} testID={`event-card-${event.id}`}>
+                      <Card style={isMultiDay ? [styles.eventCard, styles.multiDayCard] : styles.eventCard}>
+                      <View
+                        style={[
+                          styles.eventColorBar,
+                          { backgroundColor: eventColor },
+                          isMultiDay && styles.multiDayBar,
+                        ]}
+                      />
+                      <View style={styles.eventContent}>
+                        <View style={styles.eventHeader}>
+                          {event.shortCode ? (
+                            <View style={[styles.shortCodeBadge, { backgroundColor: eventColor + "20" }]}>
+                              <ThemedText style={[styles.shortCodeText, { color: eventColor }]}>
+                                {event.shortCode}
+                              </ThemedText>
+                            </View>
+                          ) : null}
+                          <ThemedText style={[styles.eventTitle, { color: colors.text, flex: 1 }]}>
+                            {event.title}
+                          </ThemedText>
+                          {event.recurrence ? (
+                            <Feather name="repeat" size={14} color={colors.textSecondary} />
+                          ) : null}
+                        </View>
+                        <View style={styles.eventMeta}>
+                          <ThemedText style={[styles.eventTime, { color: colors.textSecondary }]}>
+                            {event.allDay
+                              ? t.calendar.allDay
+                              : `${formatTime(new Date(event.startDate))}${
+                                  event.endDate
+                                    ? ` - ${formatTime(new Date(event.endDate))}`
+                                    : ""
+                                }`}
+                          </ThemedText>
+                          <View style={[styles.categoryBadge, { backgroundColor: eventColor + "15" }]}>
+                            <ThemedText style={[styles.categoryText, { color: eventColor }]}>
+                              {categoryLabel}
                             </ThemedText>
                           </View>
-                        ) : null}
-                        <ThemedText style={[styles.eventTitle, { color: colors.text, flex: 1 }]}>
-                          {event.title}
-                        </ThemedText>
-                        {event.recurrence ? (
-                          <Feather name="repeat" size={14} color={colors.textSecondary} />
-                        ) : null}
-                      </View>
-                      <View style={styles.eventMeta}>
-                        <ThemedText style={[styles.eventTime, { color: colors.textSecondary }]}>
-                          {event.allDay
-                            ? t.calendar.allDay
-                            : `${formatTime(new Date(event.startDate))}${
-                                event.endDate
-                                  ? ` - ${formatTime(new Date(event.endDate))}`
-                                  : ""
-                              }`}
-                        </ThemedText>
-                        <View style={[styles.categoryBadge, { backgroundColor: eventColor + "15" }]}>
-                          <ThemedText style={[styles.categoryText, { color: eventColor }]}>
-                            {categoryLabel}
-                          </ThemedText>
                         </View>
+                        {event.description ? (
+                          <ThemedText
+                            style={[styles.eventDescription, { color: colors.textSecondary }]}
+                            numberOfLines={2}
+                          >
+                            {event.description}
+                          </ThemedText>
+                        ) : null}
                       </View>
-                      {event.description ? (
-                        <ThemedText
-                          style={[styles.eventDescription, { color: colors.textSecondary }]}
-                          numberOfLines={2}
-                        >
-                          {event.description}
-                        </ThemedText>
-                      ) : null}
-                    </View>
-                  </Card>
-                </Pressable>
+                      </Card>
+                    </Pressable>
+                  </Animated.View>
+                </GestureDetector>
               );
             })
           )}

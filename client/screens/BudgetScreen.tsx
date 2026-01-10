@@ -9,6 +9,7 @@ import {
   Alert,
   ScrollView,
   Modal,
+  Dimensions,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
@@ -18,6 +19,7 @@ import { Feather } from "@expo/vector-icons";
 import Animated, { FadeInDown, FadeOutUp } from "react-native-reanimated";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { scheduleOnRN } from "react-native-worklets";
+import * as Haptics from "expo-haptics";
 
 import { useTheme } from "@/hooks/useTheme";
 import { useAuth } from "@/lib/auth";
@@ -56,7 +58,15 @@ export default function BudgetScreen() {
   const [newCategory, setNewCategory] = useState<ExpenseCategory>("other");
   const [newDate, setNewDate] = useState(new Date().toISOString().split("T")[0]);
 
+  const [selectedExpense, setSelectedExpense] = useState<Expense | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editAmount, setEditAmount] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+  const [editCategory, setEditCategory] = useState<ExpenseCategory>("other");
+  const [editDate, setEditDate] = useState("");
+
   const colors = isDark ? Colors.dark : Colors.light;
+  const screenWidth = Dimensions.get("window").width;
 
   const currentMonth = useMemo(() => {
     const now = new Date();
@@ -113,6 +123,21 @@ export default function BudgetScreen() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/expenses"] });
+    },
+    onError: (error: Error) => {
+      Alert.alert(t.common.error, error.message);
+    },
+  });
+
+  const updateExpenseMutation = useMutation({
+    mutationFn: async ({ id, amount, description, category, date }: { id: string; amount: number; description: string; category: string; date: string }) => {
+      return apiRequest("PUT", `/api/expenses/${id}`, { amount, description, category, date });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/expenses"] });
+      setSelectedExpense(null);
+      setIsEditing(false);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     },
     onError: (error: Error) => {
       Alert.alert(t.common.error, error.message);
@@ -209,7 +234,53 @@ export default function BudgetScreen() {
 
   const canDelete = user?.role === "admin" || user?.role === "member";
 
+  const handleOpenExpenseModal = useCallback((expense: Expense) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setSelectedExpense(expense);
+    setEditAmount(String(expense.amount));
+    setEditDescription(expense.description);
+    setEditCategory((expense.category as ExpenseCategory) || "other");
+    setEditDate(new Date(expense.date).toISOString().split("T")[0]);
+    setIsEditing(false);
+  }, []);
+
+  const handleCloseExpenseModal = useCallback(() => {
+    setSelectedExpense(null);
+    setIsEditing(false);
+  }, []);
+
+  const handleSaveExpense = useCallback(() => {
+    if (!selectedExpense) return;
+    const amount = parseFloat(editAmount.replace(",", "."));
+    if (isNaN(amount) || amount <= 0) {
+      Alert.alert(t.common.error, t.budget.amountPositive);
+      return;
+    }
+    if (!editDescription.trim()) {
+      Alert.alert(t.common.error, t.budget.descriptionRequired);
+      return;
+    }
+    updateExpenseMutation.mutate({
+      id: selectedExpense.id,
+      amount,
+      description: editDescription.trim(),
+      category: editCategory,
+      date: new Date(editDate).toISOString(),
+    });
+  }, [selectedExpense, editAmount, editDescription, editCategory, editDate, updateExpenseMutation, t]);
+
+  const handleDeleteFromModal = useCallback(() => {
+    if (!selectedExpense) return;
+    handleDeleteExpense(selectedExpense.id);
+    setSelectedExpense(null);
+  }, [selectedExpense, handleDeleteExpense]);
+
   const renderExpenseItem = useCallback(({ item }: { item: Expense }) => {
+    const tapGesture = Gesture.Tap()
+      .onEnd(() => {
+        scheduleOnRN(handleOpenExpenseModal, item);
+      });
+
     const panGesture = Gesture.Pan()
       .activeOffsetX(-50)
       .onEnd((event) => {
@@ -218,8 +289,10 @@ export default function BudgetScreen() {
         }
       });
 
+    const composedGestures = Gesture.Race(tapGesture, panGesture);
+
     return (
-      <GestureDetector gesture={panGesture}>
+      <GestureDetector gesture={composedGestures}>
         <Animated.View entering={FadeInDown} exiting={FadeOutUp}>
           <Card style={styles.expenseItem}>
             <View style={styles.expenseLeft}>
@@ -243,7 +316,7 @@ export default function BudgetScreen() {
         </Animated.View>
       </GestureDetector>
     );
-  }, [colors, canDelete, t, language, members]);
+  }, [colors, canDelete, t, language, members, handleOpenExpenseModal]);
 
   if (isLoading) {
     return (
@@ -438,6 +511,183 @@ export default function BudgetScreen() {
                 <ThemedText style={[styles.submitButtonText, { color: colors.buttonText }]}>{t.common.save}</ThemedText>
               )}
             </Pressable>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={selectedExpense !== null}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={handleCloseExpenseModal}
+      >
+        <View style={styles.expenseModalOverlay}>
+          <View style={[styles.expenseModalContent, { backgroundColor: colors.backgroundDefault }]}>
+            <View style={styles.expenseModalHeader}>
+              <ThemedText style={styles.expenseModalTitle}>
+                {isEditing ? "Modifica spesa" : "Dettagli spesa"}
+              </ThemedText>
+              <Pressable onPress={handleCloseExpenseModal}>
+                <Feather name="x" size={24} color={colors.text} />
+              </Pressable>
+            </View>
+
+            {selectedExpense ? (
+              isEditing ? (
+                <ScrollView showsVerticalScrollIndicator={false}>
+                  <View style={styles.formGroup}>
+                    <ThemedText style={styles.formLabel}>Importo</ThemedText>
+                    <TextInput
+                      style={[styles.input, { backgroundColor: colors.backgroundSecondary, color: colors.text, borderColor: colors.border }]}
+                      value={editAmount}
+                      onChangeText={setEditAmount}
+                      placeholder={t.budget.amountPlaceholder}
+                      placeholderTextColor={colors.textSecondary}
+                      keyboardType="decimal-pad"
+                    />
+                  </View>
+
+                  <View style={styles.formGroup}>
+                    <ThemedText style={styles.formLabel}>{t.budget.description}</ThemedText>
+                    <TextInput
+                      style={[styles.input, { backgroundColor: colors.backgroundSecondary, color: colors.text, borderColor: colors.border }]}
+                      value={editDescription}
+                      onChangeText={setEditDescription}
+                      placeholder={t.budget.descriptionPlaceholder}
+                      placeholderTextColor={colors.textSecondary}
+                    />
+                  </View>
+
+                  <View style={styles.formGroup}>
+                    <ThemedText style={styles.formLabel}>Categoria</ThemedText>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryScroll}>
+                      {EXPENSE_CATEGORIES.map((cat) => (
+                        <Pressable
+                          key={cat}
+                          style={[
+                            styles.categoryChip,
+                            {
+                              backgroundColor: editCategory === cat ? CATEGORY_COLORS[cat] : colors.backgroundSecondary,
+                              borderColor: CATEGORY_COLORS[cat],
+                            },
+                          ]}
+                          onPress={() => setEditCategory(cat)}
+                        >
+                          <ThemedText
+                            style={[
+                              styles.categoryChipText,
+                              { color: editCategory === cat ? colors.buttonText : colors.text },
+                            ]}
+                          >
+                            {getCategoryLabel(cat)}
+                          </ThemedText>
+                        </Pressable>
+                      ))}
+                    </ScrollView>
+                  </View>
+
+                  <View style={styles.formGroup}>
+                    <ThemedText style={styles.formLabel}>Data</ThemedText>
+                    <TextInput
+                      style={[styles.input, { backgroundColor: colors.backgroundSecondary, color: colors.text, borderColor: colors.border }]}
+                      value={editDate}
+                      onChangeText={setEditDate}
+                      placeholder="YYYY-MM-DD"
+                      placeholderTextColor={colors.textSecondary}
+                    />
+                  </View>
+
+                  <View style={styles.expenseModalButtons}>
+                    <Pressable
+                      style={[styles.modalButton, { backgroundColor: colors.backgroundSecondary }]}
+                      onPress={() => setIsEditing(false)}
+                    >
+                      <ThemedText style={{ color: colors.text }}>{t.common.cancel}</ThemedText>
+                    </Pressable>
+                    <Pressable
+                      style={[styles.modalButton, { backgroundColor: colors.primary }]}
+                      onPress={handleSaveExpense}
+                      disabled={updateExpenseMutation.isPending}
+                    >
+                      {updateExpenseMutation.isPending ? (
+                        <ActivityIndicator size="small" color={colors.buttonText} />
+                      ) : (
+                        <ThemedText style={{ color: colors.buttonText }}>{t.common.save}</ThemedText>
+                      )}
+                    </Pressable>
+                  </View>
+                </ScrollView>
+              ) : (
+                <View>
+                  <View style={styles.expenseDetailRow}>
+                    <ThemedText style={[styles.expenseDetailLabel, { color: colors.textSecondary }]}>
+                      {t.budget.description}
+                    </ThemedText>
+                    <ThemedText style={styles.expenseDetailValue}>
+                      {selectedExpense.description}
+                    </ThemedText>
+                  </View>
+
+                  <View style={styles.expenseDetailRow}>
+                    <ThemedText style={[styles.expenseDetailLabel, { color: colors.textSecondary }]}>
+                      Importo
+                    </ThemedText>
+                    <ThemedText style={[styles.expenseDetailValue, { color: colors.error }]}>
+                      -{formatCurrency(selectedExpense.amount)}
+                    </ThemedText>
+                  </View>
+
+                  <View style={styles.expenseDetailRow}>
+                    <ThemedText style={[styles.expenseDetailLabel, { color: colors.textSecondary }]}>
+                      Categoria
+                    </ThemedText>
+                    <View style={styles.expenseDetailCategoryRow}>
+                      <View style={[styles.categoryDot, { backgroundColor: CATEGORY_COLORS[selectedExpense.category as ExpenseCategory] || CATEGORY_COLORS.other }]} />
+                      <ThemedText style={styles.expenseDetailValue}>
+                        {getCategoryLabel(selectedExpense.category || "other")}
+                      </ThemedText>
+                    </View>
+                  </View>
+
+                  <View style={styles.expenseDetailRow}>
+                    <ThemedText style={[styles.expenseDetailLabel, { color: colors.textSecondary }]}>
+                      Data
+                    </ThemedText>
+                    <ThemedText style={styles.expenseDetailValue}>
+                      {formatDate(selectedExpense.date)}
+                    </ThemedText>
+                  </View>
+
+                  <View style={styles.expenseDetailRow}>
+                    <ThemedText style={[styles.expenseDetailLabel, { color: colors.textSecondary }]}>
+                      Pagato da
+                    </ThemedText>
+                    <ThemedText style={styles.expenseDetailValue}>
+                      {getMemberName(selectedExpense.paidBy)}
+                    </ThemedText>
+                  </View>
+
+                  <View style={styles.expenseModalButtons}>
+                    <Pressable
+                      style={[styles.modalButton, { backgroundColor: colors.primary }]}
+                      onPress={() => setIsEditing(true)}
+                    >
+                      <Feather name="edit-2" size={16} color={colors.buttonText} style={{ marginRight: Spacing.xs }} />
+                      <ThemedText style={{ color: colors.buttonText }}>{t.common.edit}</ThemedText>
+                    </Pressable>
+                    {canDelete ? (
+                      <Pressable
+                        style={[styles.modalButton, { backgroundColor: colors.error }]}
+                        onPress={handleDeleteFromModal}
+                      >
+                        <Feather name="trash-2" size={16} color={colors.buttonText} style={{ marginRight: Spacing.xs }} />
+                        <ThemedText style={{ color: colors.buttonText }}>{t.common.delete}</ThemedText>
+                      </Pressable>
+                    ) : null}
+                  </View>
+                </View>
+              )
+            ) : null}
           </View>
         </View>
       </Modal>
@@ -642,5 +892,57 @@ const styles = StyleSheet.create({
   submitButtonText: {
     ...Typography.body,
     fontWeight: "600",
+  },
+  expenseModalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.6)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: Spacing.lg,
+  },
+  expenseModalContent: {
+    width: "100%",
+    maxWidth: 400,
+    borderRadius: BorderRadius.xl,
+    padding: Spacing.lg,
+  },
+  expenseModalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: Spacing.lg,
+  },
+  expenseModalTitle: {
+    ...Typography.subtitle,
+    fontWeight: "600",
+  },
+  expenseDetailRow: {
+    marginBottom: Spacing.lg,
+  },
+  expenseDetailLabel: {
+    ...Typography.caption,
+    marginBottom: Spacing.xs,
+  },
+  expenseDetailValue: {
+    fontSize: 18,
+    fontWeight: "500",
+  },
+  expenseDetailCategoryRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  expenseModalButtons: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: Spacing.md,
+    marginTop: Spacing.lg,
+  },
+  modalButton: {
+    flex: 1,
+    height: Spacing.buttonHeight,
+    borderRadius: BorderRadius.sm,
+    justifyContent: "center",
+    alignItems: "center",
+    flexDirection: "row",
   },
 });
