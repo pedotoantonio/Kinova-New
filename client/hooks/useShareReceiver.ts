@@ -1,7 +1,6 @@
 import { useEffect, useCallback, useState } from "react";
 import * as Linking from "expo-linking";
-import { useNavigation } from "@react-navigation/native";
-import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { useNavigation, NavigationProp } from "@react-navigation/native";
 
 export interface SharedContent {
   type: "text" | "url" | "image" | "file";
@@ -14,9 +13,13 @@ interface UseShareReceiverOptions {
   onContentReceived?: (content: SharedContent) => void;
 }
 
+type RootStackParamList = {
+  Main: { screen: string; params?: { sharedContent: SharedContent } };
+};
+
 export function useShareReceiver(options?: UseShareReceiverOptions) {
   const [pendingShare, setPendingShare] = useState<SharedContent | null>(null);
-  const navigation = useNavigation<NativeStackNavigationProp<{ Main: { screen: string; params?: { sharedContent: SharedContent } } }>>();
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
 
   const handleUrl = useCallback((event: { url: string }) => {
     try {
@@ -54,8 +57,8 @@ export function useShareReceiver(options?: UseShareReceiverOptions) {
           options?.onContentReceived?.(content);
 
           navigation.navigate("Main", {
-            screen: "Profile",
-            params: { sharedContent: content } as never,
+            screen: "Assistant",
+            params: { sharedContent: content },
           });
         }
       }
