@@ -23,7 +23,7 @@ function setupCors(app: express.Application) {
     }
 
     if (process.env.REPLIT_DOMAINS) {
-      process.env.REPLIT_DOMAINS.split(",").forEach((d) => {
+      process.env.REPLIT_DOMAINS.split(",").forEach((d: string) => {
         origins.add(`https://${d.trim()}`);
       });
     }
@@ -201,6 +201,14 @@ function configureExpoAndLanding(app: express.Application) {
 
   app.use("/assets", express.static(path.resolve(process.cwd(), "assets")));
   app.use(express.static(path.resolve(process.cwd(), "static-build")));
+
+  app.use("/admin", express.static(path.resolve(process.cwd(), "server", "admin")));
+  app.get("/admin", (_req, res) => {
+    res.sendFile(path.resolve(process.cwd(), "server", "admin", "index.html"));
+  });
+  app.get("/admin/*", (_req, res) => {
+    res.sendFile(path.resolve(process.cwd(), "server", "admin", "index.html"));
+  });
 
   log("Expo routing: Checking expo-platform header on / and /manifest");
 }

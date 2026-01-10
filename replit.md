@@ -141,3 +141,47 @@ Preferred communication style: Simple, everyday language.
 - `server/permissions.ts`: Role defaults and permission utilities
 - `shared/types.ts`: UserPermissions interface
 - `client/lib/auth.tsx`: AuthContext with permissions
+
+### GATE 8 - Admin Console (January 2026)
+
+**Architecture**:
+- Separate PWA web application at `/admin` route
+- Three admin roles: `super_admin`, `support_admin`, `auditor`
+- Complete RBAC enforcement on all admin endpoints
+- i18n support (Italian/English) based on browser language
+
+**Admin Database Schema** (in `shared/schema.ts`):
+- `admin_users` table: Admin accounts with MFA support
+- `admin_sessions` table: Admin session tokens (1 hour expiry)
+- `admin_audit_logs` table: All admin actions tracked
+- `donation_logs` table: Donation/payment tracking
+- `ai_usage_logs` table: AI assistant usage metrics
+- `notification_logs` table: Push notification delivery logs
+- `ai_config` table: Global AI configuration
+
+**Trial/Plan Management** (added to `families` table):
+- `planType`: 'trial' | 'free' | 'premium' | 'enterprise'
+- `trialStartDate`, `trialEndDate`: Trial period tracking
+- `isActive`: Family account status
+
+**Admin API Endpoints** (`/api/admin/*`):
+- Auth: login, logout, logout-all, me
+- Dashboard: stats (totals, actives, trials, donations)
+- Users: list, detail, update, reset-sessions, delete
+- Families: list, detail, update, deactivate
+- Trials: list, extend
+- Donations: list
+- Audit: logs with pagination
+- AI: config get/update, usage logs
+- Setup: first super_admin creation (one-time)
+
+**Security**:
+- Rate limiting: 5 login attempts per 15 minutes per email
+- Password hashing: scrypt with random salt
+- Session expiry: 1 hour for admin tokens
+- All mutations logged to audit trail
+
+**Key Files**:
+- `server/admin-routes.ts`: Admin API endpoints and RBAC middleware
+- `server/admin/index.html`: Admin PWA entry point
+- `server/admin/app.js`: Admin React SPA
