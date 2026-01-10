@@ -230,3 +230,24 @@ Preferred communication style: Simple, everyday language.
 - `server/logging-routes.ts`: Logging API endpoints and error taxonomy
 - `client/lib/logging.ts`: Client-side logging utility
 - `server/admin/app.js`: Admin panel with Logs section
+
+### AI Assistant Auto-Interpretation (January 2026)
+
+**Document Auto-Interpretation Feature**:
+- Documents uploaded to the AI assistant are automatically interpreted without requiring user input
+- Similar to ChatGPT behavior: upload → instant analysis → proposed actions
+- Works with images (receipts, invoices, school documents), PDFs, and text files
+
+**Flow**:
+1. User uploads document (photo, PDF, etc.)
+2. Server analyzes document using Vision API for images, text extraction for documents
+3. Client automatically triggers interpretation request
+4. AI responds with document summary and proposes actions
+5. User can confirm/reject proposed actions
+
+**API Endpoint**:
+- `POST /api/assistant/interpret-document`: Automatic document interpretation with streaming response
+
+**Key Files**:
+- `server/assistant.ts`: Document interpretation endpoint and vision analysis
+- `client/screens/AssistantScreen.tsx`: Auto-interpretation trigger in uploadFile()
