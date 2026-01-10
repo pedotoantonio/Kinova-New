@@ -558,6 +558,7 @@ export function registerAssistantRoutes(app: Express, authMiddleware: (req: Auth
             assignedTo: actionData.assignedTo || null,
             shortCode: null,
             isHoliday: false,
+            placeId: null,
             createdBy: req.auth!.userId,
           });
           result = { success: true, message: language === "it" ? "Evento creato" : "Event created", data: event };
@@ -599,6 +600,7 @@ export function registerAssistantRoutes(app: Express, authMiddleware: (req: Auth
             assignedTo: actionData.assignedTo || null,
             priority: actionData.priority || "medium",
             completed: false,
+            placeId: null,
             createdBy: req.auth!.userId,
           });
           result = { success: true, message: language === "it" ? "Attività creata" : "Task created", data: task };
