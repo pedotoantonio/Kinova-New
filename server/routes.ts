@@ -33,6 +33,47 @@ function generateInviteCode(): string {
   return randomBytes(6).toString("base64url").toUpperCase().slice(0, 8);
 }
 
+import type { IStorage } from "./storage";
+import type { User } from "@shared/schema";
+
+async function createBirthdayEvent(storageInstance: IStorage, user: User, createdBy: string): Promise<void> {
+  if (!user.birthDate) return;
+  
+  const birthDate = new Date(user.birthDate);
+  const currentYear = new Date().getFullYear();
+  const nextBirthday = new Date(currentYear, birthDate.getMonth(), birthDate.getDate());
+  
+  if (nextBirthday < new Date()) {
+    nextBirthday.setFullYear(currentYear + 1);
+  }
+  
+  const displayName = user.displayName || user.firstName || user.username;
+  
+  const event = await storageInstance.createEvent({
+    familyId: user.familyId,
+    title: `🎂 ${displayName}`,
+    shortCode: null,
+    description: `Compleanno di ${displayName}`,
+    startDate: nextBirthday,
+    endDate: nextBirthday,
+    allDay: true,
+    color: "#FF69B4",
+    category: "family",
+    assignedTo: user.id,
+    placeId: null,
+    isHoliday: false,
+    createdBy,
+  });
+  
+  await storageInstance.createEventRecurrence({
+    eventId: event.id,
+    frequency: "monthly",
+    interval: 12,
+    endDate: null,
+    byWeekday: null,
+  });
+}
+
 let lastCleanupTime = 0;
 const CLEANUP_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
 
@@ -392,7 +433,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         members.map((m) => ({
           id: m.id,
           username: m.username,
+          firstName: m.firstName,
+          lastName: m.lastName,
           displayName: m.displayName,
+          birthDate: m.birthDate,
           avatarUrl: m.avatarUrl,
           role: m.role,
           permissions: extractPermissions(m),
@@ -404,9 +448,89 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.patch("/api/family/members/:memberId", authMiddleware, requireRoles("admin"), async (req: AuthRequest, res: Response) => {
+    try {
+      const { memberId } = req.params;
+      const { 
+        role, 
+        displayName,
+        firstName,
+        lastName,
+        birthDate,
+        canViewCalendar, 
+        canViewTasks, 
+        canViewShopping, 
+        canViewBudget, 
+        canViewPlaces, 
+        canModifyItems 
+      } = req.body;
+
+      const member = await storage.getUser(memberId);
+      if (!member) {
+        return res.status(404).json({ error: { code: "NOT_FOUND", message: "Member not found" } });
+      }
+
+      if (member.familyId !== req.auth!.familyId) {
+        return res.status(403).json({ error: { code: "FORBIDDEN", message: "Member does not belong to your family" } });
+      }
+
+      if (member.role === "admin" && memberId !== req.auth!.userId) {
+        return res.status(403).json({ error: { code: "FORBIDDEN", message: "Cannot modify another admin" } });
+      }
+
+      const updateData: Record<string, unknown> = {};
+      if (role !== undefined && ["member", "child"].includes(role)) updateData.role = role;
+      if (displayName !== undefined) updateData.displayName = displayName;
+      if (firstName !== undefined) updateData.firstName = firstName;
+      if (lastName !== undefined) updateData.lastName = lastName;
+      if (birthDate !== undefined) updateData.birthDate = birthDate ? new Date(birthDate) : null;
+      if (canViewCalendar !== undefined) updateData.canViewCalendar = canViewCalendar;
+      if (canViewTasks !== undefined) updateData.canViewTasks = canViewTasks;
+      if (canViewShopping !== undefined) updateData.canViewShopping = canViewShopping;
+      if (canViewBudget !== undefined) updateData.canViewBudget = canViewBudget;
+      if (canViewPlaces !== undefined) updateData.canViewPlaces = canViewPlaces;
+      if (canModifyItems !== undefined) updateData.canModifyItems = canModifyItems;
+
+      if (Object.keys(updateData).length === 0) {
+        return res.status(400).json({ error: "No valid fields to update" });
+      }
+
+      const updated = await storage.updateUser(memberId, updateData as any);
+
+      if (birthDate && updated) {
+        await createBirthdayEvent(storage, updated, req.auth!.userId);
+      }
+
+      res.json({
+        id: updated!.id,
+        username: updated!.username,
+        firstName: updated!.firstName,
+        lastName: updated!.lastName,
+        displayName: updated!.displayName,
+        birthDate: updated!.birthDate,
+        avatarUrl: updated!.avatarUrl,
+        role: updated!.role,
+        permissions: extractPermissions(updated!),
+      });
+    } catch (error) {
+      console.error("Update member error:", error);
+      res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Internal server error" } });
+    }
+  });
+
   app.post("/api/family/invite", authMiddleware, requireRoles("admin"), async (req: AuthRequest, res: Response) => {
     try {
-      const { role = "member", email } = req.body;
+      const { 
+        role = "member", 
+        displayName,
+        email,
+        canViewCalendar,
+        canViewTasks,
+        canViewShopping,
+        canViewBudget,
+        canViewPlaces,
+        canModifyItems,
+      } = req.body;
 
       if (!["member", "child"].includes(role)) {
         return res.status(400).json({ error: "Invalid role. Must be 'member' or 'child'" });
@@ -421,14 +545,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         role: role as UserRole,
         expiresAt,
         createdBy: req.auth!.userId,
+        displayName,
         email,
+        canViewCalendar,
+        canViewTasks,
+        canViewShopping,
+        canViewBudget,
+        canViewPlaces,
+        canModifyItems,
       });
 
       res.status(201).json({
         id: invite.id,
         code: invite.code,
         role: invite.role,
+        displayName: invite.displayName,
         expiresAt: invite.expiresAt,
+        permissions: {
+          canViewCalendar: invite.canViewCalendar,
+          canViewTasks: invite.canViewTasks,
+          canViewShopping: invite.canViewShopping,
+          canViewBudget: invite.canViewBudget,
+          canViewPlaces: invite.canViewPlaces,
+          canModifyItems: invite.canModifyItems,
+        },
       });
     } catch (error) {
       console.error("Create invite error:", error);
@@ -486,12 +626,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(409).json({ error: "Username already exists" });
       }
 
-      const user = await storage.createUser({
+      const user = await storage.createUserWithPermissions({
         username,
         password: hashPassword(password),
-        displayName: displayName || username,
+        displayName: invite.displayName || displayName || username,
         familyId: invite.familyId,
         role: invite.role,
+        canViewCalendar: invite.canViewCalendar,
+        canViewTasks: invite.canViewTasks,
+        canViewShopping: invite.canViewShopping,
+        canViewBudget: invite.canViewBudget,
+        canViewPlaces: invite.canViewPlaces,
+        canModifyItems: invite.canModifyItems,
       });
 
       await storage.acceptInvite(invite.id, user.id);

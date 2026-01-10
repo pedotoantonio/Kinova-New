@@ -136,6 +136,44 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
+  async createUserWithPermissions(data: {
+    username: string;
+    password: string;
+    displayName?: string;
+    familyId: string;
+    role: UserRole;
+    firstName?: string;
+    lastName?: string;
+    birthDate?: Date;
+    canViewCalendar: boolean;
+    canViewTasks: boolean;
+    canViewShopping: boolean;
+    canViewBudget: boolean;
+    canViewPlaces: boolean;
+    canModifyItems: boolean;
+  }): Promise<User> {
+    const [user] = await db
+      .insert(users)
+      .values({
+        username: data.username,
+        password: data.password,
+        displayName: data.displayName || data.username,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        birthDate: data.birthDate,
+        familyId: data.familyId,
+        role: data.role,
+        canViewCalendar: data.canViewCalendar,
+        canViewTasks: data.canViewTasks,
+        canViewShopping: data.canViewShopping,
+        canViewBudget: data.canViewBudget,
+        canViewPlaces: data.canViewPlaces,
+        canModifyItems: data.canModifyItems,
+      })
+      .returning();
+    return user;
+  }
+
   async updateUser(id: string, data: Partial<User>): Promise<User | undefined> {
     const [user] = await db
       .update(users)
@@ -184,7 +222,14 @@ export class DatabaseStorage implements IStorage {
     role: UserRole; 
     expiresAt: Date; 
     createdBy: string;
+    displayName?: string;
     email?: string;
+    canViewCalendar?: boolean;
+    canViewTasks?: boolean;
+    canViewShopping?: boolean;
+    canViewBudget?: boolean;
+    canViewPlaces?: boolean;
+    canModifyItems?: boolean;
   }): Promise<FamilyInvite> {
     const [invite] = await db
       .insert(familyInvites)
@@ -194,7 +239,14 @@ export class DatabaseStorage implements IStorage {
         role: data.role,
         expiresAt: data.expiresAt,
         createdBy: data.createdBy,
+        displayName: data.displayName,
         email: data.email,
+        canViewCalendar: data.canViewCalendar ?? true,
+        canViewTasks: data.canViewTasks ?? true,
+        canViewShopping: data.canViewShopping ?? true,
+        canViewBudget: data.canViewBudget ?? false,
+        canViewPlaces: data.canViewPlaces ?? true,
+        canModifyItems: data.canModifyItems ?? true,
       })
       .returning();
     return invite;
