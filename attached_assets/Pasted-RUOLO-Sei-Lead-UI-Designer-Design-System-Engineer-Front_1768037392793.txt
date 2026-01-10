@@ -1,0 +1,178 @@
+RUOLO
+Sei Lead UI Designer + Design System Engineer + Frontend Engineer + QA Lead.
+Devi migliorare l’interfaccia grafica di Kinova rendendola più moderna,
+accattivante e leggibile, mantenendo intatta la struttura funzionale esistente.
+Expo è il banco di test principale.
+
+OBIETTIVO
+Raffinare la UI introducendo:
+- iconografia chiara
+- colori semantici
+- gerarchie visive migliori
+- micro-interazioni leggere
+Senza alterare i flussi logici.
+
+---
+
+## A) ICONOGRAFIA (OBBLIGATORIA)
+
+Introdurre un set icone coerente (es. Lucide / Material / Phosphor).
+
+Ogni sezione deve avere:
+- un’icona principale
+- icone secondarie per azioni comuni
+
+Esempi:
+- 📅 Calendario
+- 📋 Task
+- 🛒 Spesa
+- 💰 Budget
+- 🤖 Assistente AI
+- 🔔 Notifiche
+- 📍 Luoghi
+- 👨‍👩‍👧‍👦 Famiglia
+
+Regole:
+- stile unico
+- peso coerente
+- dimensioni standard
+
+Test:
+T7Qn.1 Tutte le sezioni hanno icone coerenti
+
+---
+
+## B) COLORI SEMANTICI
+
+Applicare colori con significato:
+- verde → completato / ok
+- arancione → in scadenza
+- rosso → scaduto / errore
+- blu → informazione
+- grigio → disabilitato
+
+Colori:
+- devono rispettare contrasto WCAG
+- non devono essere l’unico indicatore (sempre testo o icona)
+
+Test:
+T7Qn.2 Colori semantici coerenti
+
+---
+
+## C) GERARCHIA VISIVA
+
+Migliorare:
+- titoli di sezione
+- separazione contenuti
+- spacing verticale
+- uso di card e gruppi
+
+Obiettivo:
+- capire “cosa è importante” a colpo d’occhio
+
+Test:
+T7Qn.3 Gerarchia visiva chiara
+
+---
+
+## D) MICRO-INTERAZIONI (LEGGERISSIME)
+
+Aggiungere:
+- hover/tap feedback
+- animazioni minime (fade/scale)
+- transizioni non invasive
+
+Regole:
+- niente animazioni lente
+- niente distrazioni
+
+Test:
+T7Qn.4 Interazioni fluide e non invasive
+
+---
+
+## E) STATO VISIVO DEGLI ELEMENTI
+
+Ogni elemento deve avere stato chiaro:
+- default
+- active
+- disabled
+- loading
+- error
+- success
+
+Test:
+T7Qn.5 Stati visivi chiari
+
+---
+
+## F) COERENZA CROSS-SCHERMATA
+
+Verificare coerenza grafica tra:
+- Home
+- Calendario
+- Task/Spesa
+- Budget
+- Assistente AI
+- Notifiche
+- Luoghi
+
+Test:
+T7Qn.6 Coerenza grafica globale
+
+---
+
+## G) MULTILINGUA & LAYOUT
+
+Verificare che:
+- testi IT/EN non rompano layout
+- icone aiutino comprensione indipendente dalla lingua
+
+Test:
+T7Qn.7 Layout stabile in IT/EN
+
+---
+
+## H) ACCESSIBILITÀ (RIBADITA)
+
+Verificare:
+- contrasto
+- touch target ≥ 44px
+- leggibilità icone
+- supporto screen reader
+
+Test:
+T7Qn.8 Accessibilità mantenuta
+
+---
+
+## OUTPUT OBBLIGATORIO (FORMATO RIGIDO)
+
+1) GATE 7 QUINQUIES STATUS
+- Stato: PASS / FAIL
+- Bloccanti (se FAIL)
+
+2) MATRICE VISUAL ENHANCEMENT
+[Test-ID] [Area] [Miglioria] [Esito PASS/FAIL]
+
+3) REPORT TEST DETTAGLIATO
+Per T7Qn.1 – T7Qn.8:
+- Evidenza UI
+- Esito PASS/FAIL
+- Se FAIL: fix applicato
+
+4) VISUAL CHECKLIST
+- Icone coerenti: SI/NO
+- Colori semantici: SI/NO
+- Gerarchia chiara: SI/NO
+- Micro-interazioni ok: SI/NO
+- Accessibile: SI/NO
+
+5) VERDETTO FINALE
+Scrivi ESATTAMENTE una sola riga:
+- “GATE 7 QUINQUIES COMPLETATO: PASS”
+oppure
+- “GATE 7 QUINQUIES COMPLETATO: FAIL”
+
+STOP

@@ -12,6 +12,7 @@ import AssistantScreen from "@/screens/AssistantScreen";
 import { useTheme } from "@/hooks/useTheme";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth";
+import { AppIcons } from "@/constants/icons";
 
 export type MainTabParamList = {
   HomeTab: undefined;
@@ -72,7 +73,7 @@ export default function MainTabNavigator() {
         options={{
           title: t.home.title,
           tabBarIcon: ({ color, size }) => (
-            <Feather name="home" size={size} color={color} />
+            <Feather name={AppIcons.home} size={size} color={color} />
           ),
         }}
       />
@@ -86,7 +87,7 @@ export default function MainTabNavigator() {
           headerStyle: { backgroundColor: theme.backgroundRoot },
           headerTintColor: theme.text,
           tabBarIcon: ({ color, size }) => (
-            <Feather name="calendar" size={size} color={color} />
+            <Feather name={AppIcons.calendar} size={size} color={color} />
           ),
         }}
       />
@@ -101,7 +102,7 @@ export default function MainTabNavigator() {
             headerStyle: { backgroundColor: theme.backgroundRoot },
             headerTintColor: theme.text,
             tabBarIcon: ({ color, size }) => (
-              <Feather name="list" size={size} color={color} />
+              <Feather name={AppIcons.tasks} size={size} color={color} />
             ),
           }}
         />
@@ -117,7 +118,7 @@ export default function MainTabNavigator() {
             headerStyle: { backgroundColor: theme.backgroundRoot },
             headerTintColor: theme.text,
             tabBarIcon: ({ color, size }) => (
-              <Feather name="dollar-sign" size={size} color={color} />
+              <Feather name={AppIcons.budget} size={size} color={color} />
             ),
           }}
         />
@@ -129,7 +130,7 @@ export default function MainTabNavigator() {
           title: t.assistant.title,
           headerShown: false,
           tabBarIcon: ({ color, size }) => (
-            <Feather name="message-circle" size={size} color={color} />
+            <Feather name={AppIcons.assistant} size={size} color={color} />
           ),
         }}
       />
@@ -139,7 +140,7 @@ export default function MainTabNavigator() {
         options={{
           title: t.profile.title,
           tabBarIcon: ({ color, size }) => (
-            <Feather name="user" size={size} color={color} />
+            <Feather name={AppIcons.profile} size={size} color={color} />
           ),
         }}
       />

@@ -6,6 +6,7 @@ import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Feather } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
+import * as Haptics from "expo-haptics";
 
 import { useTheme } from "@/hooks/useTheme";
 import { useAuth } from "@/lib/auth";
@@ -178,18 +179,22 @@ export default function HomeScreen() {
   }, [todayEvents]);
 
   const navigateToCalendar = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     (navigation as any).navigate("CalendarTab");
   };
 
   const navigateToLists = (tab?: "shopping" | "tasks") => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     (navigation as any).navigate("ListsTab");
   };
 
   const navigateToProfile = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     (navigation as any).navigate("ProfileTab");
   };
 
   const navigateToBudget = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     (navigation as any).navigate("BudgetTab");
   };
 

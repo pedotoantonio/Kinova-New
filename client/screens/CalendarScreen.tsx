@@ -14,6 +14,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Feather } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
 
 import { useTheme } from "@/hooks/useTheme";
 import { useAuth } from "@/lib/auth";
@@ -23,8 +24,8 @@ import { Colors, Spacing, BorderRadius, Typography } from "@/constants/theme";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { Card } from "@/components/Card";
-import type { Event, EventCategory, RecurrenceFrequency, EventRecurrence, Place } from "@shared/types";
-import { PlacePickerModal } from "@/components/PlacePickerModal";
+import type { Event, EventCategory, RecurrenceFrequency, EventRecurrence } from "@shared/types";
+import { PlacePickerModal, Place } from "@/components/PlacePickerModal";
 
 const EVENT_COLORS = [
   "#2F7F6D",
@@ -357,6 +358,7 @@ export default function CalendarScreen() {
   };
 
   const goToToday = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const today = new Date();
     setSelectedDate(today);
     setCurrentMonth(today);
@@ -364,10 +366,12 @@ export default function CalendarScreen() {
   };
 
   const toggleViewMode = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setViewMode(viewMode === "month" ? "week" : "month");
   };
 
   const openCreateEvent = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setEditingEvent(null);
     setFormData({
       title: "",
@@ -387,6 +391,7 @@ export default function CalendarScreen() {
   };
 
   const openEditEvent = (event: Event) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setEditingEvent(event);
     setFormData({
       title: event.title,
@@ -753,7 +758,7 @@ export default function CalendarScreen() {
                   onPress={() => openEditEvent(event)}
                   testID={`event-card-${event.id}`}
                 >
-                  <Card style={[styles.eventCard, isMultiDay ? styles.multiDayCard : undefined]}>
+                  <Card style={isMultiDay ? [styles.eventCard, styles.multiDayCard] : styles.eventCard}>
                     <View
                       style={[
                         styles.eventColorBar,
@@ -920,7 +925,7 @@ export default function CalendarScreen() {
               </View>
 
               <ThemedText style={[styles.inputLabel, { color: colors.textSecondary }]}>
-                {t.places.place}
+                {t.places.selectPlace}
               </ThemedText>
               <Pressable
                 style={[styles.placeSelector, { backgroundColor: theme.backgroundRoot, borderColor: colors.border }]}

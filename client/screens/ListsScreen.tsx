@@ -18,6 +18,7 @@ import { Feather } from "@expo/vector-icons";
 import Animated, { FadeInDown, FadeOutUp } from "react-native-reanimated";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { scheduleOnRN } from "react-native-worklets";
+import * as Haptics from "expo-haptics";
 
 import { useTheme } from "@/hooks/useTheme";
 import { useAuth } from "@/lib/auth";
@@ -208,10 +209,12 @@ export default function ListsScreen() {
   };
 
   const handleToggleShopping = (item: ShoppingItem) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     updateShoppingMutation.mutate({ id: item.id, purchased: !item.purchased });
   };
 
   const handleToggleTask = (task: Task) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     updateTaskMutation.mutate({ id: task.id, completed: !task.completed });
   };
 
@@ -383,7 +386,10 @@ export default function ListsScreen() {
             styles.tabButton,
             activeTab === "shopping" && { backgroundColor: colors.primary },
           ]}
-          onPress={() => setActiveTab("shopping")}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            setActiveTab("shopping");
+          }}
           testID="tab-shopping"
           accessibilityLabel={t.lists.shopping}
           accessibilityRole="tab"
@@ -407,7 +413,10 @@ export default function ListsScreen() {
             styles.tabButton,
             activeTab === "tasks" && { backgroundColor: colors.primary },
           ]}
-          onPress={() => setActiveTab("tasks")}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            setActiveTab("tasks");
+          }}
           testID="tab-tasks"
           accessibilityLabel={t.lists.tasks}
           accessibilityRole="tab"
