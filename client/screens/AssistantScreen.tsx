@@ -440,7 +440,7 @@ export default function AssistantScreen() {
     }
   }, [t]);
 
-  const uploadFile = async (uri: string, filename: string, mimeType: string) => {
+  const uploadFile = async (uri: string, filename: string, mimeType: string, autoInterpret: boolean = true) => {
     const tempId = `temp-${Date.now()}`;
     setAttachments(prev => [...prev, { id: tempId, filename, mimeType, uri, status: "uploading" }]);
 
@@ -468,11 +468,108 @@ export default function AssistantScreen() {
         const data = await response.json();
         setAttachments(prev => prev.map(a => a.id === tempId ? { ...a, id: data.id, status: "ready" as const } : a));
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        
+        if (autoInterpret) {
+          setAttachments([]);
+          
+          let convId = activeConversationId;
+          if (!convId) {
+            const conv = await createConversationMutation.mutateAsync();
+            convId = conv.id;
+          }
+          
+          await sendDocumentInterpretation(convId, data.id, filename, data.analysis || null);
+        }
       } else {
         setAttachments(prev => prev.map(a => a.id === tempId ? { ...a, status: "error" as const, error: t.errors.serverError } : a));
       }
     } catch {
       setAttachments(prev => prev.map(a => a.id === tempId ? { ...a, status: "error" as const, error: t.errors.networkError } : a));
+    }
+  };
+
+  const sendDocumentInterpretation = async (
+    conversationId: string, 
+    uploadId: string, 
+    filename: string, 
+    analysis: { type: string; data: Record<string, unknown>; suggestedActions: string[] } | null
+  ) => {
+    setIsStreaming(true);
+    setStreamingContent("");
+    setSelectedMessage(null);
+
+    try {
+      abortControllerRef.current = new AbortController();
+      const token = await AsyncStorage.getItem(AUTH_TOKEN_KEY);
+
+      const response = await fetch(new URL("/api/assistant/interpret-document", getApiUrl()).toString(), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          conversationId,
+          uploadId,
+          filename,
+          analysis,
+          language,
+        }),
+        signal: abortControllerRef.current.signal,
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to interpret document");
+      }
+
+      const reader = response.body?.getReader();
+      if (!reader) throw new Error("No reader");
+
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let fullContent = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
+
+        for (const line of lines) {
+          if (line.startsWith("data: ")) {
+            try {
+              const data = JSON.parse(line.slice(6));
+              if (data.content) {
+                fullContent += data.content;
+                setStreamingContent(fullContent);
+              }
+              if (data.proposedAction) {
+                setPendingAction({
+                  messageId: data.messageId || "",
+                  action: data.proposedAction,
+                });
+              }
+              if (data.done) {
+                setIsStreaming(false);
+                refetchConversation();
+                queryClient.invalidateQueries({ queryKey: ["/api/assistant/conversations"] });
+              }
+            } catch {}
+          }
+        }
+      }
+    } catch (error: unknown) {
+      if (error instanceof Error && error.name === "AbortError") {
+        setStreamingContent((prev) => prev + "\n\n[" + t.assistant.stopped + "]");
+      } else {
+        Alert.alert(t.common.error, t.errors.networkError);
+      }
+    } finally {
+      setIsStreaming(false);
+      abortControllerRef.current = null;
+      refetchConversation();
     }
   };
 

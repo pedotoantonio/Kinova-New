@@ -834,6 +834,174 @@ export function registerAssistantRoutes(app: Express, authMiddleware: (req: Auth
   app.post("/api/assistant/confirm-action", authMiddleware, handleConfirmAction);
   app.post("/api/assistant/confirm", authMiddleware, handleConfirmAction);
 
+  app.post("/api/assistant/interpret-document", authMiddleware, async (req: AuthRequest, res: Response) => {
+    const startTime = Date.now();
+    try {
+      const { conversationId, uploadId, filename, analysis, language = "it" } = req.body;
+
+      if (!conversationId) {
+        return res.status(400).json({ error: "conversationId is required" });
+      }
+
+      const conversation = await storage.getAssistantConversation(conversationId, req.auth!.familyId);
+      if (!conversation) {
+        return res.status(404).json({ error: "Conversation not found" });
+      }
+
+      let extractedContent = "";
+      let documentType = "document";
+      
+      if (analysis) {
+        documentType = analysis.type || "document";
+        extractedContent = JSON.stringify(analysis.data, null, 2);
+      } else if (uploadId) {
+        const upload = await storage.getAssistantUpload(uploadId, req.auth!.familyId);
+        if (upload?.extractedText) {
+          extractedContent = upload.extractedText;
+        }
+      }
+
+      const isItalian = language === "it";
+      const userMessage = isItalian 
+        ? `[Documento caricato: ${filename}]`
+        : `[Document uploaded: ${filename}]`;
+
+      const userMsg = await storage.createAssistantMessage({
+        conversationId,
+        role: "user",
+        content: userMessage,
+        attachments: uploadId ? JSON.stringify([uploadId]) : null,
+      });
+
+      const history = await storage.getAssistantMessages(conversationId);
+      const context = await getKinovaContext(req.auth!.familyId, req.auth!.userId, language);
+      const systemPrompt = buildSystemPrompt(context, language);
+
+      const documentAnalysisPrompt = isItalian
+        ? `L'utente ha caricato un documento (${filename}) e sta aspettando la tua analisi automatica.
+
+CONTENUTO ESTRATTO DAL DOCUMENTO:
+${extractedContent || "Nessun contenuto testuale estratto - analizza comunque e chiedi informazioni se necessario"}
+
+TIPO DOCUMENTO RILEVATO: ${documentType}
+
+ISTRUZIONI PER LA RISPOSTA:
+1. Analizza il documento e fornisci un riepilogo chiaro e utile
+2. Se è uno scontrino/fattura, elenca i prodotti e l'importo totale
+3. Se è un documento scolastico, estrai le informazioni importanti (date, eventi, richieste)
+4. Se contiene date o scadenze, menzionale chiaramente
+5. Proponi SEMPRE le azioni appropriate usando il formato [AZIONE_PROPOSTA: tipo | {...}]
+   - Per scontrini: proponi add_shopping_items o create_expense
+   - Per documenti scolastici: proponi create_event o create_task
+   - Per bollette/fatture: proponi create_expense
+6. Sii proattivo: non aspettare che l'utente chieda, proponi direttamente le azioni
+7. Se non riesci a estrarre informazioni, chiedi all'utente di descrivere il documento
+
+Rispondi in modo conversazionale ma efficiente, come farebbe ChatGPT.`
+        : `The user has uploaded a document (${filename}) and is waiting for your automatic analysis.
+
+CONTENT EXTRACTED FROM DOCUMENT:
+${extractedContent || "No text content extracted - analyze anyway and ask for information if needed"}
+
+DETECTED DOCUMENT TYPE: ${documentType}
+
+RESPONSE INSTRUCTIONS:
+1. Analyze the document and provide a clear, helpful summary
+2. If it's a receipt/invoice, list the products and total amount
+3. If it's a school document, extract important information (dates, events, requests)
+4. If it contains dates or deadlines, mention them clearly
+5. ALWAYS propose appropriate actions using the format [PROPOSED_ACTION: type | {...}]
+   - For receipts: propose add_shopping_items or create_expense
+   - For school documents: propose create_event or create_task
+   - For bills/invoices: propose create_expense
+6. Be proactive: don't wait for the user to ask, propose actions directly
+7. If you cannot extract information, ask the user to describe the document
+
+Respond conversationally but efficiently, like ChatGPT would.`;
+
+      const chatMessages: Array<{ role: "system" | "user" | "assistant"; content: string }> = [
+        { role: "system", content: systemPrompt },
+      ];
+
+      const recentHistory = history.slice(-18);
+      recentHistory.forEach((m) => {
+        if (m.id !== userMsg.id) {
+          chatMessages.push({
+            role: m.role as "user" | "assistant",
+            content: m.content,
+          });
+        }
+      });
+
+      chatMessages.push({ role: "user", content: documentAnalysisPrompt });
+
+      res.setHeader("Content-Type", "text/event-stream");
+      res.setHeader("Cache-Control", "no-cache");
+      res.setHeader("Connection", "keep-alive");
+      res.setHeader("X-Accel-Buffering", "no");
+
+      const stream = await openai.chat.completions.create({
+        model: "gpt-4.1-mini",
+        messages: chatMessages,
+        stream: true,
+        max_completion_tokens: 2048,
+      });
+
+      let fullResponse = "";
+
+      for await (const chunk of stream) {
+        const delta = chunk.choices[0]?.delta?.content || "";
+        if (delta) {
+          fullResponse += delta;
+          res.write(`data: ${JSON.stringify({ content: delta })}\n\n`);
+        }
+      }
+
+      const assistantMsg = await storage.createAssistantMessage({
+        conversationId,
+        role: "assistant",
+        content: fullResponse,
+        attachments: null,
+      });
+
+      if (!conversation.title) {
+        const titleContent = isItalian ? `Documento: ${filename}` : `Document: ${filename}`;
+        await storage.updateAssistantConversation(conversationId, { title: titleContent.slice(0, 50) });
+      }
+
+      const proposedAction = extractProposedAction(fullResponse);
+      const responseTimeMs = Date.now() - startTime;
+      
+      await storage.createAiUsageLog({
+        userId: req.auth!.userId,
+        familyId: req.auth!.familyId,
+        requestType: `document_interpretation:${documentType}`,
+        tokensUsed: Math.round(fullResponse.length / 4),
+        responseTimeMs,
+      });
+
+      res.write(`data: ${JSON.stringify({ done: true, proposedAction, messageId: assistantMsg.id })}\n\n`);
+      res.end();
+    } catch (error) {
+      console.error("Document interpretation error:", error);
+      const responseTimeMs = Date.now() - startTime;
+      try {
+        await storage.createAiUsageLog({
+          userId: req.auth!.userId,
+          familyId: req.auth!.familyId,
+          requestType: "document_interpretation_error",
+          responseTimeMs,
+        });
+      } catch {}
+      if (res.headersSent) {
+        res.write(`data: ${JSON.stringify({ error: "Errore durante l'interpretazione" })}\n\n`);
+        res.end();
+      } else {
+        res.status(500).json({ error: "Failed to interpret document" });
+      }
+    }
+  });
+
   app.post("/api/assistant/uploads", authMiddleware, async (req: AuthRequest, res: Response) => {
     try {
       const contentType = req.headers["content-type"] || "";
