@@ -236,11 +236,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const register = async (email: string, password: string, displayName?: string, acceptTerms: boolean = false, familyName?: string) => {
     const baseUrl = getApiUrl();
-    const res = await fetch(new URL("/api/auth/register", baseUrl).href, {
+    const url = new URL("/api/auth/register", baseUrl).href;
+    
+    const res = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password, displayName, familyName, acceptTerms }),
     });
+
+    const contentType = res.headers.get("content-type") || "";
+    if (!contentType.includes("application/json")) {
+      console.error("Registration returned non-JSON response:", contentType, "from URL:", url);
+      throw new Error("Server error. Please try again.");
+    }
 
     if (!res.ok) {
       const data = await res.json();
