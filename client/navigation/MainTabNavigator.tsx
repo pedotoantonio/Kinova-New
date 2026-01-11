@@ -1,8 +1,7 @@
 import React from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Feather } from "@expo/vector-icons";
-import { BlurView } from "expo-blur";
-import { Platform, StyleSheet } from "react-native";
+import { Platform, StyleSheet, View } from "react-native";
 import HomeStackNavigator from "@/navigation/HomeStackNavigator";
 import ProfileStackNavigator from "@/navigation/ProfileStackNavigator";
 import NotesStackNavigator from "@/navigation/NotesStackNavigator";
@@ -14,7 +13,7 @@ import { useTheme } from "@/hooks/useTheme";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth";
 import { AppIcons } from "@/constants/icons";
-import { Shadows } from "@/constants/theme";
+import { Colors, IconSize, BorderRadius } from "@/constants/theme";
 
 export type MainTabParamList = {
   HomeTab: undefined;
@@ -33,6 +32,8 @@ export default function MainTabNavigator() {
   const { t } = useI18n();
   const { user } = useAuth();
   
+  const colors = isDark ? Colors.dark : Colors.light;
+  
   const permissions = user?.permissions ?? {
     canViewCalendar: true,
     canViewTasks: true,
@@ -48,27 +49,16 @@ export default function MainTabNavigator() {
     <Tab.Navigator
       initialRouteName="HomeTab"
       screenOptions={{
-        tabBarActiveTintColor: theme.tabIconSelected,
-        tabBarInactiveTintColor: theme.tabIconDefault,
+        tabBarActiveTintColor: colors.tabIconSelected,
+        tabBarInactiveTintColor: colors.tabIconDefault,
         tabBarStyle: {
-          position: "absolute",
-          backgroundColor: Platform.select({
-            ios: "transparent",
-            android: theme.backgroundRoot,
-            web: theme.backgroundRoot,
-          }),
-          borderTopWidth: Platform.OS === "web" ? 1 : 0,
-          borderTopColor: theme.border,
+          backgroundColor: colors.tabBar,
+          borderTopWidth: 0,
           elevation: 0,
+          height: Platform.OS === "ios" ? 88 : 64,
+          paddingBottom: Platform.OS === "ios" ? 28 : 8,
+          paddingTop: 8,
         },
-        tabBarBackground: () =>
-          Platform.OS === "ios" ? (
-            <BlurView
-              intensity={100}
-              tint={isDark ? "dark" : "light"}
-              style={StyleSheet.absoluteFill}
-            />
-          ) : null,
         headerShown: false,
         tabBarLabelStyle: {
           fontSize: 11,
@@ -82,7 +72,7 @@ export default function MainTabNavigator() {
         options={{
           title: t.home.title,
           tabBarIcon: ({ color, size }) => (
-            <Feather name={AppIcons.home} size={size} color={color} />
+            <Feather name={AppIcons.home} size={IconSize.navigation} color={color} />
           ),
         }}
       />
@@ -96,7 +86,7 @@ export default function MainTabNavigator() {
           headerStyle: { backgroundColor: theme.backgroundRoot },
           headerTintColor: theme.text,
           tabBarIcon: ({ color, size }) => (
-            <Feather name={AppIcons.calendar} size={size} color={color} />
+            <Feather name={AppIcons.calendar} size={IconSize.navigation} color={color} />
           ),
         }}
       />
@@ -111,7 +101,7 @@ export default function MainTabNavigator() {
             headerStyle: { backgroundColor: theme.backgroundRoot },
             headerTintColor: theme.text,
             tabBarIcon: ({ color, size }) => (
-              <Feather name={AppIcons.tasks} size={size} color={color} />
+              <Feather name={AppIcons.tasks} size={IconSize.navigation} color={color} />
             ),
           }}
         />
@@ -122,7 +112,7 @@ export default function MainTabNavigator() {
         options={{
           title: t.notes.title,
           tabBarIcon: ({ color, size }) => (
-            <Feather name={AppIcons.notes} size={size} color={color} />
+            <Feather name={AppIcons.notes} size={IconSize.navigation} color={color} />
           ),
         }}
       />
@@ -137,7 +127,7 @@ export default function MainTabNavigator() {
             headerStyle: { backgroundColor: theme.backgroundRoot },
             headerTintColor: theme.text,
             tabBarIcon: ({ color, size }) => (
-              <Feather name={AppIcons.budget} size={size} color={color} />
+              <Feather name={AppIcons.budget} size={IconSize.navigation} color={color} />
             ),
           }}
         />
@@ -149,7 +139,7 @@ export default function MainTabNavigator() {
           title: t.assistant.title,
           headerShown: false,
           tabBarIcon: ({ color, size }) => (
-            <Feather name={AppIcons.assistant} size={size} color={color} />
+            <Feather name={AppIcons.assistant} size={IconSize.navigation} color={color} />
           ),
         }}
       />
@@ -159,7 +149,7 @@ export default function MainTabNavigator() {
         options={{
           title: t.profile.title,
           tabBarIcon: ({ color, size }) => (
-            <Feather name={AppIcons.profile} size={size} color={color} />
+            <Feather name={AppIcons.profile} size={IconSize.navigation} color={color} />
           ),
         }}
       />

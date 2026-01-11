@@ -3,7 +3,6 @@ import { View, Pressable, StyleSheet, ActivityIndicator, Alert, Switch, Image } 
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
 import { Feather } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
 
 import { ThemedText } from "@/components/ThemedText";
 import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollViewCompat";
@@ -13,7 +12,7 @@ import { Card } from "@/components/Card";
 import { useTheme } from "@/hooks/useTheme";
 import { useAuth } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
-import { Colors, Spacing, BorderRadius, Typography, Shadows } from "@/constants/theme";
+import { Colors, Spacing, BorderRadius, Typography } from "@/constants/theme";
 
 interface PasswordStrength {
   valid: boolean;
@@ -74,10 +73,10 @@ function PasswordStrengthMeter({ password, t, colors }: { password: string; t: a
   if (!password) return null;
 
   const strengthColors = {
-    weak: "#E85D4E",
-    fair: "#FF9800",
-    good: "#7CB342",
-    strong: "#2D8659",
+    weak: colors.error,
+    fair: colors.accentYellow,
+    good: colors.accentGreen,
+    strong: colors.success,
   };
 
   const strengthWidth = {
@@ -244,7 +243,7 @@ export default function LoginScreen() {
       </View>
       <ThemedText style={[styles.appName, { color: colors.primary }]}>Kinova</ThemedText>
       <ThemedText style={[styles.tagline, { color: colors.textSecondary }]}>
-        {t.app?.tagline || "La tua app di fiducia per la famiglia"}
+        {"La tua app di fiducia per la famiglia"}
       </ThemedText>
     </View>
   );
@@ -265,7 +264,7 @@ export default function LoginScreen() {
             {t.auth.forgotPassword}
           </ThemedText>
           <ThemedText style={[styles.formSubtitle, { color: colors.textSecondary }]}>
-            {t.auth.forgotPasswordDesc || "Inserisci la tua email per ricevere le istruzioni"}
+            {"Inserisci la tua email per ricevere le istruzioni"}
           </ThemedText>
 
           <Input
@@ -293,7 +292,7 @@ export default function LoginScreen() {
             onPress={() => setIsForgotPassword(false)}
             style={styles.secondaryButton}
           >
-            {t.auth.backToLogin || "Torna al login"}
+            {"Torna al login"}
           </Button>
         </Card>
       </KeyboardAwareScrollViewCompat>
@@ -316,8 +315,8 @@ export default function LoginScreen() {
         </ThemedText>
         <ThemedText style={[styles.formSubtitle, { color: colors.textSecondary }]}>
           {isRegisterMode 
-            ? (t.auth.createAccountDesc || "Inizia a organizzare la tua famiglia")
-            : (t.auth.loginDesc || "Accedi al tuo account")}
+            ? "Inizia a organizzare la tua famiglia"
+            : "Accedi al tuo account"}
         </ThemedText>
 
         <Input
@@ -391,7 +390,7 @@ export default function LoginScreen() {
 
       <View style={styles.switchModeContainer}>
         <ThemedText style={[styles.switchModeText, { color: colors.textSecondary }]}>
-          {isRegisterMode ? t.auth.alreadyHaveAccount : t.auth.noAccount || "Non hai un account?"}
+          {isRegisterMode ? t.auth.alreadyHaveAccount : "Non hai un account?"}
         </ThemedText>
         <Pressable onPress={() => setIsRegisterMode(!isRegisterMode)}>
           <ThemedText style={[styles.switchModeLink, { color: colors.primary }]}>
@@ -420,15 +419,13 @@ const styles = StyleSheet.create({
   logoContainer: {
     width: 80,
     height: 80,
-    borderRadius: BorderRadius.xl,
+    borderRadius: BorderRadius.lg,
     justifyContent: "center",
     alignItems: "center",
     marginBottom: Spacing.lg,
-    ...Shadows.lg,
   },
   appName: {
-    fontSize: 32,
-    fontWeight: "700",
+    ...Typography.largeTitle,
     marginBottom: Spacing.sm,
   },
   tagline: {
@@ -457,7 +454,7 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.lg,
   },
   forgotPasswordText: {
-    ...Typography.caption,
+    ...Typography.label,
     fontWeight: "500",
   },
   termsContainer: {
@@ -467,7 +464,7 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.md,
   },
   termsText: {
-    ...Typography.caption,
+    ...Typography.label,
     flex: 1,
   },
   switchModeContainer: {

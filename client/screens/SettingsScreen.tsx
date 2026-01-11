@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { View, StyleSheet, Switch, Pressable, Alert, Platform, ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useHeaderHeight } from "@react-navigation/elements";
 import { useNavigation } from "@react-navigation/native";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
@@ -9,7 +8,6 @@ import Constants from "expo-constants";
 
 import { ThemedText } from "@/components/ThemedText";
 import { Card } from "@/components/Card";
-import { Button } from "@/components/Button";
 import { useTheme } from "@/hooks/useTheme";
 import { useAuth } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
@@ -70,9 +68,8 @@ function SettingRow({
 
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
-  const headerHeight = useHeaderHeight();
-  const { theme, isDark, toggleTheme } = useTheme();
-  const { user, logout } = useAuth();
+  const { theme, isDark } = useTheme();
+  const { logout } = useAuth();
   const { t, language, setLanguage } = useI18n();
   const navigation = useNavigation();
 
@@ -90,13 +87,6 @@ export default function SettingsScreen() {
 
   const handleToggleDataSharing = (value: boolean) => {
     setDataSharing(value);
-    if (Platform.OS !== "web") {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    }
-  };
-
-  const handleToggleTheme = () => {
-    toggleTheme?.();
     if (Platform.OS !== "web") {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
@@ -146,18 +136,18 @@ export default function SettingsScreen() {
       contentContainerStyle={{
         paddingTop: Spacing.xl,
         paddingBottom: insets.bottom + Spacing.xl,
-        paddingHorizontal: Spacing.lg,
+        paddingHorizontal: Spacing.xl,
       }}
       scrollIndicatorInsets={{ bottom: insets.bottom }}
     >
       <Card style={styles.sectionCard}>
         <ThemedText style={[styles.sectionTitle, { color: colors.text }]}>
-          {t.settings?.notifications || "Notifiche"}
+          {language === "it" ? "Notifiche" : "Notifications"}
         </ThemedText>
         
         <SettingRow
           icon="bell"
-          label={t.notifications?.enable || "Abilita notifiche"}
+          label={language === "it" ? "Abilita notifiche" : "Enable notifications"}
           showChevron={false}
           rightElement={
             <Switch
@@ -173,19 +163,19 @@ export default function SettingsScreen() {
 
         <SettingRow
           icon="settings"
-          label={t.notifications?.settings || "Impostazioni notifiche"}
+          label={t.notifications.settings}
           onPress={() => (navigation as any).navigate("NotificationSettings")}
         />
       </Card>
 
       <Card style={styles.sectionCard}>
         <ThemedText style={[styles.sectionTitle, { color: colors.text }]}>
-          {t.settings?.privacy || "Privacy"}
+          {language === "it" ? "Privacy" : "Privacy"}
         </ThemedText>
         
         <SettingRow
           icon="share-2"
-          label={t.settings?.dataSharing || "Condivisione dati"}
+          label={language === "it" ? "Condivisione dati" : "Data sharing"}
           showChevron={false}
           rightElement={
             <Switch
@@ -200,12 +190,12 @@ export default function SettingsScreen() {
 
       <Card style={styles.sectionCard}>
         <ThemedText style={[styles.sectionTitle, { color: colors.text }]}>
-          {t.settings?.appearance || "Aspetto"}
+          {language === "it" ? "Aspetto" : "Appearance"}
         </ThemedText>
         
         <SettingRow
           icon="globe"
-          label={t.profile?.language || "Lingua"}
+          label={t.profile?.language || (language === "it" ? "Lingua" : "Language")}
           showChevron={false}
           rightElement={
             <View style={styles.languageSelector}>
@@ -252,33 +242,16 @@ export default function SettingsScreen() {
             </View>
           }
         />
-
-        <View style={[styles.divider, { backgroundColor: colors.border }]} />
-
-        <SettingRow
-          icon={isDark ? "moon" : "sun"}
-          label={t.settings?.theme || "Tema"}
-          value={isDark ? (t.settings?.dark || "Scuro") : (t.settings?.light || "Chiaro")}
-          showChevron={false}
-          rightElement={
-            <Switch
-              value={isDark}
-              onValueChange={handleToggleTheme}
-              trackColor={{ false: colors.backgroundSecondary, true: colors.primary }}
-              thumbColor={isDark ? colors.buttonText : colors.surface}
-            />
-          }
-        />
       </Card>
 
       <Card style={styles.sectionCard}>
         <ThemedText style={[styles.sectionTitle, { color: colors.text }]}>
-          {t.settings?.support || "Supporto"}
+          {language === "it" ? "Supporto" : "Support"}
         </ThemedText>
         
         <SettingRow
           icon="help-circle"
-          label={t.settings?.help || "Aiuto e FAQ"}
+          label={language === "it" ? "Aiuto e FAQ" : "Help & FAQ"}
           onPress={() => (navigation as any).navigate("Help")}
         />
 
@@ -286,7 +259,7 @@ export default function SettingsScreen() {
 
         <SettingRow
           icon="mail"
-          label={t.settings?.contact || "Contatta il supporto"}
+          label={language === "it" ? "Contatta il supporto" : "Contact support"}
           onPress={() => {}}
         />
 
@@ -294,19 +267,19 @@ export default function SettingsScreen() {
 
         <SettingRow
           icon="heart"
-          label={t.donation?.title || "Supporta Kinova"}
+          label={t.donation?.title || (language === "it" ? "Supporta Kinova" : "Support Kinova")}
           onPress={() => (navigation as any).navigate("Donation")}
         />
       </Card>
 
       <Card style={styles.sectionCard}>
         <ThemedText style={[styles.sectionTitle, { color: colors.text }]}>
-          {t.settings?.about || "Informazioni"}
+          {language === "it" ? "Informazioni" : "About"}
         </ThemedText>
         
         <SettingRow
           icon="info"
-          label={t.settings?.version || "Versione app"}
+          label={language === "it" ? "Versione app" : "App version"}
           value={appVersion}
           showChevron={false}
         />
@@ -378,7 +351,7 @@ const styles = StyleSheet.create({
   logoutButton: {
     flexDirection: "row",
     height: Spacing.buttonHeight,
-    borderRadius: BorderRadius.sm,
+    borderRadius: BorderRadius.button,
     borderWidth: 1,
     justifyContent: "center",
     alignItems: "center",

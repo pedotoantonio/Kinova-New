@@ -49,7 +49,7 @@ function HelpItem({ icon, title, description, onPress }: HelpItemProps) {
 export default function HelpScreen() {
   const insets = useSafeAreaInsets();
   const { theme, isDark } = useTheme();
-  const { t, language } = useI18n();
+  const { language } = useI18n();
 
   const colors = isDark ? Colors.dark : Colors.light;
 
@@ -94,7 +94,7 @@ export default function HelpScreen() {
       contentContainerStyle={{
         paddingTop: Spacing.xl,
         paddingBottom: insets.bottom + Spacing.xl,
-        paddingHorizontal: Spacing.lg,
+        paddingHorizontal: Spacing.xl,
       }}
       scrollIndicatorInsets={{ bottom: insets.bottom }}
     >
@@ -131,8 +131,8 @@ export default function HelpScreen() {
       </ThemedText>
 
       <Card style={styles.contactCard}>
-        <View style={[styles.contactIconContainer, { backgroundColor: colors.secondary + "20" }]}>
-          <Feather name="mail" size={24} color={colors.secondary} />
+        <View style={[styles.contactIconContainer, { backgroundColor: colors.secondary + "40" }]}>
+          <Feather name="mail" size={24} color={colors.primary} />
         </View>
         <View style={styles.contactContent}>
           <ThemedText style={[styles.contactTitle, { color: colors.text }]}>
@@ -146,7 +146,7 @@ export default function HelpScreen() {
         </View>
         <Pressable
           onPress={handleContactSupport}
-          style={[styles.contactButton, { backgroundColor: colors.secondary }]}
+          style={[styles.contactButton, { backgroundColor: colors.primary }]}
         >
           <ThemedText style={[styles.contactButtonText, { color: colors.buttonText }]}>
             {language === "it" ? "Scrivi" : "Write"}
@@ -243,7 +243,7 @@ const styles = StyleSheet.create({
   contactButton: {
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.sm,
-    borderRadius: BorderRadius.sm,
+    borderRadius: BorderRadius.button,
   },
   contactButtonText: {
     ...Typography.caption,

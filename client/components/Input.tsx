@@ -54,8 +54,8 @@ export function Input({
 
   const getBorderColor = () => {
     if (error) return theme.error;
-    if (isFocused) return theme.primary;
-    return theme.border;
+    if (isFocused) return theme.inputBorderFocus || theme.primary;
+    return theme.inputBorder || theme.border;
   };
 
   const togglePasswordVisibility = () => {
@@ -74,7 +74,7 @@ export function Input({
         style={[
           styles.inputContainer,
           {
-            backgroundColor: theme.surface,
+            backgroundColor: theme.inputBackground || theme.surface,
             borderColor: getBorderColor(),
           },
         ]}
@@ -98,7 +98,7 @@ export function Input({
             },
             inputStyle,
           ]}
-          placeholderTextColor={theme.textSecondary}
+          placeholderTextColor={theme.textLight || theme.textSecondary}
           secureTextEntry={isPassword && !showPassword}
           onFocus={handleFocus}
           onBlur={handleBlur}
@@ -150,7 +150,7 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.lg,
   },
   label: {
-    ...Typography.caption,
+    ...Typography.label,
     fontWeight: "500",
     marginBottom: Spacing.sm,
   },
@@ -158,7 +158,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     height: Spacing.inputHeight,
-    borderRadius: BorderRadius.sm,
+    borderRadius: BorderRadius.input,
     borderWidth: 1,
   },
   leftIcon: {

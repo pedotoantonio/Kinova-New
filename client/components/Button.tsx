@@ -9,9 +9,9 @@ import Animated, {
 
 import { ThemedText } from "@/components/ThemedText";
 import { useTheme } from "@/hooks/useTheme";
-import { BorderRadius, Spacing, Shadows } from "@/constants/theme";
+import { BorderRadius, Spacing, Typography } from "@/constants/theme";
 
-type ButtonVariant = "primary" | "secondary" | "outline";
+type ButtonVariant = "primary" | "secondary" | "outline" | "ghost";
 
 interface ButtonProps {
   onPress?: () => void;
@@ -42,7 +42,7 @@ export function Button({
   variant = "primary",
   testID,
 }: ButtonProps) {
-  const { theme, isDark } = useTheme();
+  const { theme } = useTheme();
   const scale = useSharedValue(1);
 
   const animatedStyle = useAnimatedStyle(() => ({
@@ -64,34 +64,29 @@ export function Button({
   const isDisabled = disabled || loading;
 
   const getButtonStyles = (): ViewStyle => {
-    const baseStyles: ViewStyle = {
-      ...Shadows.md,
-    };
-
     switch (variant) {
       case "primary":
         return {
-          ...baseStyles,
           backgroundColor: theme.primary,
         };
       case "secondary":
         return {
-          backgroundColor: "transparent",
-          borderWidth: 1.5,
-          borderColor: theme.primary,
-          shadowOpacity: 0,
-          elevation: 0,
+          backgroundColor: theme.secondary,
         };
       case "outline":
         return {
           backgroundColor: "transparent",
-          borderWidth: 1,
-          borderColor: theme.border,
-          shadowOpacity: 0,
-          elevation: 0,
+          borderWidth: 1.5,
+          borderColor: theme.primary,
+        };
+      case "ghost":
+        return {
+          backgroundColor: "transparent",
         };
       default:
-        return baseStyles;
+        return {
+          backgroundColor: theme.primary,
+        };
     }
   };
 
@@ -100,9 +95,11 @@ export function Button({
       case "primary":
         return theme.buttonText;
       case "secondary":
-        return theme.primary;
-      case "outline":
         return theme.text;
+      case "outline":
+        return theme.primary;
+      case "ghost":
+        return theme.primary;
       default:
         return theme.buttonText;
     }
@@ -140,12 +137,12 @@ export function Button({
 const styles = StyleSheet.create({
   button: {
     height: Spacing.buttonHeight,
-    borderRadius: BorderRadius.sm,
+    borderRadius: BorderRadius.button,
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: Spacing.xl,
+    paddingHorizontal: Spacing["2xl"],
   },
   buttonText: {
-    fontWeight: "600",
+    ...Typography.button,
   },
 });
