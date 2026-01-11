@@ -146,7 +146,7 @@ export function Button({
     </>
   );
 
-  if (usesGradient && !isDisabled) {
+  if (usesGradient) {
     return (
       <AnimatedPressable
         onPress={handlePress}
