@@ -1,0 +1,226 @@
+REDESIGN COMPLETO INTERFACCIA KINOVA - APP PROFESSIONALE PER FAMIGLIE
+
+Crea un'interfaccia grafica PROFESSIONALE, MODERNA e ACCATTIVANTE per l'app Kinova. L'app deve essere perfettamente compatibile con iPhone e Android.
+
+=== PARTE 1: LOGO E BRANDING ===
+1. GENERA UN LOGO PROFESSIONALE per Kinova che:
+   - Riflette famiglia, fiducia e tecnologia
+   - Usa colori caldi e accoglienti (verde salvia, azzurro cielo, bianco)
+   - Sia semplice, memorabile e scalabile
+   - Funzioni bene come icona app (192x192 e 512x512)
+   - Crea una versione SVG/PNG ad alta risoluzione
+   - Salva in /assets/logo/kinova-logo.svg e kinova-logo.png
+
+2. COLORI E DESIGN SYSTEM:
+   - Primary Color: #2D8659 (verde salvia - fiducia)
+   - Secondary Color: #4A90E2 (azzurro - serenità)
+   - Accent Color: #FF6B6B (corallo - energia)
+   - Background: #FAFAFA (bianco quasi puro)
+   - Text Dark: #1A1A1A
+   - Text Light: #666666
+   - Success: #2D8659
+   - Error: #E85D4E
+   - Border: #E0E0E0
+
+=== PARTE 2: COMPONENTI UI MODERNI ===
+Crea componenti React Native RIUTILIZZABILI:
+
+1. Button Component:
+   - Rounded corners (12px)
+   - Shadow elevation (Material Design)
+   - Ripple effect su tap
+   - Loading state con spinner
+   - Disabled state elegante
+   - Varianti: Primary, Secondary, Outline
+
+2. Card Component:
+   - Rounded corners (16px)
+   - Subtle shadow
+   - Padding consistente (16px)
+   - Background bianco con bordi grigi
+
+3. Input Component:
+   - Rounded corners (12px)
+   - Floating label animato
+   - Focus state con colore primary
+   - Error state con messaggio
+   - Icone dentro l'input (email, password visibility)
+   - Placeholder sottile
+
+4. Navigation Bottom:
+   - 4 tab: Home, Profile, Settings, Help
+   - Icone + Label
+   - Active indicator animato
+   - Safe area per iPhone notch/Android
+
+=== PARTE 3: SCHERMATE UI REDESIGNATE ===
+
+1. SPLASH SCREEN:
+   - Logo Kinova grande e centrato
+   - Tagline: "La tua app di fiducia per la famiglia"
+   - Colori gradient (verde a azzurro)
+   - Animazione fade in/scale
+
+2. LOGIN SCREEN:
+   - Logo piccolo in alto
+   - Titolo: "Accedi al tuo account"
+   - Email input con icona envelope
+   - Password input con toggle visibility
+   - "Password dimenticata?" link
+   - Grande bottone Login con shadow
+   - "Non hai account? Registrati" link sottile
+   - Background con leggero pattern/gradient
+
+3. SIGNUP SCREEN:
+   - Logo piccolo
+   - Titolo: "Crea il tuo account"
+   - Campo Email
+   - Campo Password con strength indicator (colore che cambia)
+   - Campo Conferma Password
+   - Nome visualizzato (opzionale)
+   - Checkbox: "Accetto i termini di servizio"
+   - Bottone Crea Account
+   - Link per login
+   - Progress indicator (Step 1 of 1)
+
+4. HOME SCREEN:
+   - Header con greeting: "Ciao, {Nome}!"
+   - Card benvenuto con icona famiglia
+   - Sezione "Quick Actions" con 4 cards:
+     * Visualizza profilo
+     * Leggi guide
+     * Contatti supporto
+     * Impostazioni
+   - List di "Recent activities" se disponibile
+   - Floating action button per nuova azione (se applicabile)
+
+5. PROFILE SCREEN:
+   - Avatar grande circolare (con iniziali o foto)
+   - Nome utente
+   - Email
+   - Sezione "Account Info" con card
+   - Pulsante "Edit Profile"
+   - Sezione "Security" con:
+     * Change password
+     * Two-factor authentication
+     * Login history
+   - Sezione "Preferenze":
+     * Notifiche ON/OFF
+     * Lingua
+     * Tema (Light/Dark) - da implementare
+
+6. SETTINGS SCREEN:
+   - Sections con dividers
+   - Toggle switches con colore primary quando attivi
+   - Impostazioni per:
+     * Notifiche (Enable/Disable per tipo)
+     * Privacy (Data sharing preferences)
+     * Sicurezza (Password, 2FA)
+     * Lingua (it, en, es, fr)
+     * Tema (Light/Dark)
+     * Version app
+     * Logout button in basso
+
+=== PARTE 4: RESPONSIVENESS E COMPATIBILITY ===
+
+1. MOBILE FIRST DESIGN:
+   - Perfetto su iPhone 12, 13, 14, 15
+   - Perfetto su Android standard (varie risoluzioni)
+   - Safe area per notch e gesture
+   - Bottom safe area per home indicator
+
+2. TOUCH FRIENDLY:
+   - Pulsanti min 48x48dp
+   - Spacing coerente (8, 12, 16, 24, 32px)
+   - Font size leggibile (min 14px)
+   - Contrast ratio WCAG AA minimum
+
+3. PERFORMANCE:
+   - Immagini ottimizzate (WebP per web, PNG per app)
+   - Font system per performance
+   - Lazy loading dove necessario
+   - Smooth animations (60fps)
+
+=== PARTE 5: FILE STRUCTURE ===
+Crea struttura di file:
+
+/src
+  /components
+    /common
+      Button.tsx
+      Card.tsx
+      Input.tsx
+      Avatar.tsx
+      BottomNavigation.tsx
+      Header.tsx
+    /screens
+      SplashScreen.tsx
+      LoginScreen.tsx
+      SignupScreen.tsx
+      HomeScreen.tsx
+      ProfileScreen.tsx
+      SettingsScreen.tsx
+  /styles
+    colors.ts (colori centralizzati)
+    typography.ts (font system)
+    spacing.ts (spacing system)
+    shadows.ts (elevation system)
+  /assets
+    /images
+      /icons (tutte le icone SVG)
+      /logo
+        kinova-logo.svg
+        kinova-logo.png
+    /fonts (se custom fonts)
+
+=== PARTE 6: SPECIFICHE TECNICHE ===
+
+1. STATE MANAGEMENT:
+   - Usa Context API + Hooks (non redux per app semplice)
+   - AuthContext per authentication
+   - AppThemeContext per tema light/dark
+   - NotificationContext per notifiche
+
+2. NAVIGATION:
+   - React Navigation per mobile
+   - Stack Navigator per auth flow
+   - Bottom Tab Navigator per main app
+   - Transizioni smooth (fade, slide)
+
+3. STYLING:
+   - StyleSheet per React Native
+   - Responsive sizing con Dimensions API
+   - CSS Modules o Tailwind per web
+
+4. ICONE:
+   - FontAwesome o MaterialCommunityIcons
+   - Colori coerenti con design system
+   - Dimensioni: 24px per tab, 32px per header
+
+=== PARTE 7: IMPLEMENTAZIONE ===
+
+1. Inizia creando il Design System (colori, tipografia, spacing, shadows)
+2. Crea i componenti di base (Button, Card, Input, Avatar)
+3. Implementa le schermate nell'ordine: Splash > Login > Signup > Home > Profile > Settings
+4. Testa responsive design su diverse risoluzioni
+5. Implementa navigazione fluida tra schermate
+6. Aggiungi animazioni e transizioni
+7. Optimizza performance
+8. Testa su emulator iPhone e Android
+
+=== PARTE 8: LINEE GUIDA DESIGN ===
+
+- Spazi bianchi generosi per leggibilità
+- Nessun elemento cramped
+- Consistent padding/margin (12, 16, 24px)
+- Icons dove possibile per velocità d'uso
+- Microcopy chiarissimo e in italiano
+- Loading states sempre visibili
+- Error messages costruttivi, non generici
+- Feedback tattile su interazioni
+- Colori accessibili per daltonismi
+
+SOMMARIO:
+Crea un'app professionale, moderna, accattivante e 100% responsiva su iOS e Android. Logo professionale, componenti riutilizzabili, design system coerente, compatibilità totale con diverse risoluzioni e safe areas. L'interfaccia deve essere accogliente per le famiglie ma sofisticata nel design.
+
+Ora INIZIA l'implementazione passo dopo passo!
