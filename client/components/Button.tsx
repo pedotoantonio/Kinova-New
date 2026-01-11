@@ -1,17 +1,19 @@
 import React, { ReactNode } from "react";
-import { StyleSheet, Pressable, ViewStyle, StyleProp, ActivityIndicator } from "react-native";
+import { StyleSheet, Pressable, ViewStyle, StyleProp, ActivityIndicator, Platform } from "react-native";
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withSpring,
   WithSpringConfig,
 } from "react-native-reanimated";
+import { LinearGradient } from "expo-linear-gradient";
+import * as Haptics from "expo-haptics";
 
 import { ThemedText } from "@/components/ThemedText";
 import { useTheme } from "@/hooks/useTheme";
-import { BorderRadius, Spacing, Typography } from "@/constants/theme";
+import { BorderRadius, Spacing, Typography, Shadows, Animation, Gradients, Colors } from "@/constants/theme";
 
-type ButtonVariant = "primary" | "secondary" | "outline" | "ghost";
+type ButtonVariant = "primary" | "secondary" | "outline" | "ghost" | "coral" | "green" | "lavender" | "yellow";
 
 interface ButtonProps {
   onPress?: () => void;
@@ -24,11 +26,10 @@ interface ButtonProps {
 }
 
 const springConfig: WithSpringConfig = {
-  damping: 15,
+  damping: Animation.spring.damping,
+  stiffness: Animation.spring.stiffness,
   mass: 0.3,
-  stiffness: 150,
   overshootClamping: true,
-  energyThreshold: 0.001,
 };
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
@@ -42,7 +43,8 @@ export function Button({
   variant = "primary",
   testID,
 }: ButtonProps) {
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
+  const colors = isDark ? Colors.dark : Colors.light;
   const scale = useSharedValue(1);
 
   const animatedStyle = useAnimatedStyle(() => ({
@@ -51,7 +53,7 @@ export function Button({
 
   const handlePressIn = () => {
     if (!disabled && !loading) {
-      scale.value = withSpring(0.98, springConfig);
+      scale.value = withSpring(Animation.pressScale, springConfig);
     }
   };
 
@@ -61,53 +63,119 @@ export function Button({
     }
   };
 
+  const handlePress = () => {
+    if (!disabled && !loading && onPress) {
+      if (Platform.OS !== "web") {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      }
+      onPress();
+    }
+  };
+
   const isDisabled = disabled || loading;
+
+  const getGradientColors = (): [string, string] => {
+    switch (variant) {
+      case "primary":
+        return Gradients.oceanBlue as [string, string];
+      case "coral":
+        return Gradients.sunriseCoral as [string, string];
+      case "green":
+        return Gradients.meadowGreen as [string, string];
+      case "lavender":
+        return Gradients.lavenderBloom as [string, string];
+      case "yellow":
+        return Gradients.sunshineYellow as [string, string];
+      default:
+        return Gradients.oceanBlue as [string, string];
+    }
+  };
+
+  const usesGradient = ["primary", "coral", "green", "lavender", "yellow"].includes(variant);
 
   const getButtonStyles = (): ViewStyle => {
     switch (variant) {
-      case "primary":
-        return {
-          backgroundColor: theme.primary,
-        };
       case "secondary":
         return {
-          backgroundColor: theme.secondary,
+          backgroundColor: colors.backgroundDefault,
+          borderWidth: 1.5,
+          borderColor: colors.primary,
         };
       case "outline":
         return {
           backgroundColor: "transparent",
           borderWidth: 1.5,
-          borderColor: theme.primary,
+          borderColor: colors.primary,
         };
       case "ghost":
         return {
           backgroundColor: "transparent",
         };
       default:
-        return {
-          backgroundColor: theme.primary,
-        };
+        return {};
     }
   };
 
   const getTextColor = (): string => {
     switch (variant) {
-      case "primary":
-        return theme.buttonText;
       case "secondary":
-        return theme.text;
+        return colors.primary;
       case "outline":
-        return theme.primary;
+        return colors.primary;
       case "ghost":
-        return theme.primary;
+        return colors.primary;
+      case "yellow":
+        return "#2D3436";
       default:
-        return theme.buttonText;
+        return "#FFFFFF";
     }
   };
 
+  const buttonContent = (
+    <>
+      {loading ? (
+        <ActivityIndicator size="small" color={getTextColor()} />
+      ) : (
+        <ThemedText
+          type="button"
+          style={[styles.buttonText, { color: getTextColor() }]}
+        >
+          {children}
+        </ThemedText>
+      )}
+    </>
+  );
+
+  if (usesGradient && !isDisabled) {
+    return (
+      <AnimatedPressable
+        onPress={handlePress}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        disabled={isDisabled}
+        testID={testID}
+        style={[
+          styles.buttonContainer,
+          { opacity: isDisabled ? 0.5 : 1 },
+          style,
+          animatedStyle,
+        ]}
+      >
+        <LinearGradient
+          colors={getGradientColors()}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={[styles.button, styles.gradientButton, Shadows.button]}
+        >
+          {buttonContent}
+        </LinearGradient>
+      </AnimatedPressable>
+    );
+  }
+
   return (
     <AnimatedPressable
-      onPress={isDisabled ? undefined : onPress}
+      onPress={handlePress}
       onPressIn={handlePressIn}
       onPressOut={handlePressOut}
       disabled={isDisabled}
@@ -120,27 +188,25 @@ export function Button({
         animatedStyle,
       ]}
     >
-      {loading ? (
-        <ActivityIndicator size="small" color={getTextColor()} />
-      ) : (
-        <ThemedText
-          type="body"
-          style={[styles.buttonText, { color: getTextColor() }]}
-        >
-          {children}
-        </ThemedText>
-      )}
+      {buttonContent}
     </AnimatedPressable>
   );
 }
 
 const styles = StyleSheet.create({
+  buttonContainer: {
+    borderRadius: BorderRadius.button,
+    overflow: "hidden",
+  },
   button: {
     height: Spacing.buttonHeight,
     borderRadius: BorderRadius.button,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: Spacing["2xl"],
+  },
+  gradientButton: {
+    borderRadius: BorderRadius.button,
   },
   buttonText: {
     ...Typography.button,

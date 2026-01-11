@@ -13,7 +13,7 @@ import { useTheme } from "@/hooks/useTheme";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth";
 import { AppIcons } from "@/constants/icons";
-import { Colors, IconSize, BorderRadius } from "@/constants/theme";
+import { Colors, IconSize, CategoryColors } from "@/constants/theme";
 
 export type MainTabParamList = {
   HomeTab: undefined;
@@ -26,6 +26,31 @@ export type MainTabParamList = {
 };
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
+
+function TabIcon({ 
+  name, 
+  focused, 
+  categoryColor, 
+  inactiveColor 
+}: { 
+  name: keyof typeof Feather.glyphMap; 
+  focused: boolean; 
+  categoryColor: string; 
+  inactiveColor: string;
+}) {
+  return (
+    <View style={styles.iconContainer}>
+      <Feather 
+        name={name} 
+        size={IconSize.navigation} 
+        color={focused ? categoryColor : inactiveColor} 
+      />
+      {focused ? (
+        <View style={[styles.activeIndicator, { backgroundColor: categoryColor }]} />
+      ) : null}
+    </View>
+  );
+}
 
 export default function MainTabNavigator() {
   const { theme, isDark } = useTheme();
@@ -49,20 +74,22 @@ export default function MainTabNavigator() {
     <Tab.Navigator
       initialRouteName="HomeTab"
       screenOptions={{
-        tabBarActiveTintColor: colors.tabIconSelected,
+        tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.tabIconDefault,
         tabBarStyle: {
           backgroundColor: colors.tabBar,
-          borderTopWidth: 0,
+          borderTopWidth: 1,
+          borderTopColor: colors.border,
           elevation: 0,
-          height: Platform.OS === "ios" ? 88 : 64,
-          paddingBottom: Platform.OS === "ios" ? 28 : 8,
+          height: Platform.OS === "ios" ? 88 : 68,
+          paddingBottom: Platform.OS === "ios" ? 28 : 12,
           paddingTop: 8,
         },
         headerShown: false,
         tabBarLabelStyle: {
           fontSize: 11,
           fontWeight: "500",
+          marginTop: 2,
         },
       }}
     >
@@ -71,8 +98,13 @@ export default function MainTabNavigator() {
         component={HomeStackNavigator}
         options={{
           title: t.home.title,
-          tabBarIcon: ({ color, size }) => (
-            <Feather name={AppIcons.home} size={IconSize.navigation} color={color} />
+          tabBarIcon: ({ focused }) => (
+            <TabIcon 
+              name={AppIcons.home} 
+              focused={focused} 
+              categoryColor={CategoryColors.home}
+              inactiveColor={colors.tabIconDefault}
+            />
           ),
         }}
       />
@@ -83,10 +115,15 @@ export default function MainTabNavigator() {
           title: t.calendar.title,
           headerShown: true,
           headerTitle: t.calendar.title,
-          headerStyle: { backgroundColor: theme.backgroundRoot },
-          headerTintColor: theme.text,
-          tabBarIcon: ({ color, size }) => (
-            <Feather name={AppIcons.calendar} size={IconSize.navigation} color={color} />
+          headerStyle: { backgroundColor: colors.backgroundRoot },
+          headerTintColor: colors.text,
+          tabBarIcon: ({ focused }) => (
+            <TabIcon 
+              name={AppIcons.calendar} 
+              focused={focused} 
+              categoryColor={CategoryColors.calendar}
+              inactiveColor={colors.tabIconDefault}
+            />
           ),
         }}
       />
@@ -98,10 +135,15 @@ export default function MainTabNavigator() {
             title: t.lists.title,
             headerShown: true,
             headerTitle: t.lists.title,
-            headerStyle: { backgroundColor: theme.backgroundRoot },
-            headerTintColor: theme.text,
-            tabBarIcon: ({ color, size }) => (
-              <Feather name={AppIcons.tasks} size={IconSize.navigation} color={color} />
+            headerStyle: { backgroundColor: colors.backgroundRoot },
+            headerTintColor: colors.text,
+            tabBarIcon: ({ focused }) => (
+              <TabIcon 
+                name={AppIcons.tasks} 
+                focused={focused} 
+                categoryColor={CategoryColors.lists}
+                inactiveColor={colors.tabIconDefault}
+              />
             ),
           }}
         />
@@ -111,8 +153,13 @@ export default function MainTabNavigator() {
         component={NotesStackNavigator}
         options={{
           title: t.notes.title,
-          tabBarIcon: ({ color, size }) => (
-            <Feather name={AppIcons.notes} size={IconSize.navigation} color={color} />
+          tabBarIcon: ({ focused }) => (
+            <TabIcon 
+              name={AppIcons.notes} 
+              focused={focused} 
+              categoryColor={CategoryColors.notes}
+              inactiveColor={colors.tabIconDefault}
+            />
           ),
         }}
       />
@@ -124,10 +171,15 @@ export default function MainTabNavigator() {
             title: t.budget.title,
             headerShown: true,
             headerTitle: t.budget.title,
-            headerStyle: { backgroundColor: theme.backgroundRoot },
-            headerTintColor: theme.text,
-            tabBarIcon: ({ color, size }) => (
-              <Feather name={AppIcons.budget} size={IconSize.navigation} color={color} />
+            headerStyle: { backgroundColor: colors.backgroundRoot },
+            headerTintColor: colors.text,
+            tabBarIcon: ({ focused }) => (
+              <TabIcon 
+                name={AppIcons.budget} 
+                focused={focused} 
+                categoryColor={CategoryColors.budget}
+                inactiveColor={colors.tabIconDefault}
+              />
             ),
           }}
         />
@@ -138,8 +190,13 @@ export default function MainTabNavigator() {
         options={{
           title: t.assistant.title,
           headerShown: false,
-          tabBarIcon: ({ color, size }) => (
-            <Feather name={AppIcons.assistant} size={IconSize.navigation} color={color} />
+          tabBarIcon: ({ focused }) => (
+            <TabIcon 
+              name={AppIcons.assistant} 
+              focused={focused} 
+              categoryColor={CategoryColors.assistant}
+              inactiveColor={colors.tabIconDefault}
+            />
           ),
         }}
       />
@@ -148,11 +205,30 @@ export default function MainTabNavigator() {
         component={ProfileStackNavigator}
         options={{
           title: t.profile.title,
-          tabBarIcon: ({ color, size }) => (
-            <Feather name={AppIcons.profile} size={IconSize.navigation} color={color} />
+          tabBarIcon: ({ focused }) => (
+            <TabIcon 
+              name={AppIcons.profile} 
+              focused={focused} 
+              categoryColor={CategoryColors.profile}
+              inactiveColor={colors.tabIconDefault}
+            />
           ),
         }}
       />
     </Tab.Navigator>
   );
 }
+
+const styles = StyleSheet.create({
+  iconContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  activeIndicator: {
+    position: "absolute",
+    top: -8,
+    width: 20,
+    height: 3,
+    borderRadius: 1.5,
+  },
+});

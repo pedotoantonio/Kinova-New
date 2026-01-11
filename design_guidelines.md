@@ -1,201 +1,202 @@
-# Kinova Design Guidelines - WeUs Style
-
-## Overview
-Kinova follows the WeUs design system - a warm, minimal, and elegant aesthetic with soft earth tones and generous white space. The design emphasizes trust, warmth, and simplicity for family coordination.
+# Kinova Bloom Design Guidelines
 
 ## 1. Brand Identity
 
-**Purpose**: Kinova is a professional family coordination app that helps families stay organized, connected, and in sync.
+**Purpose**: Kinova is a family coordination app that helps families stay organized, connected, and in sync with joy and energy.
 
-**Aesthetic Direction**: Warm, minimal, and elegant. The design combines soft taupe/teal tones with beige accents to create a calming, trustworthy experience. Think family warmth meets modern simplicity.
+**Aesthetic Direction**: Playful/Professional - Vibrant colors meet clean organization. Like a well-designed family planner that actually makes you smile. Think Notion's clarity with Duolingo's warmth.
 
-**Tagline**: "La tua app di fiducia per la famiglia" (Your trusted family app)
+**Memorable Element**: Color-coded categories with gradient accents throughout the app. Each family area (calendar, lists, notes, budget) has its own signature color that creates instant visual recognition.
 
 ## 2. Color Palette
 
 ### Primary Colors
-- **Primary**: `#8F867D` (Soft Teal/Taupe) - Main brand color for buttons, active states, navigation
-- **Secondary**: `#D4C5B0` (Warm Beige) - Secondary elements, inactive states, tab icons
+- **Ocean Blue**: `#4A90D9` - Primary actions, Calendar
+- **Sunrise Coral**: `#FF7B54` - Lists & Tasks
+- **Meadow Green**: `#4CAF7D` - Success states, Budget
+- **Lavender Bloom**: `#9B7ED9` - Notes & Documents
+- **Sunshine Yellow**: `#FFD93D` - Highlights, Assistant
 
-### Accent Colors
-- **Coral**: `#F0A8A8` - Soft coral for highlights, alerts, notifications
-- **Yellow**: `#F4D89A` - Light yellow for warnings, special highlights
-- **Green**: `#C3E4C8` - Light mint green for success states, confirmations
+### Neutrals
+- **Background**: `#FFFFFF` (Pure White)
+- **Surface**: `#F8F9FA` (Light Gray)
+- **Text Primary**: `#2D3436` (Charcoal)
+- **Text Secondary**: `#636E72` (Medium Gray)
+- **Border**: `#DFE6E9` (Soft Gray)
 
-### Neutral Colors
-- **Background**: `#FDFBF9` (Warm White) - Main background color
-- **Surface**: `#FFFFFF` (Pure White) - Cards, modals, elevated surfaces
-- **Background Secondary**: `#F5F0EB` - Secondary backgrounds
-- **Text Primary**: `#4A4A4A` (Dark Gray) - Main text color
-- **Text Secondary**: `#7A7A7A` (Medium Gray) - Secondary text, labels
-- **Text Light**: `#9A9A9A` (Light Gray) - Placeholder text, disabled states
-- **Border**: `#E5DED4` (Soft Border) - Input borders, dividers
-- **Border Light**: `#EDE8E1` - Subtle separators
+### Semantic Colors
+- **Success**: `#4CAF7D` (Meadow Green)
+- **Warning**: `#FFD93D` (Sunshine Yellow)
+- **Error**: `#FF6B6B` (Soft Red)
+- **Info**: `#4A90D9` (Ocean Blue)
 
 ### Dark Mode
-- Background Root: `#1E1D1C`
-- Surface: `#2A2826`
-- Primary adjusted: `#A69D94`
-- Text: `#F5F0EB`
+- Background: `#1A1D1F`
+- Surface: `#252A2E`
+- Text Primary: `#F8F9FA`
+- Primary colors remain vibrant
 
 ## 3. Typography
 
-### Font Family
-**Inter** - A clean, modern sans-serif typeface with excellent readability
+**Font**: Inter (clean, modern, professional)
 
-### Type Scale
-| Style | Size | Weight | Line Height | Usage |
-|-------|------|--------|-------------|-------|
-| Large Title | 28px | Bold (700) | 34px | Main screen titles |
-| Title | 24px | Bold (700) | 30px | Section headers |
-| Subtitle | 18px | Semi-bold (600) | 24px | Card titles, small headings |
-| Body | 16px | Regular (400) | 22px | Main content text |
-| Label | 14px | Regular (400) | 20px | Form labels, metadata |
-| Caption | 13px | Regular (400) | 18px | Secondary information |
-| Small | 12px | Regular (400) | 16px | Footnotes, timestamps |
-| Button | 16px | Semi-bold (600) | 22px | Button text |
+| Style | Size | Weight | Line Height |
+|-------|------|--------|-------------|
+| Large Title | 28px | Bold (700) | 34px |
+| Title | 22px | Bold (700) | 28px |
+| Subtitle | 18px | Semibold (600) | 24px |
+| Body | 16px | Regular (400) | 22px |
+| Label | 14px | Medium (500) | 20px |
+| Caption | 12px | Regular (400) | 16px |
+| Button | 16px | Semibold (600) | 22px |
 
-## 4. Spacing System
+## 4. Spacing & Layout
 
-### Base Units
-- xs: 4px
-- sm: 8px
-- md: 12px
-- lg: 16px
-- xl: 20px
-- 2xl: 24px
-- 3xl: 32px
-- 4xl: 40px
-
-### Layout Spacing
+- xs: 4px, sm: 8px, md: 12px, lg: 16px, xl: 20px, 2xl: 24px, 3xl: 32px
 - **Screen Padding**: 20px horizontal
-- **Card Padding**: 20px all sides
-- **Component Margins**: 16px between elements
-- **Input Height**: 52px
-- **Button Height**: 52px
+- **Card Padding**: 16px
+- **Component Gap**: 12px
+- **Input/Button Height**: 52px
 
 ## 5. Border Radius
 
-| Element | Radius |
-|---------|--------|
-| Buttons | 20px |
-| Inputs | 16px |
-| Cards | 20px |
-| Small elements | 12px |
-| Badges/Tags | 8px |
+- Buttons: 26px (pill-shaped)
+- Cards: 16px
+- Inputs: 12px
+- Badges: 20px (pill)
+- Avatars: 50% (circle)
 
 ## 6. Components
 
 ### Buttons
-- **Primary**: Background `#8F867D`, white text, rounded 20px, NO shadow
-- **Secondary**: Background `#D4C5B0`, dark text, rounded 20px
-- **Outline**: Transparent, 1.5px border primary color, rounded 20px
-- **Ghost**: Transparent, primary text color
-- Height: 52px with generous horizontal padding (24px)
-- Press animation: Scale 0.98 with spring
-
-### Inputs
-- Background: Warm white `#FDFBF9`
-- Border: `#E5DED4` (1px)
-- Focus Border: `#8F867D` (primary color)
-- Border Radius: 16px
-- Height: 52px
-- Padding: 16px horizontal
-- Icons: Left for type indication, right for actions
+- **Primary**: Gradient background (e.g., Ocean Blue to lighter tint), white text, height 52px, rounded 26px, subtle shadow (shadowOffset: {width: 0, height: 2}, shadowOpacity: 0.15, shadowRadius: 4)
+- **Secondary**: White background, colored text, 1.5px colored border
+- **Ghost**: Transparent, colored text
+- Press: Scale 0.97 with spring animation
 
 ### Cards
-- Background: Pure white `#FFFFFF`
-- Border: `#E5DED4` (1px)
-- Border Radius: 20px
-- Padding: 20px
-- **NO shadows** - use subtle borders instead
+- Background: White
+- Border: 1px `#DFE6E9`
+- Radius: 16px
+- Shadow: shadowOffset {width: 0, height: 1}, shadowOpacity 0.05, shadowRadius 3
+- **Category Indicator**: 4px colored left border or top gradient strip matching category
 
-### Navigation (Bottom Tab Bar)
-- Background: `#8F867D` (primary color)
-- Active Icon: White `#FFFFFF`
-- Inactive Icon: Beige `#D4C5B0`
+### Inputs
+- Background: White
+- Border: 1.5px `#DFE6E9`
+- Focus Border: Category color (2px)
+- Radius: 12px
+- Height: 52px
+- Left icon in category color
+
+### Tab Bar
+- Background: White
+- Border Top: 1px `#DFE6E9`
+- Active Icon: Category color
+- Inactive Icon: `#636E72`
 - Icon Size: 24px
-- Label Size: 11px, weight 500
+- Active Indicator: 3px colored line above icon
 
-## 7. Icons
+## 7. Navigation Architecture
 
-### Style
-- Simple, minimal line icons (Feather icon set)
-- Stroke width: Default (2px)
-- Color: Primary `#8F867D` or Text `#4A4A4A`
+**Root**: Tab Navigation (7 tabs)
 
-### Sizes
-- Navigation: 24px
-- Action buttons: 22px
-- Inline icons: 18px
-- Large decorative: 28px
+**Tabs**:
+1. **Home** (Ocean Blue) - Family overview, greeting, quick actions
+2. **Calendar** (Ocean Blue) - Shared events
+3. **Lists** (Sunrise Coral) - Tasks, shopping
+4. **Notes** (Lavender Bloom) - Documents
+5. **Budget** (Meadow Green) - Expenses
+6. **Assistant** (Sunshine Yellow) - AI helper
+7. **Profile** (Ocean Blue) - Settings, family
 
-## 8. Navigation Architecture
-
-**Root Navigation**: Tab Navigation (5-7 tabs based on user permissions)
-
-**Screens**:
-- Home (Tab 1): Family overview, greeting, quick actions, recent activity
-- Calendar (Tab 2): Shared family calendar and events
-- Lists (Tab 3): Tasks and shopping lists
-- Notes (Tab 4): Family notes and documents
-- Budget (Tab 5): Monthly expenses and budgeting (if enabled)
-- Assistant (Tab 6): AI-powered family assistant
-- Profile (Tab 7): User settings and family management
-
-## 9. Design Principles
-
-### 1. Generous White Space
-- Allow content to breathe with ample margins and padding
-- Use 20px screen padding, 16px between components
-- Avoid cluttered layouts
-
-### 2. Soft & Warm
-- Warm white backgrounds instead of pure white for root
-- Soft border colors instead of harsh lines
-- Earth-toned accent colors
-
-### 3. Minimal & Elegant
-- **No shadows on components** (use subtle borders)
-- Clean, simple iconography
-- Limited color usage per screen
-
-### 4. Consistent Hierarchy
-- Clear visual hierarchy with type scale
-- Primary actions prominent, secondary actions subtle
-- Logical grouping with cards and sections
-
-### 5. Accessibility
-- Sufficient color contrast (4.5:1 minimum)
-- Touch targets minimum 44px
-- Clear focus states for inputs
-
-## 10. Animations
-- Button press: Scale 0.98 with spring (damping: 15, stiffness: 150)
-- Screen transitions: Smooth fade/slide
-- Loading states: ActivityIndicator with primary color
-- Haptic feedback on important actions
-
-## 11. Screen Specifications
-
-### Login Screen
-- Logo centered at top with primary background
-- App name and tagline below logo
-- Card-based form layout
-- Email input with mail icon
-- Password input with visibility toggle
-- Primary button for Login (WeUs style)
-- Link for registration mode toggle
+## 8. Screen Specifications
 
 ### Home Screen
-- Greeting: "Ciao, {Nome}!"
-- Welcome card with family info
-- Quick actions grid
-- Recent activities section
-- Pull-to-refresh
+- **Header**: Transparent, greeting "Ciao, {Name}!" (Large Title), avatar top-right
+- **Layout**: ScrollView with:
+  - Welcome card (gradient Ocean Blue → lighter tint, white text, family member count)
+  - Quick Actions grid (4 colorful icon buttons with labels)
+  - Recent Activity list (cards with colored left borders)
+- **Safe Area**: Top = headerHeight + xl, Bottom = tabBarHeight + xl
+
+### Calendar Screen
+- **Header**: Default with "Calendario" title, plus button (Ocean Blue) top-right
+- **Layout**: Calendar view + events list below
+- **Components**: Month selector, day grid, event cards (Ocean Blue accents)
+- **Empty State**: Illustration (calendar-empty.png)
+
+### Lists Screen
+- **Header**: Transparent, "Liste" title, plus button (Sunrise Coral)
+- **Layout**: Segmented control (Tasks/Shopping), card list
+- **Components**: Checkbox items, progress bars (Sunrise Coral)
+- **Empty State**: Illustration (lists-empty.png)
+
+### Notes Screen
+- **Header**: Default, "Note" title, plus button (Lavender Bloom)
+- **Layout**: Grid of note cards (2 columns)
+- **Components**: Note preview cards (Lavender Bloom top strip)
+- **Empty State**: Illustration (notes-empty.png)
+
+### Budget Screen
+- **Header**: Default, "Budget" title, filter button
+- **Layout**: Monthly summary card + expense list
+- **Components**: Pie chart (Meadow Green gradients), category tags
+- **Empty State**: Illustration (budget-empty.png)
+
+### Assistant Screen
+- **Header**: Transparent, "Assistente" title
+- **Layout**: Chat interface
+- **Components**: Message bubbles (user: white with border, AI: Sunshine Yellow tint)
+- **Safe Area**: Top = headerHeight + xl, Bottom = tabBarHeight + input height + xl
 
 ### Profile Screen
-- Large circular avatar
-- Display name and email
-- Settings cards with icons
-- Logout button
+- **Header**: Default, "Profilo" title
+- **Layout**: ScrollView with avatar, name, settings cards
+- **Components**: Large circular avatar (120px), setting rows with icons, logout button (Error color)
+
+### Login Screen
+- **Header**: None
+- **Layout**: Centered content with logo, form card
+- **Components**: Logo (app icon), email/password inputs, primary button (Ocean Blue gradient)
+- **Safe Area**: Top = insets.top + xl, Bottom = insets.bottom + xl
+
+## 9. Visual Design
+
+### Gradients
+Use for primary buttons, welcome cards, and category headers:
+- Ocean Blue: `#4A90D9` → `#6BA8E3`
+- Sunrise Coral: `#FF7B54` → `#FF9575`
+- Meadow Green: `#4CAF7D` → `#6FC596`
+- Lavender Bloom: `#9B7ED9` → `#B299E3`
+- Sunshine Yellow: `#FFD93D` → `#FFE26B`
+
+### Icons
+- Use Feather icons from @expo/vector-icons
+- Stroke width: 2px
+- Colors: Match category or text gray
+- Sizes: 24px (navigation/actions), 20px (inline), 32px (decorative)
+
+### Animations
+- Screen transitions: Slide with fade
+- Button press: Scale 0.97, spring (damping: 15, stiffness: 200)
+- List item appear: Fade + translateY
+- Loading: ActivityIndicator with category color
+- Haptic feedback on primary actions
+
+## 10. Assets to Generate
+
+| Filename | Description | Where Used |
+|----------|-------------|------------|
+| icon.png | App icon with colorful gradient logo | Device home screen |
+| splash-icon.png | Simplified logo for launch screen | App launch |
+| calendar-empty.png | Colorful calendar illustration (Ocean Blue tones) | Calendar empty state |
+| lists-empty.png | Checklist illustration (Coral tones) | Lists empty state |
+| notes-empty.png | Document/note illustration (Lavender tones) | Notes empty state |
+| budget-empty.png | Piggy bank/coins illustration (Green tones) | Budget empty state |
+| welcome-family.png | Happy family illustration | Home screen welcome card |
+| avatar-1.png | Preset avatar option 1 | Profile, onboarding |
+| avatar-2.png | Preset avatar option 2 | Profile, onboarding |
+| avatar-3.png | Preset avatar option 3 | Profile, onboarding |
+
+**Image Quality**: Simple, friendly illustrations with rounded shapes matching the Kinova Bloom aesthetic. Avoid overly detailed or clipart-style images.
