@@ -125,53 +125,120 @@ Questo documento contiene una lista completa di verifiche da eseguire prima dell
 
 ---
 
-## 5. PERMESSI
+## 5. FUNZIONALITA' PULSANTI (Button Functionality)
 
-### 5.1 Fotocamera (expo-camera)
+### 5.1 Pulsanti di INSERIMENTO (Add/Create)
+- [ ] **Assistente AI**: Pulsante invio messaggio funziona
+- [ ] **Assistente AI**: Pulsante allega file funziona
+- [ ] **Shopping**: Pulsante "+" aggiunge articolo (richiede testo)
+- [ ] **Shopping**: Pulsante disabilitato mostra opacità ridotta quando campo vuoto
+- [ ] **Tasks**: Pulsante "+" aggiunge task (richiede testo)
+- [ ] **Tasks**: Pulsante disabilitato mostra opacità ridotta quando campo vuoto
+- [ ] **Calendario**: FAB "+" apre modal creazione evento
+- [ ] **Calendario**: Pulsante "Salva" crea evento
+- [ ] **Budget**: FAB "+" apre modal nuova spesa
+- [ ] **Budget**: Pulsante "Salva" crea spesa
+- [ ] **Note**: FAB "+" crea nuova nota
+- [ ] **Note**: Pulsante "Salva" salva modifiche
+- [ ] **Famiglia**: Pulsante "Invita" genera codice invito
+
+### 5.2 Pulsanti di MODIFICA (Edit/Update)
+- [ ] **Shopping**: Tap su item apre modal modifica
+- [ ] **Shopping**: Pulsante "Salva" nella modal aggiorna item
+- [ ] **Tasks**: Tap su task apre modal modifica
+- [ ] **Tasks**: Pulsante "Salva" nella modal aggiorna task
+- [ ] **Calendario**: Tap su evento apre modal modifica
+- [ ] **Calendario**: Pulsante "Salva" aggiorna evento
+- [ ] **Budget**: Tap su spesa apre modal modifica
+- [ ] **Budget**: Pulsante "Salva" aggiorna spesa
+- [ ] **Note**: Modifiche auto-salvate o pulsante salva funziona
+- [ ] **Profilo**: Pulsante modifica profilo funziona
+- [ ] **Famiglia (Admin)**: Modifica permessi membri funziona
+
+### 5.3 Pulsanti di ELIMINAZIONE (Delete)
+- [ ] **Shopping**: Swipe-to-delete elimina articolo
+- [ ] **Shopping**: Pulsante elimina in modal dettagli funziona
+- [ ] **Tasks**: Swipe-to-delete elimina task
+- [ ] **Tasks**: Pulsante elimina in modal dettagli funziona
+- [ ] **Calendario**: Swipe-to-delete elimina evento
+- [ ] **Calendario**: Pulsante elimina in modal/schermata modifica funziona
+- [ ] **Budget**: Swipe-to-delete elimina spesa
+- [ ] **Budget**: Pulsante elimina in modal dettagli funziona
+- [ ] **Note**: Swipe-to-delete elimina nota
+- [ ] **Note**: Pulsante elimina in schermata dettaglio funziona
+- [ ] **Assistente AI**: Pulsante per eliminare messaggi/conversazione (se presente)
+
+### 5.4 Pulsanti di CONFERMA/ANNULLAMENTO
+- [ ] **Tutte le modal**: Pulsante "X" chiude senza salvare
+- [ ] **Tutte le modal**: Pulsante "Annulla" chiude senza salvare
+- [ ] **Tutte le modal**: Pulsante "Salva/Conferma" salva e chiude
+- [ ] **Assistente AI**: Pulsante "Conferma" esegue azione proposta
+- [ ] **Assistente AI**: Pulsante "Annulla" rifiuta azione proposta
+- [ ] **Dialoghi conferma**: Azioni distruttive richiedono conferma
+
+### 5.5 Pulsanti Toggle e Checkbox
+- [ ] **Shopping**: Checkbox completato funziona
+- [ ] **Tasks**: Checkbox completato funziona
+- [ ] **Note**: Toggle pin funziona
+- [ ] **Profilo**: Toggle notifiche funziona
+- [ ] **Calendario**: Toggle "Tutto il giorno" funziona
+
+### 5.6 Visual Feedback Pulsanti
+- [ ] Pulsanti mostrano stato pressed (opacità/scala)
+- [ ] Pulsanti disabilitati hanno opacità ridotta (0.5)
+- [ ] Haptic feedback su azioni importanti (iOS)
+- [ ] Loading indicator durante operazioni asincrone
+- [ ] Pulsanti non cliccabili durante caricamento
+
+---
+
+## 6. PERMESSI
+
+### 6.1 Fotocamera (expo-camera)
 - [ ] Prima richiesta mostra dialog sistema
 - [ ] Permesso concesso: fotocamera funziona
 - [ ] Permesso negato: messaggio appropriato mostrato
 - [ ] Pulsante "Apri Impostazioni" funziona (solo mobile)
 - [ ] Su web: messaggio "Usa Expo Go per questa funzione"
 
-### 5.2 Galleria Foto (expo-media-library)
+### 6.2 Galleria Foto (expo-media-library)
 - [ ] Prima richiesta mostra dialog sistema
 - [ ] Permesso concesso: galleria accessibile
 - [ ] Permesso negato: alternativa o messaggio mostrato
 
-### 5.3 Notifiche (expo-notifications)
+### 6.3 Notifiche (expo-notifications)
 - [ ] Toggle notifiche inizia OFF
 - [ ] Attivando toggle, appare richiesta permesso
 - [ ] Permesso concesso: notifiche funzionano
 - [ ] Permesso negato: toggle torna a OFF
 
-### 5.4 Posizione (expo-location) - se utilizzata
+### 6.4 Posizione (expo-location) - se utilizzata
 - [ ] Richiesta permesso foreground
 - [ ] Posizione ottenuta con accuratezza appropriata
 
 ---
 
-## 6. NAVIGAZIONE
+## 7. NAVIGAZIONE
 
-### 6.1 Tab Navigation
+### 7.1 Tab Navigation
 - [ ] Tap su Home naviga a Home
 - [ ] Tap su Calendario naviga a Calendario
 - [ ] Tap su Liste naviga a Liste
 - [ ] Tap su Profilo naviga a Profilo
 - [ ] Tab nascosti correttamente in base ai permessi utente
 
-### 6.2 Stack Navigation
+### 7.2 Stack Navigation
 - [ ] Back button funziona su tutte le schermate
 - [ ] Gesture swipe-back funziona (iOS)
 - [ ] Deep linking funziona (se implementato)
 - [ ] Navigazione tra schermate smooth
 
-### 6.3 Modal Navigation
+### 7.3 Modal Navigation
 - [ ] Modal si apre con animazione corretta
 - [ ] Modal si chiude correttamente
 - [ ] Stato preservato quando modal chiusa
 
-### 6.4 Auth Flow
+### 7.4 Auth Flow
 - [ ] Utente non autenticato vede Login
 - [ ] Login riuscito naviga a Home
 - [ ] Logout riporta a Login
@@ -179,23 +246,23 @@ Questo documento contiene una lista completa di verifiche da eseguire prima dell
 
 ---
 
-## 7. DIFFERENZE PIATTAFORMA
+## 8. DIFFERENZE PIATTAFORMA
 
-### 7.1 iOS Specifico
+### 8.1 iOS Specifico
 - [ ] Blur effect su tab bar funziona
 - [ ] Haptic feedback funziona
 - [ ] Safe area per Dynamic Island
 - [ ] Gesture back edge funziona
 - [ ] Font SF Pro renderizza correttamente
 
-### 7.2 Android Specifico
+### 8.2 Android Specifico
 - [ ] Status bar colore corretto
 - [ ] Navigation bar (bottom) gestita
 - [ ] Back button hardware funziona
 - [ ] Keyboard mode corretto (adjustResize)
 - [ ] Ripple effect su pressable
 
-### 7.3 Web Specifico
+### 8.3 Web Specifico
 - [ ] Fallback per feature native non disponibili
 - [ ] Layout responsive
 - [ ] Scroll con mouse/trackpad funziona
@@ -204,63 +271,63 @@ Questo documento contiene una lista completa di verifiche da eseguire prima dell
 
 ---
 
-## 8. DATA FETCHING E API
+## 9. DATA FETCHING E API
 
-### 8.1 Query e Mutation
+### 9.1 Query e Mutation
 - [ ] Dati caricati correttamente all'avvio
 - [ ] Loading indicator durante fetch
 - [ ] Dati aggiornati dopo mutation
 - [ ] Cache invalidation funziona
 - [ ] Pull-to-refresh ricarica dati
 
-### 8.2 Error Handling
+### 9.2 Error Handling
 - [ ] Errori di rete mostrano messaggio appropriato
 - [ ] Retry automatico funziona
 - [ ] Errori 401 reindirizzano a login
 - [ ] Errori 403 mostrano messaggio permessi
 - [ ] Errori 500 gestiti gracefully
 
-### 8.3 Offline Behavior
+### 9.3 Offline Behavior
 - [ ] App non crasha senza connessione
 - [ ] Messaggio appropriato per offline
 - [ ] Dati cached mostrati se disponibili
 
 ---
 
-## 9. ANIMAZIONI
+## 10. ANIMAZIONI
 
-### 9.1 React Native Reanimated
+### 10.1 React Native Reanimated
 - [ ] FadeInDown funziona su nuovi elementi
 - [ ] FadeOutUp funziona su elementi rimossi
 - [ ] Animazioni smooth a 60fps
 - [ ] Nessun warning in console
 
-### 9.2 Gesture Handler
+### 10.2 Gesture Handler
 - [ ] GestureDetector risponde correttamente
 - [ ] Gesture.Race non causa conflitti
 - [ ] scheduleOnRN callback funziona
 
-### 9.3 Transition Animations
+### 10.3 Transition Animations
 - [ ] Navigazione tra schermate animata
 - [ ] Modal appaiono con fade
 - [ ] Tab switch smooth
 
 ---
 
-## 10. MODAL E OVERLAY
+## 11. MODAL E OVERLAY
 
-### 10.1 Modal Standard
+### 11.1 Modal Standard
 - [ ] Overlay scuro visibile (rgba 0,0,0,0.6)
 - [ ] Contenuto centrato
 - [ ] Larghezza corretta (screenWidth - padding)
 - [ ] Scroll interno funziona se contenuto lungo
 
-### 10.2 Keyboard in Modal
+### 11.2 Keyboard in Modal
 - [ ] KeyboardAvoidingView funziona dentro modal
 - [ ] Input fields rimangono visibili
 - [ ] Modal si adatta all'altezza disponibile
 
-### 10.3 Dismissal
+### 11.3 Dismissal
 - [ ] Tap su overlay chiude modal
 - [ ] Pulsante close funziona
 - [ ] Hardware back (Android) chiude modal
@@ -268,9 +335,9 @@ Questo documento contiene una lista completa di verifiche da eseguire prima dell
 
 ---
 
-## 11. FUNZIONALITA' SPECIFICHE KINOVA
+## 12. FUNZIONALITA' SPECIFICHE KINOVA
 
-### 11.1 Assistente AI
+### 12.1 Assistente AI
 - [ ] Chat carica storico messaggi
 - [ ] Nuovo messaggio inviato correttamente
 - [ ] Streaming risposta funziona
@@ -279,7 +346,7 @@ Questo documento contiene una lista completa di verifiche da eseguire prima dell
 - [ ] Upload allegati funziona
 - [ ] Interpretazione automatica documenti funziona
 
-### 11.2 Calendario
+### 12.2 Calendario
 - [ ] Vista mensile corretta
 - [ ] Tap su giorno mostra eventi
 - [ ] Creazione evento funziona
@@ -287,7 +354,7 @@ Questo documento contiene una lista completa di verifiche da eseguire prima dell
 - [ ] Eliminazione evento funziona
 - [ ] Colori eventi visibili
 
-### 11.3 Liste (Shopping/Tasks)
+### 12.3 Liste (Shopping/Tasks)
 - [ ] Switch tra Shopping e Tasks funziona
 - [ ] Filtri funzionano
 - [ ] Aggiunta item funziona
@@ -295,7 +362,7 @@ Questo documento contiene una lista completa di verifiche da eseguire prima dell
 - [ ] Modifica item funziona
 - [ ] Eliminazione item funziona
 
-### 11.4 Budget
+### 12.4 Budget
 - [ ] Totale mensile corretto
 - [ ] Lista spese visibile
 - [ ] Aggiunta spesa funziona
@@ -303,7 +370,7 @@ Questo documento contiene una lista completa di verifiche da eseguire prima dell
 - [ ] Eliminazione spesa funziona
 - [ ] Categorie mostrate correttamente
 
-### 11.5 Note
+### 12.5 Note
 - [ ] Lista note visibile
 - [ ] Filtri (pinned, related) funzionano
 - [ ] Creazione nota funziona
@@ -312,7 +379,7 @@ Questo documento contiene una lista completa di verifiche da eseguire prima dell
 - [ ] Pin/Unpin funziona
 - [ ] Eliminazione nota funziona
 
-### 11.6 Profilo e Famiglia
+### 12.6 Profilo e Famiglia
 - [ ] Info utente corrette
 - [ ] Lista membri famiglia visibile
 - [ ] Invito nuovi membri funziona
@@ -321,19 +388,19 @@ Questo documento contiene una lista completa di verifiche da eseguire prima dell
 
 ---
 
-## 12. PERFORMANCE
+## 13. PERFORMANCE
 
-### 12.1 Caricamento
+### 13.1 Caricamento
 - [ ] Splash screen visibile durante caricamento
 - [ ] App carica in < 3 secondi
 - [ ] Font caricati prima del render
 
-### 12.2 Scroll Performance
+### 13.2 Scroll Performance
 - [ ] Liste lunghe scrollano smooth
 - [ ] Nessun jank durante scroll rapido
 - [ ] Virtualizzazione FlatList funziona
 
-### 12.3 Memoria
+### 13.3 Memoria
 - [ ] App non crasha dopo uso prolungato
 - [ ] Immagini gestite con cache appropriata
 
