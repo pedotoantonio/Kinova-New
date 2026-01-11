@@ -238,10 +238,11 @@ export default function LoginScreen() {
 
   const renderHeader = () => (
     <View style={styles.header}>
-      <View style={[styles.logoContainer, { backgroundColor: colors.primary }]}>
-        <Feather name="users" size={32} color="#FFFFFF" />
-      </View>
-      <ThemedText style={[styles.appName, { color: colors.primary }]}>Kinova</ThemedText>
+      <Image
+        source={require("../../assets/images/kinova-logo-full.png")}
+        style={styles.logoImage}
+        resizeMode="contain"
+      />
       <ThemedText style={[styles.tagline, { color: colors.textSecondary }]}>
         {"La tua app di fiducia per la famiglia"}
       </ThemedText>
@@ -416,17 +417,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: Spacing["2xl"],
   },
-  logoContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: BorderRadius.lg,
-    justifyContent: "center",
-    alignItems: "center",
+  logoImage: {
+    width: 200,
+    height: 200,
     marginBottom: Spacing.lg,
-  },
-  appName: {
-    ...Typography.largeTitle,
-    marginBottom: Spacing.sm,
   },
   tagline: {
     ...Typography.body,
