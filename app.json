@@ -17,13 +17,17 @@
             "CFBundleTypeName": "PDF Document",
             "CFBundleTypeRole": "Viewer",
             "LSHandlerRank": "Alternate",
-            "LSItemContentTypes": ["com.adobe.pdf"]
+            "LSItemContentTypes": [
+              "com.adobe.pdf"
+            ]
           },
           {
             "CFBundleTypeName": "Images",
             "CFBundleTypeRole": "Viewer",
             "LSHandlerRank": "Alternate",
-            "LSItemContentTypes": ["public.image"]
+            "LSItemContentTypes": [
+              "public.image"
+            ]
           }
         ],
         "UTExportedTypeDeclarations": [],
@@ -44,31 +48,51 @@
       "intentFilters": [
         {
           "action": "android.intent.action.SEND",
-          "category": ["android.intent.category.DEFAULT"],
+          "category": [
+            "android.intent.category.DEFAULT"
+          ],
           "data": [
-            { "mimeType": "text/plain" },
-            { "mimeType": "text/*" }
+            {
+              "mimeType": "text/plain"
+            },
+            {
+              "mimeType": "text/*"
+            }
           ]
         },
         {
           "action": "android.intent.action.SEND",
-          "category": ["android.intent.category.DEFAULT"],
+          "category": [
+            "android.intent.category.DEFAULT"
+          ],
           "data": [
-            { "mimeType": "image/*" }
+            {
+              "mimeType": "image/*"
+            }
           ]
         },
         {
           "action": "android.intent.action.SEND",
-          "category": ["android.intent.category.DEFAULT"],
+          "category": [
+            "android.intent.category.DEFAULT"
+          ],
           "data": [
-            { "mimeType": "application/pdf" }
+            {
+              "mimeType": "application/pdf"
+            }
           ]
         },
         {
           "action": "android.intent.action.VIEW",
-          "category": ["android.intent.category.DEFAULT", "android.intent.category.BROWSABLE"],
+          "category": [
+            "android.intent.category.DEFAULT",
+            "android.intent.category.BROWSABLE"
+          ],
           "data": [
-            { "scheme": "kinova", "host": "share" }
+            {
+              "scheme": "kinova",
+              "host": "share"
+            }
           ]
         }
       ]
@@ -94,6 +118,11 @@
     ],
     "experiments": {
       "reactCompiler": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "8b9e7f4c-bc4d-42ed-aaf6-16d6a51f581a"
+      }
     }
   }
 }
