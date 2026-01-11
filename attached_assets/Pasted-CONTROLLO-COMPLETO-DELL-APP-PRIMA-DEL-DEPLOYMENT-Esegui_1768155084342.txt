@@ -1,0 +1,60 @@
+CONTROLLO COMPLETO DELL'APP PRIMA DEL DEPLOYMENT
+
+Esegui un audit RIGOROSO e DETTAGLIATO di tutte le funzionalità dell'applicazione Kinova. Non fare controlli superficiali. Per ogni area, verifica:
+
+1. AUTENTICAZIONE & ACCOUNT
+   - Verifica il login con credenziali errate (deve mostrare errore)
+   - Verifica il signup con password debole (deve rifiutare)
+   - Verifica la validazione email durante signup
+   - Verifica il reset password flow completo
+   - Controlla la persistenza del token di autenticazione
+   - Verifica logout pulito (sessione terminata)
+
+2. VALIDAZIONE DATI & FORM
+   - Tutti gli input hanno validazione lato client?
+   - I messaggi di errore sono chiari e in italiano?
+   - Prova submit form vuoti (deve bloccare)
+   - Prova valori limite (min/max length, special chars)
+   - Controlla le password hashing e salting nel database
+
+3. DATABASE & BACKEND
+   - Verifica che i dati persistono dopo refresh della pagina
+   - Controlla la connessione al database (prova con connessione offline)
+   - Verifica l'integrità dei dati salvati
+   - Controlla le query SQL per vulnerabilità (SQL injection)
+   - Verifica che i dati sensibili non sono loggati
+
+4. SICUREZZA
+   - Controlla HTTPS enforcement
+   - Verifica CORS configuration
+   - Controlla le API endpoints per autenticazione
+   - Verifica che i token hanno expiration
+   - Controlla rate limiting sugli endpoint
+
+5. UI/UX & USABILITÀ
+   - Naviga tra tutte le schermate (mapping completo)
+   - Verifica responsive design su diverse risoluzioni
+   - Controlla l'accessibilità (contrasto, font size)
+   - Verifica la performance (caricamento lento?)
+   - Prova tutte le animazioni e transizioni
+
+6. ERRORI & EDGE CASES
+   - Cosa succede se l'API è down?
+   - Cosa succede con timeout di rete?
+   - Prova refresh durante operazioni
+   - Prova navigazione back/forward durante loading
+   - Controlla memory leaks durante transizioni
+
+7. DEPLOY READINESS
+   - Tutte le console.log() sono rimosse?
+   - Ci sono TODO o FIXME nel codice?
+   - Le credenziali sono salvate in variabili d'ambiente?
+   - Il codice segue le best practices?
+   - Ci sono dependency warnings non risolti?
+
+Per OGNI ISSUE trovato:
+- Descrivi il problema in dettaglio
+- Spiega l'impatto sul deployment
+- Fornisci il fix code pronto da applicare
+
+Sei rigoroso e non superficiale. Verifica REALMENTE il codice e le funzionalità.

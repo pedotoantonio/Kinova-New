@@ -234,7 +234,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const tokenData = await issueTokens(user.id, user.familyId, user.role);
 
-      console.log(`[EMAIL VERIFICATION] Token for ${email}: ${emailVerificationToken}`);
+      // Token generated for email verification - in production, send via email service
 
       res.status(201).json({
         ...tokenData,
@@ -358,7 +358,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         emailVerificationExpires,
       });
 
-      console.log(`[EMAIL VERIFICATION] New token for ${user.email}: ${emailVerificationToken}`);
+      // New verification token generated - in production, send via email service
 
       res.json({ success: true, message: "Verification email sent" });
     } catch (error) {
@@ -386,7 +386,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           passwordResetExpires,
         });
 
-        console.log(`[PASSWORD RESET] Token for ${email}: ${passwordResetToken}`);
+        // Password reset token generated - in production, send via email service
       }
 
       res.json({ success: true, message: "If an account exists with this email, a password reset link has been sent" });
