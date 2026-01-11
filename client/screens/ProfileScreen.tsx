@@ -489,6 +489,48 @@ export default function ProfileScreen() {
       <Card style={styles.settingsCard}>
         <Pressable
           style={styles.settingsRow}
+          onPress={() => navigation.navigate("Settings" as never)}
+          testID="button-settings"
+        >
+          <View style={styles.settingsRowLeft}>
+            <Feather name="settings" size={20} color={colors.primary} />
+            <View style={styles.settingsRowContent}>
+              <ThemedText style={[styles.settingsLabel, { color: colors.textSecondary }]}>
+                {language === "it" ? "Impostazioni" : "Settings"}
+              </ThemedText>
+              <ThemedText style={[styles.settingsValue, { color: colors.text }]}>
+                {language === "it" ? "Notifiche, privacy, tema" : "Notifications, privacy, theme"}
+              </ThemedText>
+            </View>
+          </View>
+          <Feather name="chevron-right" size={20} color={colors.textSecondary} />
+        </Pressable>
+        
+        <View style={[styles.divider, { backgroundColor: colors.backgroundSecondary }]} />
+        
+        <Pressable
+          style={styles.settingsRow}
+          onPress={() => navigation.navigate("Help" as never)}
+          testID="button-help"
+        >
+          <View style={styles.settingsRowLeft}>
+            <Feather name="help-circle" size={20} color={colors.primary} />
+            <View style={styles.settingsRowContent}>
+              <ThemedText style={[styles.settingsLabel, { color: colors.textSecondary }]}>
+                {language === "it" ? "Aiuto" : "Help"}
+              </ThemedText>
+              <ThemedText style={[styles.settingsValue, { color: colors.text }]}>
+                {language === "it" ? "FAQ e supporto" : "FAQ and support"}
+              </ThemedText>
+            </View>
+          </View>
+          <Feather name="chevron-right" size={20} color={colors.textSecondary} />
+        </Pressable>
+        
+        <View style={[styles.divider, { backgroundColor: colors.backgroundSecondary }]} />
+        
+        <Pressable
+          style={styles.settingsRow}
           onPress={() => navigation.navigate("Donation" as never)}
           testID="button-donation"
         >

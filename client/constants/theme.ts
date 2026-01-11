@@ -1,49 +1,59 @@
 import { Platform } from "react-native";
 
-// Kinova Brand Colors
-const primaryColor = "#2F7F6D";
-const secondaryColor = "#6FB7A8";
+const primaryColor = "#2D8659";
+const secondaryColor = "#4A90E2";
+const accentColor = "#FF6B6B";
 
 export const Colors = {
   light: {
     primary: primaryColor,
     secondary: secondaryColor,
-    text: "#1F2D2B",
-    textSecondary: "#5E6E6B",
+    accent: accentColor,
+    text: "#1A1A1A",
+    textSecondary: "#666666",
     buttonText: "#FFFFFF",
-    tabIconDefault: "#5E6E6B",
+    tabIconDefault: "#666666",
     tabIconSelected: primaryColor,
     link: primaryColor,
-    backgroundRoot: "#F5F7F6",
+    backgroundRoot: "#FAFAFA",
     backgroundDefault: "#FFFFFF",
-    backgroundSecondary: "#E8EEEC",
-    backgroundTertiary: "#D9E4E1",
+    backgroundSecondary: "#F0F0F0",
+    backgroundTertiary: "#E8E8E8",
     surface: "#FFFFFF",
-    border: "#D9E4E1",
-    success: "#4CAF50",
+    border: "#E0E0E0",
+    success: "#2D8659",
     warning: "#FF9800",
-    error: "#F44336",
+    error: "#E85D4E",
     info: secondaryColor,
+    gradient: {
+      start: primaryColor,
+      end: secondaryColor,
+    },
   },
   dark: {
-    primary: secondaryColor,
-    secondary: primaryColor,
+    primary: "#3D9669",
+    secondary: "#5AA0F2",
+    accent: accentColor,
     text: "#ECEDEE",
-    textSecondary: "#9BA8A5",
+    textSecondary: "#9BA1A6",
     buttonText: "#FFFFFF",
-    tabIconDefault: "#9BA8A5",
-    tabIconSelected: secondaryColor,
-    link: secondaryColor,
-    backgroundRoot: "#1F2D2B",
-    backgroundDefault: "#2A3836",
-    backgroundSecondary: "#354442",
-    backgroundTertiary: "#40504E",
-    surface: "#2A3836",
-    border: "#40504E",
-    success: "#66BB6A",
+    tabIconDefault: "#9BA1A6",
+    tabIconSelected: "#3D9669",
+    link: "#3D9669",
+    backgroundRoot: "#1A1A1A",
+    backgroundDefault: "#242424",
+    backgroundSecondary: "#2E2E2E",
+    backgroundTertiary: "#383838",
+    surface: "#242424",
+    border: "#404040",
+    success: "#3D9669",
     warning: "#FFA726",
     error: "#EF5350",
-    info: secondaryColor,
+    info: "#5AA0F2",
+    gradient: {
+      start: "#3D9669",
+      end: "#5AA0F2",
+    },
   },
 };
 
@@ -55,8 +65,8 @@ export const Spacing = {
   xl: 24,
   "2xl": 32,
   "3xl": 48,
-  inputHeight: 48,
-  buttonHeight: 48,
+  inputHeight: 52,
+  buttonHeight: 52,
 };
 
 export const BorderRadius = {
@@ -72,7 +82,7 @@ export const BorderRadius = {
 export const Typography = {
   title: {
     fontSize: 28,
-    lineHeight: 39,
+    lineHeight: 36,
     fontWeight: "700" as const,
   },
   subtitle: {
@@ -82,7 +92,7 @@ export const Typography = {
   },
   body: {
     fontSize: 16,
-    lineHeight: 22,
+    lineHeight: 24,
     fontWeight: "400" as const,
   },
   caption: {
@@ -94,6 +104,30 @@ export const Typography = {
     fontSize: 12,
     lineHeight: 17,
     fontWeight: "400" as const,
+  },
+};
+
+export const Shadows = {
+  sm: {
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  md: {
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.10,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  lg: {
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    elevation: 8,
   },
 };
 

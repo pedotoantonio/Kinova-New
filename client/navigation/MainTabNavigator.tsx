@@ -14,6 +14,7 @@ import { useTheme } from "@/hooks/useTheme";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth";
 import { AppIcons } from "@/constants/icons";
+import { Shadows } from "@/constants/theme";
 
 export type MainTabParamList = {
   HomeTab: undefined;
@@ -54,8 +55,10 @@ export default function MainTabNavigator() {
           backgroundColor: Platform.select({
             ios: "transparent",
             android: theme.backgroundRoot,
+            web: theme.backgroundRoot,
           }),
-          borderTopWidth: 0,
+          borderTopWidth: Platform.OS === "web" ? 1 : 0,
+          borderTopColor: theme.border,
           elevation: 0,
         },
         tabBarBackground: () =>
@@ -67,6 +70,10 @@ export default function MainTabNavigator() {
             />
           ) : null,
         headerShown: false,
+        tabBarLabelStyle: {
+          fontSize: 11,
+          fontWeight: "500",
+        },
       }}
     >
       <Tab.Screen

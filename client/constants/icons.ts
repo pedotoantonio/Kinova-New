@@ -55,6 +55,7 @@ export const AppIcons = {
   language: "globe" as FeatherIconName,
   moon: "moon" as FeatherIconName,
   externalLink: "external-link" as FeatherIconName,
+  help: "help-circle" as FeatherIconName,
 } as const;
 
 export const IconSizes = {

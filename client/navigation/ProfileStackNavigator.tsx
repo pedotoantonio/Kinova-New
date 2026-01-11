@@ -6,6 +6,8 @@ import NotificationSettingsScreen from "@/screens/NotificationSettingsScreen";
 import FamilyMembersScreen from "@/screens/FamilyMembersScreen";
 import QRScannerScreen from "@/screens/QRScannerScreen";
 import DonationScreen from "@/screens/DonationScreen";
+import SettingsScreen from "@/screens/SettingsScreen";
+import HelpScreen from "@/screens/HelpScreen";
 import { useScreenOptions } from "@/hooks/useScreenOptions";
 import { useI18n } from "@/lib/i18n";
 
@@ -15,13 +17,15 @@ export type ProfileStackParamList = {
   FamilyMembers: undefined;
   QRScanner: undefined;
   Donation: undefined;
+  Settings: undefined;
+  Help: undefined;
 };
 
 const Stack = createNativeStackNavigator<ProfileStackParamList>();
 
 export default function ProfileStackNavigator() {
   const screenOptions = useScreenOptions();
-  const { t } = useI18n();
+  const { t, language } = useI18n();
 
   return (
     <Stack.Navigator screenOptions={screenOptions}>
@@ -58,6 +62,20 @@ export default function ProfileStackNavigator() {
         component={DonationScreen}
         options={{
           title: t.donation.title,
+        }}
+      />
+      <Stack.Screen
+        name="Settings"
+        component={SettingsScreen}
+        options={{
+          title: language === "it" ? "Impostazioni" : "Settings",
+        }}
+      />
+      <Stack.Screen
+        name="Help"
+        component={HelpScreen}
+        options={{
+          title: language === "it" ? "Aiuto" : "Help",
         }}
       />
     </Stack.Navigator>

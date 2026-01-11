@@ -1,16 +1,19 @@
 import React, { useState, useMemo } from "react";
-import { View, TextInput, Pressable, StyleSheet, ActivityIndicator, Alert, Switch } from "react-native";
+import { View, Pressable, StyleSheet, ActivityIndicator, Alert, Switch, Image } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
 import { Feather } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 
 import { ThemedText } from "@/components/ThemedText";
-import { ThemedView } from "@/components/ThemedView";
 import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollViewCompat";
+import { Input } from "@/components/Input";
+import { Button } from "@/components/Button";
+import { Card } from "@/components/Card";
 import { useTheme } from "@/hooks/useTheme";
 import { useAuth } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
-import { Colors, Spacing, BorderRadius, Typography } from "@/constants/theme";
+import { Colors, Spacing, BorderRadius, Typography, Shadows } from "@/constants/theme";
 
 interface PasswordStrength {
   valid: boolean;
@@ -71,10 +74,10 @@ function PasswordStrengthMeter({ password, t, colors }: { password: string; t: a
   if (!password) return null;
 
   const strengthColors = {
-    weak: "#E53935",
-    fair: "#FB8C00",
+    weak: "#E85D4E",
+    fair: "#FF9800",
     good: "#7CB342",
-    strong: "#43A047",
+    strong: "#2D8659",
   };
 
   const strengthWidth = {
@@ -94,7 +97,7 @@ function PasswordStrengthMeter({ password, t, colors }: { password: string; t: a
 
   return (
     <View style={styles.strengthContainer}>
-      <View style={styles.strengthBarContainer}>
+      <View style={[styles.strengthBarContainer, { backgroundColor: colors.backgroundSecondary }]}>
         <View
           style={[
             styles.strengthBar,
@@ -109,8 +112,8 @@ function PasswordStrengthMeter({ password, t, colors }: { password: string; t: a
         {t.auth.passwordStrength[validation.strength]}
       </ThemedText>
 
-      <View style={styles.requirementsList}>
-        <ThemedText style={[styles.requirementsTitle, { color: colors.textSecondary }]}>
+      <Card style={styles.requirementsCard}>
+        <ThemedText style={[styles.requirementsTitle, { color: colors.text }]}>
           {t.auth.passwordRequirements.title}
         </ThemedText>
         {requirements.map((req) => {
@@ -119,13 +122,13 @@ function PasswordStrengthMeter({ password, t, colors }: { password: string; t: a
             <View key={req.key} style={styles.requirementItem}>
               <Feather
                 name={met ? "check-circle" : "circle"}
-                size={14}
-                color={met ? "#43A047" : colors.textSecondary}
+                size={16}
+                color={met ? colors.success : colors.textSecondary}
               />
               <ThemedText
                 style={[
                   styles.requirementText,
-                  { color: met ? "#43A047" : colors.textSecondary },
+                  { color: met ? colors.success : colors.textSecondary },
                 ]}
               >
                 {req.label}
@@ -133,7 +136,7 @@ function PasswordStrengthMeter({ password, t, colors }: { password: string; t: a
             </View>
           );
         })}
-      </View>
+      </Card>
     </View>
   );
 }
@@ -151,7 +154,6 @@ export default function LoginScreen() {
   const [displayName, setDisplayName] = useState("");
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
 
   const colors = isDark ? Colors.dark : Colors.light;
 
@@ -229,40 +231,46 @@ export default function LoginScreen() {
 
   if (isLoading) {
     return (
-      <ThemedView style={[styles.container, { paddingTop: insets.top }]}>
+      <View style={[styles.loadingContainer, { backgroundColor: colors.backgroundRoot }]}>
         <ActivityIndicator size="large" color={colors.primary} />
-      </ThemedView>
+      </View>
     );
   }
+
+  const renderHeader = () => (
+    <View style={styles.header}>
+      <View style={[styles.logoContainer, { backgroundColor: colors.primary }]}>
+        <Feather name="users" size={32} color="#FFFFFF" />
+      </View>
+      <ThemedText style={[styles.appName, { color: colors.primary }]}>Kinova</ThemedText>
+      <ThemedText style={[styles.tagline, { color: colors.textSecondary }]}>
+        {t.app?.tagline || "La tua app di fiducia per la famiglia"}
+      </ThemedText>
+    </View>
+  );
 
   if (isForgotPassword) {
     return (
       <KeyboardAwareScrollViewCompat
-        style={{ flex: 1, backgroundColor: theme.backgroundRoot }}
+        style={{ flex: 1, backgroundColor: colors.backgroundRoot }}
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingTop: insets.top + Spacing["2xl"], paddingBottom: insets.bottom + Spacing["2xl"] },
+          { paddingTop: insets.top + Spacing["3xl"], paddingBottom: insets.bottom + Spacing["2xl"] },
         ]}
       >
-        <View style={styles.header}>
-          <ThemedText style={[styles.title, { color: colors.primary }]}>Kinova</ThemedText>
-          <ThemedText style={[styles.subtitle, { color: colors.textSecondary }]}>
+        {renderHeader()}
+
+        <Card style={styles.formCard}>
+          <ThemedText style={[styles.formTitle, { color: colors.text }]}>
             {t.auth.forgotPassword}
           </ThemedText>
-        </View>
+          <ThemedText style={[styles.formSubtitle, { color: colors.textSecondary }]}>
+            {t.auth.forgotPasswordDesc || "Inserisci la tua email per ricevere le istruzioni"}
+          </ThemedText>
 
-        <View style={styles.form}>
-          <TextInput
-            style={[
-              styles.input,
-              {
-                backgroundColor: colors.surface,
-                color: colors.text,
-                borderColor: colors.backgroundSecondary,
-              },
-            ]}
+          <Input
+            leftIcon="mail"
             placeholder={t.auth.email}
-            placeholderTextColor={colors.textSecondary}
             value={email}
             onChangeText={setEmail}
             autoCapitalize="none"
@@ -271,66 +279,50 @@ export default function LoginScreen() {
             testID="input-email"
           />
 
-          <Pressable
-            style={({ pressed }) => [
-              styles.primaryButton,
-              { backgroundColor: colors.primary, opacity: pressed ? 0.7 : 1 },
-            ]}
+          <Button
             onPress={handleForgotPassword}
-            disabled={loading}
+            loading={loading}
+            testID="button-reset-password"
+            style={styles.primaryButton}
           >
-            {loading ? (
-              <ActivityIndicator color={colors.buttonText} />
-            ) : (
-              <ThemedText style={[styles.buttonText, { color: colors.buttonText }]}>
-                {t.auth.resetPassword}
-              </ThemedText>
-            )}
-          </Pressable>
+            {t.auth.resetPassword}
+          </Button>
 
-          <Pressable
-            style={({ pressed }) => [
-              styles.secondaryButton,
-              { borderColor: colors.primary, opacity: pressed ? 0.7 : 1 },
-            ]}
+          <Button
+            variant="outline"
             onPress={() => setIsForgotPassword(false)}
+            style={styles.secondaryButton}
           >
-            <ThemedText style={[styles.secondaryButtonText, { color: colors.primary }]}>
-              {t.auth.login}
-            </ThemedText>
-          </Pressable>
-        </View>
+            {t.auth.backToLogin || "Torna al login"}
+          </Button>
+        </Card>
       </KeyboardAwareScrollViewCompat>
     );
   }
 
   return (
     <KeyboardAwareScrollViewCompat
-      style={{ flex: 1, backgroundColor: theme.backgroundRoot }}
+      style={{ flex: 1, backgroundColor: colors.backgroundRoot }}
       contentContainerStyle={[
         styles.scrollContent,
-        { paddingTop: insets.top + Spacing["2xl"], paddingBottom: insets.bottom + Spacing["2xl"] },
+        { paddingTop: insets.top + Spacing["3xl"], paddingBottom: insets.bottom + Spacing["2xl"] },
       ]}
     >
-      <View style={styles.header}>
-        <ThemedText style={[styles.title, { color: colors.primary }]}>Kinova</ThemedText>
-        <ThemedText style={[styles.subtitle, { color: colors.textSecondary }]}>
+      {renderHeader()}
+
+      <Card style={styles.formCard}>
+        <ThemedText style={[styles.formTitle, { color: colors.text }]}>
           {isRegisterMode ? t.auth.createYourAccount : t.auth.welcomeBack}
         </ThemedText>
-      </View>
+        <ThemedText style={[styles.formSubtitle, { color: colors.textSecondary }]}>
+          {isRegisterMode 
+            ? (t.auth.createAccountDesc || "Inizia a organizzare la tua famiglia")
+            : (t.auth.loginDesc || "Accedi al tuo account")}
+        </ThemedText>
 
-      <View style={styles.form}>
-        <TextInput
-          style={[
-            styles.input,
-            {
-              backgroundColor: colors.surface,
-              color: colors.text,
-              borderColor: colors.backgroundSecondary,
-            },
-          ]}
+        <Input
+          leftIcon="mail"
           placeholder={t.auth.email}
-          placeholderTextColor={colors.textSecondary}
           value={email}
           onChangeText={setEmail}
           autoCapitalize="none"
@@ -339,59 +331,30 @@ export default function LoginScreen() {
           testID="input-email"
         />
 
-        <View style={styles.passwordContainer}>
-          <TextInput
-            style={[
-              styles.input,
-              styles.passwordInput,
-              {
-                backgroundColor: colors.surface,
-                color: colors.text,
-                borderColor: colors.backgroundSecondary,
-              },
-            ]}
-            placeholder={t.auth.password}
-            placeholderTextColor={colors.textSecondary}
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry={!showPassword}
-            testID="input-password"
-          />
-          <Pressable
-            style={styles.passwordToggle}
-            onPress={() => setShowPassword(!showPassword)}
-          >
-            <Feather
-              name={showPassword ? "eye-off" : "eye"}
-              size={20}
-              color={colors.textSecondary}
-            />
-          </Pressable>
-        </View>
+        <Input
+          leftIcon="lock"
+          placeholder={t.auth.password}
+          value={password}
+          onChangeText={setPassword}
+          isPassword
+          testID="input-password"
+        />
 
-        {isRegisterMode && password.length > 0 && (
+        {isRegisterMode && password.length > 0 ? (
           <PasswordStrengthMeter password={password} t={t} colors={colors} />
-        )}
+        ) : null}
 
-        {isRegisterMode && (
-          <TextInput
-            style={[
-              styles.input,
-              {
-                backgroundColor: colors.surface,
-                color: colors.text,
-                borderColor: colors.backgroundSecondary,
-              },
-            ]}
+        {isRegisterMode ? (
+          <Input
+            leftIcon="user"
             placeholder={t.auth.displayNameOptional}
-            placeholderTextColor={colors.textSecondary}
             value={displayName}
             onChangeText={setDisplayName}
             testID="input-displayname"
           />
-        )}
+        ) : null}
 
-        {isRegisterMode && (
+        {isRegisterMode ? (
           <View style={styles.termsContainer}>
             <Switch
               value={acceptTerms}
@@ -403,27 +366,18 @@ export default function LoginScreen() {
               {t.auth.acceptTerms}
             </ThemedText>
           </View>
-        )}
+        ) : null}
 
-        <Pressable
-          style={({ pressed }) => [
-            styles.primaryButton,
-            { backgroundColor: colors.primary, opacity: pressed ? 0.7 : 1 },
-          ]}
+        <Button
           onPress={handleSubmit}
-          disabled={loading}
+          loading={loading}
           testID="button-submit"
+          style={styles.primaryButton}
         >
-          {loading ? (
-            <ActivityIndicator color={colors.buttonText} />
-          ) : (
-            <ThemedText style={[styles.buttonText, { color: colors.buttonText }]}>
-              {isRegisterMode ? t.auth.createAccount : t.auth.login}
-            </ThemedText>
-          )}
-        </Pressable>
+          {isRegisterMode ? t.auth.createAccount : t.auth.login}
+        </Button>
 
-        {!isRegisterMode && (
+        {!isRegisterMode ? (
           <Pressable
             style={styles.forgotPasswordLink}
             onPress={() => setIsForgotPassword(true)}
@@ -432,18 +386,16 @@ export default function LoginScreen() {
               {t.auth.forgotPassword}
             </ThemedText>
           </Pressable>
-        )}
+        ) : null}
+      </Card>
 
-        <Pressable
-          style={({ pressed }) => [
-            styles.secondaryButton,
-            { borderColor: colors.primary, opacity: pressed ? 0.7 : 1 },
-          ]}
-          onPress={() => setIsRegisterMode(!isRegisterMode)}
-          disabled={loading}
-        >
-          <ThemedText style={[styles.secondaryButtonText, { color: colors.primary }]}>
-            {isRegisterMode ? t.auth.alreadyHaveAccount : t.auth.createNewAccount}
+      <View style={styles.switchModeContainer}>
+        <ThemedText style={[styles.switchModeText, { color: colors.textSecondary }]}>
+          {isRegisterMode ? t.auth.alreadyHaveAccount : t.auth.noAccount || "Non hai un account?"}
+        </ThemedText>
+        <Pressable onPress={() => setIsRegisterMode(!isRegisterMode)}>
+          <ThemedText style={[styles.switchModeLink, { color: colors.primary }]}>
+            {isRegisterMode ? t.auth.login : t.auth.createNewAccount}
           </ThemedText>
         </Pressable>
       </View>
@@ -452,7 +404,7 @@ export default function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
+  loadingContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
@@ -462,109 +414,107 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.xl,
   },
   header: {
-    marginTop: Spacing["3xl"],
-    marginBottom: Spacing["2xl"],
     alignItems: "center",
+    marginBottom: Spacing["2xl"],
   },
-  title: {
-    ...Typography.title,
-    fontSize: 36,
+  logoContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: BorderRadius.xl,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: Spacing.lg,
+    ...Shadows.lg,
+  },
+  appName: {
+    fontSize: 32,
     fontWeight: "700",
     marginBottom: Spacing.sm,
   },
-  subtitle: {
+  tagline: {
     ...Typography.body,
+    textAlign: "center",
   },
-  form: {
-    gap: Spacing.lg,
+  formCard: {
+    marginBottom: Spacing.xl,
   },
-  input: {
-    height: Spacing.inputHeight,
-    borderRadius: BorderRadius.md,
-    paddingHorizontal: Spacing.lg,
-    borderWidth: 1,
+  formTitle: {
+    ...Typography.title,
+    marginBottom: Spacing.sm,
+  },
+  formSubtitle: {
     ...Typography.body,
-  },
-  passwordContainer: {
-    position: "relative",
-  },
-  passwordInput: {
-    paddingRight: 50,
-  },
-  passwordToggle: {
-    position: "absolute",
-    right: 16,
-    top: 0,
-    bottom: 0,
-    justifyContent: "center",
+    marginBottom: Spacing.xl,
   },
   primaryButton: {
-    height: Spacing.buttonHeight,
-    borderRadius: BorderRadius.sm,
-    justifyContent: "center",
-    alignItems: "center",
-    marginTop: Spacing.sm,
+    marginTop: Spacing.md,
   },
   secondaryButton: {
-    height: Spacing.buttonHeight,
-    borderRadius: BorderRadius.sm,
-    justifyContent: "center",
-    alignItems: "center",
-    borderWidth: 1,
-  },
-  buttonText: {
-    ...Typography.body,
-    fontWeight: "600",
-  },
-  secondaryButtonText: {
-    ...Typography.body,
+    marginTop: Spacing.md,
   },
   forgotPasswordLink: {
     alignItems: "center",
-    paddingVertical: Spacing.sm,
+    paddingVertical: Spacing.lg,
   },
   forgotPasswordText: {
     ...Typography.caption,
+    fontWeight: "500",
   },
   termsContainer: {
     flexDirection: "row",
     alignItems: "center",
     gap: Spacing.md,
+    marginBottom: Spacing.md,
   },
   termsText: {
     ...Typography.caption,
     flex: 1,
   },
-  strengthContainer: {
+  switchModeContainer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
     gap: Spacing.sm,
   },
+  switchModeText: {
+    ...Typography.body,
+  },
+  switchModeLink: {
+    ...Typography.body,
+    fontWeight: "600",
+  },
+  strengthContainer: {
+    marginBottom: Spacing.lg,
+  },
   strengthBarContainer: {
-    height: 4,
-    backgroundColor: "#E0E0E0",
-    borderRadius: 2,
+    height: 6,
+    borderRadius: 3,
     overflow: "hidden",
+    marginBottom: Spacing.sm,
   },
   strengthBar: {
     height: "100%",
-    borderRadius: 2,
+    borderRadius: 3,
   },
   strengthLabel: {
     ...Typography.caption,
     fontWeight: "600",
     textAlign: "right",
+    marginBottom: Spacing.md,
   },
-  requirementsList: {
-    gap: Spacing.xs,
+  requirementsCard: {
+    padding: Spacing.lg,
   },
   requirementsTitle: {
     ...Typography.caption,
     fontWeight: "600",
-    marginBottom: Spacing.xs,
+    marginBottom: Spacing.md,
   },
   requirementItem: {
     flexDirection: "row",
     alignItems: "center",
     gap: Spacing.sm,
+    marginBottom: Spacing.sm,
   },
   requirementText: {
     ...Typography.caption,
