@@ -23,7 +23,9 @@ export default function HomeStackNavigator() {
         name="Home"
         component={HomeScreen}
         options={{
-          headerTitle: () => <HeaderTitle title="Kinova" />,
+          headerTitle: () => <HeaderTitle />,
+          headerTransparent: true,
+          headerStyle: { backgroundColor: "transparent" },
         }}
       />
       <Stack.Screen

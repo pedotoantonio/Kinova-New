@@ -14,6 +14,7 @@ import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth";
 import { AppIcons } from "@/constants/icons";
 import { Colors, IconSize, CategoryColors } from "@/constants/theme";
+import { HeaderTitle } from "@/components/HeaderTitle";
 
 export type MainTabParamList = {
   HomeTab: undefined;
@@ -114,8 +115,9 @@ export default function MainTabNavigator() {
         options={{
           title: t.calendar.title,
           headerShown: true,
-          headerTitle: t.calendar.title,
-          headerStyle: { backgroundColor: colors.backgroundRoot },
+          headerTitle: () => <HeaderTitle />,
+          headerStyle: { backgroundColor: "transparent" },
+          headerTransparent: true,
           headerTintColor: colors.text,
           tabBarIcon: ({ focused }) => (
             <TabIcon 
@@ -134,8 +136,9 @@ export default function MainTabNavigator() {
           options={{
             title: t.lists.title,
             headerShown: true,
-            headerTitle: t.lists.title,
-            headerStyle: { backgroundColor: colors.backgroundRoot },
+            headerTitle: () => <HeaderTitle />,
+            headerStyle: { backgroundColor: "transparent" },
+            headerTransparent: true,
             headerTintColor: colors.text,
             tabBarIcon: ({ focused }) => (
               <TabIcon 
@@ -170,8 +173,9 @@ export default function MainTabNavigator() {
           options={{
             title: t.budget.title,
             headerShown: true,
-            headerTitle: t.budget.title,
-            headerStyle: { backgroundColor: colors.backgroundRoot },
+            headerTitle: () => <HeaderTitle />,
+            headerStyle: { backgroundColor: "transparent" },
+            headerTransparent: true,
             headerTintColor: colors.text,
             tabBarIcon: ({ focused }) => (
               <TabIcon 
@@ -189,7 +193,10 @@ export default function MainTabNavigator() {
         component={AssistantScreen}
         options={{
           title: t.assistant.title,
-          headerShown: false,
+          headerShown: true,
+          headerTitle: () => <HeaderTitle />,
+          headerStyle: { backgroundColor: "transparent" },
+          headerTransparent: true,
           tabBarIcon: ({ focused }) => (
             <TabIcon 
               name={AppIcons.assistant} 

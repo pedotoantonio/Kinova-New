@@ -10,6 +10,7 @@ import SettingsScreen from "@/screens/SettingsScreen";
 import HelpScreen from "@/screens/HelpScreen";
 import { useScreenOptions } from "@/hooks/useScreenOptions";
 import { useI18n } from "@/lib/i18n";
+import { HeaderTitle } from "@/components/HeaderTitle";
 
 export type ProfileStackParamList = {
   Profile: undefined;
@@ -33,7 +34,9 @@ export default function ProfileStackNavigator() {
         name="Profile"
         component={ProfileScreen}
         options={{
-          title: t.profile.title,
+          headerTitle: () => <HeaderTitle />,
+          headerTransparent: true,
+          headerStyle: { backgroundColor: "transparent" },
         }}
       />
       <Stack.Screen
