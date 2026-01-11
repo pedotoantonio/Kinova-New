@@ -1,42 +1,54 @@
-# Kinova Bloom Design Guidelines
+# Kinova Design Guidelines
 
 ## 1. Brand Identity
 
 **Purpose**: Kinova is a family coordination app that helps families stay organized, connected, and in sync with joy and energy.
 
-**Aesthetic Direction**: Playful/Professional - Vibrant colors meet clean organization. Like a well-designed family planner that actually makes you smile. Think Notion's clarity with Duolingo's warmth.
+**Aesthetic Direction**: Playful/Professional - Vibrant rainbow colors meet clean organization. Like a well-designed family planner that actually makes you smile. The color palette is directly derived from the Kinova logo's rainbow gradient.
 
-**Memorable Element**: Color-coded categories with gradient accents throughout the app. Each family area (calendar, lists, notes, budget) has its own signature color that creates instant visual recognition.
+**Memorable Element**: Rainbow-inspired color palette where each family area has its own signature color from the logo, creating instant visual recognition and a unified brand experience.
 
-## 2. Color Palette
+## 2. Color Palette (From Kinova Logo)
 
-### Primary Colors
-- **Ocean Blue**: `#4A90D9` - Primary actions, Calendar
-- **Sunrise Coral**: `#FF7B54` - Lists & Tasks
-- **Meadow Green**: `#4CAF7D` - Success states, Budget
-- **Lavender Bloom**: `#9B7ED9` - Notes & Documents
-- **Sunshine Yellow**: `#FFD93D` - Highlights, Assistant
+### Kinova Brand Colors (Rainbow Sequence)
+- **K - Ruby Red**: `#E53935` - Home, Urgent items
+- **i - Sunset Orange**: `#FF9800` - Lists & Tasks
+- **n - Lime Green**: `#8BC34A` - Success states, Budget
+- **o - Teal Cyan**: `#00BCD4` - AI Assistant, Info
+- **v - Royal Blue**: `#2196F3` - Primary actions, Calendar, Profile
+- **a - Violet Purple**: `#9C27B0` - Notes & Documents
 
 ### Neutrals
 - **Background**: `#FFFFFF` (Pure White)
-- **Surface**: `#F8F9FA` (Light Gray)
-- **Text Primary**: `#2D3436` (Charcoal)
-- **Text Secondary**: `#636E72` (Medium Gray)
-- **Border**: `#DFE6E9` (Soft Gray)
+- **Surface**: `#FAFAFA` (Light Gray)
+- **Text Primary**: `#212121` (Dark Gray)
+- **Text Secondary**: `#616161` (Medium Gray)
+- **Border**: `#E0E0E0` (Soft Gray)
 
 ### Semantic Colors
-- **Success**: `#4CAF7D` (Meadow Green)
-- **Warning**: `#FFD93D` (Sunshine Yellow)
-- **Error**: `#FF6B6B` (Soft Red)
-- **Info**: `#4A90D9` (Ocean Blue)
+- **Success**: `#8BC34A` (Lime Green)
+- **Warning**: `#FFC107` (Amber)
+- **Error**: `#E53935` (Ruby Red)
+- **Info**: `#00BCD4` (Teal Cyan)
 
 ### Dark Mode
-- Background: `#1A1D1F`
-- Surface: `#252A2E`
-- Text Primary: `#F8F9FA`
-- Primary colors remain vibrant
+- Background: `#121212`
+- Surface: `#1E1E1E`
+- Text Primary: `#FAFAFA`
+- Brand colors become slightly lighter for visibility
 
-## 3. Typography
+## 3. Gradients
+
+All gradient buttons use the brand color to a lighter tint:
+- **Primary (Blue)**: `#2196F3` → `#42A5F5`
+- **Red**: `#E53935` → `#EF5350`
+- **Orange**: `#FF9800` → `#FFB74D`
+- **Green**: `#8BC34A` → `#AED581`
+- **Teal**: `#00BCD4` → `#4DD0E1`
+- **Purple**: `#9C27B0` → `#BA68C8`
+- **Rainbow**: Full gradient for special headers `#E53935 → #FF9800 → #8BC34A → #00BCD4 → #2196F3 → #9C27B0`
+
+## 4. Typography
 
 **Font**: Inter (clean, modern, professional)
 
@@ -50,7 +62,7 @@
 | Caption | 12px | Regular (400) | 16px |
 | Button | 16px | Semibold (600) | 22px |
 
-## 4. Spacing & Layout
+## 5. Spacing & Layout
 
 - xs: 4px, sm: 8px, md: 12px, lg: 16px, xl: 20px, 2xl: 24px, 3xl: 32px
 - **Screen Padding**: 20px horizontal
@@ -58,7 +70,7 @@
 - **Component Gap**: 12px
 - **Input/Button Height**: 52px
 
-## 5. Border Radius
+## 6. Border Radius
 
 - Buttons: 26px (pill-shaped)
 - Cards: 16px
@@ -66,137 +78,97 @@
 - Badges: 20px (pill)
 - Avatars: 50% (circle)
 
-## 6. Components
+## 7. Components
 
 ### Buttons
-- **Primary**: Gradient background (e.g., Ocean Blue to lighter tint), white text, height 52px, rounded 26px, subtle shadow (shadowOffset: {width: 0, height: 2}, shadowOpacity: 0.15, shadowRadius: 4)
+- **Primary**: Gradient background (Royal Blue), white text, height 52px, rounded 26px, subtle colored shadow
+- **Red/Orange/Green/Teal/Purple**: Same style with respective brand color gradient
 - **Secondary**: White background, colored text, 1.5px colored border
 - **Ghost**: Transparent, colored text
-- Press: Scale 0.97 with spring animation
+- Press: Scale 0.97 with spring animation (damping: 15, stiffness: 200)
 
 ### Cards
 - Background: White
-- Border: 1px `#DFE6E9`
+- Border: 1px `#E0E0E0`
 - Radius: 16px
-- Shadow: shadowOffset {width: 0, height: 1}, shadowOpacity 0.05, shadowRadius 3
-- **Category Indicator**: 4px colored left border or top gradient strip matching category
+- Shadow: subtle (shadowOffset: {0, 1}, shadowOpacity: 0.05, shadowRadius: 3)
+- **Category Indicator**: 4px colored left border matching category
 
 ### Inputs
 - Background: White
-- Border: 1.5px `#DFE6E9`
-- Focus Border: Category color (2px)
+- Border: 1.5px `#E0E0E0`
+- Focus Border: Primary color (2px)
 - Radius: 12px
 - Height: 52px
-- Left icon in category color
+- Left icon in primary color
 
 ### Tab Bar
 - Background: White
-- Border Top: 1px `#DFE6E9`
-- Active Icon: Category color
-- Inactive Icon: `#636E72`
+- Border Top: 1px `#E0E0E0`
+- Active Icon: Category color from Kinova palette
+- Inactive Icon: `#757575`
 - Icon Size: 24px
-- Active Indicator: 3px colored line above icon
+- Active Indicator: 3px colored line above icon with animation
 
-## 7. Navigation Architecture
+## 8. Category Color Mapping
+
+| Section | Icon | Brand Color |
+|---------|------|-------------|
+| Home | home | Ruby Red `#E53935` |
+| Calendar | calendar | Royal Blue `#2196F3` |
+| Lists | list | Sunset Orange `#FF9800` |
+| Notes | file-text | Violet Purple `#9C27B0` |
+| Budget | dollar-sign | Lime Green `#8BC34A` |
+| Assistant | message-circle | Teal Cyan `#00BCD4` |
+| Profile | user | Royal Blue `#2196F3` |
+
+## 9. Navigation Architecture
 
 **Root**: Tab Navigation (7 tabs)
 
-**Tabs**:
-1. **Home** (Ocean Blue) - Family overview, greeting, quick actions
-2. **Calendar** (Ocean Blue) - Shared events
-3. **Lists** (Sunrise Coral) - Tasks, shopping
-4. **Notes** (Lavender Bloom) - Documents
-5. **Budget** (Meadow Green) - Expenses
-6. **Assistant** (Sunshine Yellow) - AI helper
-7. **Profile** (Ocean Blue) - Settings, family
+**Tabs** (with Kinova logo colors):
+1. **Home** (Ruby Red) - Family overview, greeting, quick actions
+2. **Calendar** (Royal Blue) - Shared events
+3. **Lists** (Sunset Orange) - Tasks, shopping
+4. **Notes** (Violet Purple) - Documents
+5. **Budget** (Lime Green) - Expenses
+6. **Assistant** (Teal Cyan) - AI helper
+7. **Profile** (Royal Blue) - Settings, family
 
-## 8. Screen Specifications
+## 10. Animations
+
+- **Spring Config**: damping: 15, stiffness: 200
+- **Press Scale**: 0.97
+- **Duration**: Fast (150ms), Normal (250ms), Slow (400ms)
+- **Tab Indicator**: Animated width expansion on tab selection
+- **Cards**: Subtle scale on press
+- **Lists**: FadeIn animations for items
+
+## 11. Screen Specifications
 
 ### Home Screen
 - **Header**: Transparent, greeting "Ciao, {Name}!" (Large Title), avatar top-right
 - **Layout**: ScrollView with:
-  - Welcome card (gradient Ocean Blue → lighter tint, white text, family member count)
-  - Quick Actions grid (4 colorful icon buttons with labels)
+  - Welcome card (gradient with primary color, white text)
+  - Quick Actions grid (4 colorful icon buttons matching category colors)
   - Recent Activity list (cards with colored left borders)
-- **Safe Area**: Top = headerHeight + xl, Bottom = tabBarHeight + xl
 
 ### Calendar Screen
-- **Header**: Default with "Calendario" title, plus button (Ocean Blue) top-right
-- **Layout**: Calendar view + events list below
-- **Components**: Month selector, day grid, event cards (Ocean Blue accents)
-- **Empty State**: Illustration (calendar-empty.png)
+- **Header**: Default with "Calendario" title, plus button (Royal Blue) top-right
+- **Color**: Royal Blue accent throughout
 
 ### Lists Screen
-- **Header**: Transparent, "Liste" title, plus button (Sunrise Coral)
-- **Layout**: Segmented control (Tasks/Shopping), card list
-- **Components**: Checkbox items, progress bars (Sunrise Coral)
-- **Empty State**: Illustration (lists-empty.png)
+- **Header**: Default with "Liste" title
+- **Color**: Sunset Orange accent for active items
 
 ### Notes Screen
-- **Header**: Default, "Note" title, plus button (Lavender Bloom)
-- **Layout**: Grid of note cards (2 columns)
-- **Components**: Note preview cards (Lavender Bloom top strip)
-- **Empty State**: Illustration (notes-empty.png)
+- **Header**: Default with "Note" title
+- **Color**: Violet Purple accent for note items
 
 ### Budget Screen
-- **Header**: Default, "Budget" title, filter button
-- **Layout**: Monthly summary card + expense list
-- **Components**: Pie chart (Meadow Green gradients), category tags
-- **Empty State**: Illustration (budget-empty.png)
+- **Header**: Default with "Budget" title
+- **Color**: Lime Green accent for expense items
 
 ### Assistant Screen
-- **Header**: Transparent, "Assistente" title
-- **Layout**: Chat interface
-- **Components**: Message bubbles (user: white with border, AI: Sunshine Yellow tint)
-- **Safe Area**: Top = headerHeight + xl, Bottom = tabBarHeight + input height + xl
-
-### Profile Screen
-- **Header**: Default, "Profilo" title
-- **Layout**: ScrollView with avatar, name, settings cards
-- **Components**: Large circular avatar (120px), setting rows with icons, logout button (Error color)
-
-### Login Screen
-- **Header**: None
-- **Layout**: Centered content with logo, form card
-- **Components**: Logo (app icon), email/password inputs, primary button (Ocean Blue gradient)
-- **Safe Area**: Top = insets.top + xl, Bottom = insets.bottom + xl
-
-## 9. Visual Design
-
-### Gradients
-Use for primary buttons, welcome cards, and category headers:
-- Ocean Blue: `#4A90D9` → `#6BA8E3`
-- Sunrise Coral: `#FF7B54` → `#FF9575`
-- Meadow Green: `#4CAF7D` → `#6FC596`
-- Lavender Bloom: `#9B7ED9` → `#B299E3`
-- Sunshine Yellow: `#FFD93D` → `#FFE26B`
-
-### Icons
-- Use Feather icons from @expo/vector-icons
-- Stroke width: 2px
-- Colors: Match category or text gray
-- Sizes: 24px (navigation/actions), 20px (inline), 32px (decorative)
-
-### Animations
-- Screen transitions: Slide with fade
-- Button press: Scale 0.97, spring (damping: 15, stiffness: 200)
-- List item appear: Fade + translateY
-- Loading: ActivityIndicator with category color
-- Haptic feedback on primary actions
-
-## 10. Assets to Generate
-
-| Filename | Description | Where Used |
-|----------|-------------|------------|
-| icon.png | App icon with colorful gradient logo | Device home screen |
-| splash-icon.png | Simplified logo for launch screen | App launch |
-| calendar-empty.png | Colorful calendar illustration (Ocean Blue tones) | Calendar empty state |
-| lists-empty.png | Checklist illustration (Coral tones) | Lists empty state |
-| notes-empty.png | Document/note illustration (Lavender tones) | Notes empty state |
-| budget-empty.png | Piggy bank/coins illustration (Green tones) | Budget empty state |
-| welcome-family.png | Happy family illustration | Home screen welcome card |
-| avatar-1.png | Preset avatar option 1 | Profile, onboarding |
-| avatar-2.png | Preset avatar option 2 | Profile, onboarding |
-| avatar-3.png | Preset avatar option 3 | Profile, onboarding |
-
-**Image Quality**: Simple, friendly illustrations with rounded shapes matching the Kinova Bloom aesthetic. Avoid overly detailed or clipart-style images.
+- **Header**: Default with "Assistente" title
+- **Color**: Teal Cyan accent for AI interactions

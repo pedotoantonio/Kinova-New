@@ -13,7 +13,7 @@ import { ThemedText } from "@/components/ThemedText";
 import { useTheme } from "@/hooks/useTheme";
 import { BorderRadius, Spacing, Typography, Shadows, Animation, Gradients, Colors } from "@/constants/theme";
 
-type ButtonVariant = "primary" | "secondary" | "outline" | "ghost" | "coral" | "green" | "lavender" | "yellow";
+type ButtonVariant = "primary" | "secondary" | "outline" | "ghost" | "red" | "orange" | "green" | "teal" | "purple" | "coral" | "lavender" | "yellow";
 
 interface ButtonProps {
   onPress?: () => void;
@@ -77,21 +77,27 @@ export function Button({
   const getGradientColors = (): [string, string] => {
     switch (variant) {
       case "primary":
-        return Gradients.oceanBlue as [string, string];
+        return Gradients.primary as [string, string];
+      case "red":
+        return Gradients.red as [string, string];
+      case "orange":
       case "coral":
-        return Gradients.sunriseCoral as [string, string];
+        return Gradients.coral as [string, string];
       case "green":
-        return Gradients.meadowGreen as [string, string];
+        return Gradients.green as [string, string];
+      case "teal":
+        return Gradients.teal as [string, string];
+      case "purple":
       case "lavender":
-        return Gradients.lavenderBloom as [string, string];
+        return Gradients.purple as [string, string];
       case "yellow":
         return Gradients.sunshineYellow as [string, string];
       default:
-        return Gradients.oceanBlue as [string, string];
+        return Gradients.primary as [string, string];
     }
   };
 
-  const usesGradient = ["primary", "coral", "green", "lavender", "yellow"].includes(variant);
+  const usesGradient = ["primary", "red", "orange", "coral", "green", "teal", "purple", "lavender", "yellow"].includes(variant);
 
   const getButtonStyles = (): ViewStyle => {
     switch (variant) {

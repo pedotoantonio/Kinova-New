@@ -2,7 +2,7 @@
 
 ## Overview
 
-Kinova is a family coordination and connection mobile app built with React Native and Expo. It aims to help families stay organized and connected in real-time through shared calendars, tasks, and activity tracking. The app features an organic/natural design aesthetic with a teal-green color palette (#2F7F6D), promoting a calming and trustworthy user experience. The application uses a monorepo structure with `client/` (React Native/Expo app), `server/` (Express.js backend), and `shared/` (TypeScript types and schemas). It includes features like shared calendars, tasks, shopping lists, expenses tracking, and an AI assistant.
+Kinova is a family coordination and connection mobile app built with React Native and Expo. It aims to help families stay organized and connected in real-time through shared calendars, tasks, and activity tracking. The app features a vibrant, colorful design based on the Kinova logo's rainbow gradient (K=Red #E53935, i=Orange #FF9800, n=Green #8BC34A, o=Cyan #00BCD4, v=Blue #2196F3, a=Purple #9C27B0), creating a joyful family-friendly experience. The application uses a monorepo structure with `client/` (React Native/Expo app), `server/` (Express.js backend), and `shared/` (TypeScript types and schemas). It includes features like shared calendars, tasks, shopping lists, expenses tracking, and an AI assistant.
 
 ## User Preferences
 
@@ -18,7 +18,7 @@ Preferred communication style: Simple, everyday language.
 
 **State Management**: TanStack React Query for server state and data fetching, React Context for authentication, and local component state with React hooks.
 
-**Theming System**: Automatic light/dark mode support and centralized theme constants with Kinova's primary teal (#2F7F6D) and secondary (#6FB7A8) brand colors.
+**Theming System**: Automatic light/dark mode support with Kinova's rainbow color palette derived from the logo: Ruby Red (#E53935) for Home, Sunset Orange (#FF9800) for Lists, Lime Green (#8BC34A) for Budget, Teal Cyan (#00BCD4) for Assistant, Royal Blue (#2196F3) as primary for Calendar/Profile, and Violet Purple (#9C27B0) for Notes. Gradient buttons and animated interactions provide a vibrant family-friendly experience.
 
 **Key Libraries**: `react-native-reanimated`, `react-native-gesture-handler`, `expo-haptics`, `expo-blur`, `expo-glass-effect`, and `@react-navigation/*`.
 
