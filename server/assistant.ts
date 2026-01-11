@@ -4,8 +4,6 @@ import { storage } from "./storage";
 import type { UserRole } from "@shared/schema";
 import fs from "node:fs";
 import path from "node:path";
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const pdfParse = require("pdf-parse");
 
 const openai = new OpenAI({
   apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
@@ -1299,6 +1297,8 @@ Respond conversationally but efficiently, like ChatGPT would.`;
 
       if (mimeType === "application/pdf") {
         try {
+          const pdfParseModule = await import("pdf-parse");
+          const pdfParse = pdfParseModule.default || pdfParseModule;
           const pdfData = await pdfParse(fileData);
           const pdfText = pdfData.text.slice(0, 15000);
           
