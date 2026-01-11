@@ -11,7 +11,7 @@ import * as Haptics from "expo-haptics";
 import { useTheme } from "@/hooks/useTheme";
 import { useAuth } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
-import { Colors, Spacing, BorderRadius, Typography } from "@/constants/theme";
+import { Colors, Spacing, BorderRadius, Typography, KinovaColors, CategoryColors } from "@/constants/theme";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { Card } from "@/components/Card";
@@ -223,11 +223,16 @@ export default function HomeScreen() {
 
       <View style={styles.todaySection}>
         <View style={styles.sectionHeader}>
-          <ThemedText style={[styles.sectionTitle, { color: colors.text }]}>
-            {t.home.todayEvents}
-          </ThemedText>
+          <View style={styles.sectionTitleWithIcon}>
+            <View style={[styles.sectionIcon, { backgroundColor: CategoryColors.calendar + '20' }]}>
+              <Feather name="calendar" size={18} color={CategoryColors.calendar} />
+            </View>
+            <ThemedText style={[styles.sectionTitle, { color: colors.text }]}>
+              {t.home.todayEvents}
+            </ThemedText>
+          </View>
           <Pressable onPress={navigateToCalendar} hitSlop={8}>
-            <ThemedText style={[styles.viewAllLink, { color: colors.primary }]}>
+            <ThemedText style={[styles.viewAllLink, { color: CategoryColors.calendar }]}>
               {t.home.viewCalendar}
             </ThemedText>
           </Pressable>
@@ -235,7 +240,7 @@ export default function HomeScreen() {
 
         {filteredTodayEvents.length === 0 ? (
           <Card style={styles.emptyTodayCard}>
-            <Feather name="calendar" size={24} color={colors.textSecondary} />
+            <Feather name="calendar" size={24} color={CategoryColors.calendar} />
             <ThemedText style={[styles.emptyTodayText, { color: colors.textSecondary }]}>
               {t.home.noEventsToday}
             </ThemedText>
@@ -266,11 +271,16 @@ export default function HomeScreen() {
 
       <View style={styles.todaySection}>
         <View style={styles.sectionHeader}>
-          <ThemedText style={[styles.sectionTitle, { color: colors.text }]}>
-            {t.home.shoppingList}
-          </ThemedText>
+          <View style={styles.sectionTitleWithIcon}>
+            <View style={[styles.sectionIcon, { backgroundColor: CategoryColors.lists + '20' }]}>
+              <Feather name="shopping-cart" size={18} color={CategoryColors.lists} />
+            </View>
+            <ThemedText style={[styles.sectionTitle, { color: colors.text }]}>
+              {t.home.shoppingList}
+            </ThemedText>
+          </View>
           <Pressable onPress={() => navigateToLists("shopping")} hitSlop={8}>
-            <ThemedText style={[styles.viewAllLink, { color: colors.primary }]}>
+            <ThemedText style={[styles.viewAllLink, { color: CategoryColors.lists }]}>
               {t.home.viewShopping}
             </ThemedText>
           </Pressable>
@@ -278,7 +288,7 @@ export default function HomeScreen() {
 
         {pendingShoppingItems.length === 0 ? (
           <Card style={styles.emptyTodayCard}>
-            <Feather name="shopping-cart" size={24} color={colors.textSecondary} />
+            <Feather name="shopping-cart" size={24} color={CategoryColors.lists} />
             <ThemedText style={[styles.emptyTodayText, { color: colors.textSecondary }]}>
               {t.home.nothingToBuy}
             </ThemedText>
@@ -287,7 +297,7 @@ export default function HomeScreen() {
           pendingShoppingItems.map((item) => (
             <Pressable key={item.id} onPress={() => navigateToLists("shopping")} testID={`home-shopping-${item.id}`}>
               <Card style={styles.listItemCard}>
-                <View style={[styles.listItemDot, { backgroundColor: colors.primary }]} />
+                <View style={[styles.listItemDot, { backgroundColor: CategoryColors.lists }]} />
                 <ThemedText style={[styles.listItemText, { color: colors.text }]}>
                   {item.name}
                 </ThemedText>
@@ -304,20 +314,25 @@ export default function HomeScreen() {
 
       <View style={styles.todaySection}>
         <View style={styles.sectionHeader}>
-          <View style={styles.sectionTitleRow}>
-            <ThemedText style={[styles.sectionTitle, { color: colors.text }]}>
-              {t.home.pendingTasks}
-            </ThemedText>
-            {overdueTasks.length > 0 ? (
-              <View style={[styles.overdueBadge, { backgroundColor: colors.error }]}>
-                <ThemedText style={[styles.overdueBadgeText, { color: colors.buttonText }]}>
-                  {overdueTasks.length} {t.home.overdue}
-                </ThemedText>
-              </View>
-            ) : null}
+          <View style={styles.sectionTitleWithIcon}>
+            <View style={[styles.sectionIcon, { backgroundColor: CategoryColors.lists + '20' }]}>
+              <Feather name="check-square" size={18} color={CategoryColors.lists} />
+            </View>
+            <View style={styles.sectionTitleRow}>
+              <ThemedText style={[styles.sectionTitle, { color: colors.text }]}>
+                {t.home.pendingTasks}
+              </ThemedText>
+              {overdueTasks.length > 0 ? (
+                <View style={[styles.overdueBadge, { backgroundColor: colors.error }]}>
+                  <ThemedText style={[styles.overdueBadgeText, { color: colors.buttonText }]}>
+                    {overdueTasks.length} {t.home.overdue}
+                  </ThemedText>
+                </View>
+              ) : null}
+            </View>
           </View>
           <Pressable onPress={() => navigateToLists("tasks")} hitSlop={8}>
-            <ThemedText style={[styles.viewAllLink, { color: colors.primary }]}>
+            <ThemedText style={[styles.viewAllLink, { color: CategoryColors.lists }]}>
               {t.home.viewTasks}
             </ThemedText>
           </Pressable>
@@ -325,7 +340,7 @@ export default function HomeScreen() {
 
         {pendingTasks.length === 0 ? (
           <Card style={styles.emptyTodayCard}>
-            <Feather name="check-square" size={24} color={colors.textSecondary} />
+            <Feather name="check-square" size={24} color={CategoryColors.lists} />
             <ThemedText style={[styles.emptyTodayText, { color: colors.textSecondary }]}>
               {t.home.noTasksPending}
             </ThemedText>
@@ -372,11 +387,16 @@ export default function HomeScreen() {
 
       <View style={styles.todaySection}>
         <View style={styles.sectionHeader}>
-          <ThemedText style={[styles.sectionTitle, { color: colors.text }]}>
-            {t.home.monthlyBudget}
-          </ThemedText>
+          <View style={styles.sectionTitleWithIcon}>
+            <View style={[styles.sectionIcon, { backgroundColor: CategoryColors.budget + '20' }]}>
+              <Feather name="dollar-sign" size={18} color={CategoryColors.budget} />
+            </View>
+            <ThemedText style={[styles.sectionTitle, { color: colors.text }]}>
+              {t.home.monthlyBudget}
+            </ThemedText>
+          </View>
           <Pressable onPress={navigateToBudget} hitSlop={8}>
-            <ThemedText style={[styles.viewAllLink, { color: colors.primary }]}>
+            <ThemedText style={[styles.viewAllLink, { color: CategoryColors.budget }]}>
               {t.home.viewBudget}
             </ThemedText>
           </Pressable>
@@ -384,7 +404,7 @@ export default function HomeScreen() {
 
         <Pressable onPress={navigateToBudget} testID="home-budget-widget">
           <Card style={styles.budgetCard}>
-            <Feather name="dollar-sign" size={24} color={colors.primary} />
+            <Feather name="dollar-sign" size={24} color={CategoryColors.budget} />
             <View style={styles.budgetInfo}>
               <ThemedText style={[styles.budgetAmount, { color: colors.text }]}>
                 {formatCurrency(monthlyTotal)}
@@ -474,6 +494,18 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: Spacing.md,
+  },
+  sectionTitleWithIcon: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+  },
+  sectionIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    justifyContent: "center",
+    alignItems: "center",
   },
   sectionTitle: {
     ...Typography.subtitle,
