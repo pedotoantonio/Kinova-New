@@ -630,6 +630,20 @@ export function registerAssistantRoutes(app: Express, authMiddleware: (req: Auth
 
       let result: { success: boolean; message: string; data?: unknown } = { success: false, message: "" };
 
+      // Category normalization helpers
+      const validEventCategories = ["family", "course", "shift", "vacation", "holiday", "other"] as const;
+      type EventCategory = typeof validEventCategories[number];
+      const normalizeEventCategory = (cat?: string): EventCategory => {
+        if (!cat) return "family";
+        const lower = cat.toLowerCase();
+        if (validEventCategories.includes(lower as EventCategory)) return lower as EventCategory;
+        if (lower === "home" || lower === "casa") return "family";
+        if (lower === "work" || lower === "lavoro") return "shift";
+        if (lower === "travel" || lower === "viaggio") return "vacation";
+        if (lower === "school" || lower === "scuola" || lower === "education") return "course";
+        return "other";
+      };
+
       switch (actionType) {
         case "create_event": {
           const event = await storage.createEvent({
@@ -640,7 +654,7 @@ export function registerAssistantRoutes(app: Express, authMiddleware: (req: Auth
             endDate: actionData.endDate ? new Date(actionData.endDate) : null,
             allDay: actionData.allDay ?? false,
             color: actionData.color || null,
-            category: actionData.category || "family",
+            category: normalizeEventCategory(actionData.category),
             assignedTo: actionData.assignedTo || null,
             shortCode: null,
             isHoliday: false,
@@ -659,7 +673,7 @@ export function registerAssistantRoutes(app: Express, authMiddleware: (req: Auth
             endDate: actionData.endDate ? new Date(actionData.endDate) : undefined,
             allDay: actionData.allDay,
             color: actionData.color,
-            category: actionData.category,
+            category: actionData.category ? normalizeEventCategory(actionData.category) : undefined,
           });
           result = { success: !!updated, message: language === "it" ? "Evento aggiornato" : "Event updated", data: updated };
           break;
@@ -769,7 +783,7 @@ export function registerAssistantRoutes(app: Express, authMiddleware: (req: Auth
               endDate: event.endDate ? new Date(event.endDate) : null,
               allDay: event.allDay ?? true,
               color: event.color || null,
-              category: (event.category || "family") as "family" | "course" | "shift" | "vacation" | "holiday" | "other",
+              category: normalizeEventCategory(event.category),
               assignedTo: event.assignedTo || null,
               shortCode: null,
               isHoliday: false,
