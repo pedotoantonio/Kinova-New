@@ -27,7 +27,7 @@ import { useTheme } from "@/hooks/useTheme";
 import { useAuth } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { apiRequest } from "@/lib/query-client";
-import { Colors, Spacing, BorderRadius, Typography } from "@/constants/theme";
+import { Colors, Spacing, BorderRadius, Typography, CategoryColors } from "@/constants/theme";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { Card } from "@/components/Card";
@@ -371,8 +371,8 @@ export default function ListsScreen() {
                 style={[
                   styles.checkboxInner,
                   {
-                    backgroundColor: item.purchased ? colors.primary : "transparent",
-                    borderColor: item.purchased ? colors.primary : colors.border,
+                    backgroundColor: item.purchased ? CategoryColors.lists : "transparent",
+                    borderColor: item.purchased ? CategoryColors.lists : colors.border,
                   },
                 ]}
               >
@@ -440,8 +440,8 @@ export default function ListsScreen() {
                 style={[
                   styles.checkboxInner,
                   {
-                    backgroundColor: item.completed ? colors.primary : "transparent",
-                    borderColor: item.completed ? colors.primary : colors.border,
+                    backgroundColor: item.completed ? CategoryColors.lists : "transparent",
+                    borderColor: item.completed ? CategoryColors.lists : colors.border,
                   },
                 ]}
               >
@@ -512,7 +512,7 @@ export default function ListsScreen() {
         <Pressable
           style={[
             styles.tabButton,
-            activeTab === "shopping" && { backgroundColor: colors.primary },
+            activeTab === "shopping" && { backgroundColor: CategoryColors.lists },
           ]}
           onPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -539,7 +539,7 @@ export default function ListsScreen() {
         <Pressable
           style={[
             styles.tabButton,
-            activeTab === "tasks" && { backgroundColor: colors.primary },
+            activeTab === "tasks" && { backgroundColor: CategoryColors.lists },
           ]}
           onPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -576,7 +576,7 @@ export default function ListsScreen() {
             styles.filterChip,
             {
               backgroundColor:
-                shoppingFilter === filter ? colors.primary : colors.backgroundSecondary,
+                shoppingFilter === filter ? CategoryColors.lists : colors.backgroundSecondary,
             },
           ]}
           onPress={() => setShoppingFilter(filter)}
@@ -608,7 +608,7 @@ export default function ListsScreen() {
             styles.filterChip,
             {
               backgroundColor:
-                taskFilter === filter ? colors.primary : colors.backgroundSecondary,
+                taskFilter === filter ? CategoryColors.lists : colors.backgroundSecondary,
             },
           ]}
           onPress={() => setTaskFilter(filter)}
@@ -654,7 +654,7 @@ export default function ListsScreen() {
               style={[
                 styles.placeButton,
                 { 
-                  backgroundColor: selectedPlaceId ? colors.primary : colors.backgroundSecondary,
+                  backgroundColor: selectedPlaceId ? CategoryColors.lists : colors.backgroundSecondary,
                   borderColor: colors.border,
                 },
               ]}
@@ -672,7 +672,7 @@ export default function ListsScreen() {
             style={[
               styles.addButton, 
               { 
-                backgroundColor: colors.primary,
+                backgroundColor: CategoryColors.lists,
                 opacity: newItemName.trim() ? 1 : 0.5,
               }
             ]}
@@ -687,7 +687,7 @@ export default function ListsScreen() {
         </View>
         {activeTab === "tasks" && selectedPlaceId ? (
           <View style={styles.selectedPlaceRow}>
-            <Feather name="map-pin" size={14} color={colors.primary} />
+            <Feather name="map-pin" size={14} color={CategoryColors.lists} />
             <ThemedText style={[styles.selectedPlaceText, { color: colors.text }]}>
               {getPlaceName(selectedPlaceId)}
             </ThemedText>
@@ -821,7 +821,7 @@ export default function ListsScreen() {
                     {"Stato"}
                   </ThemedText>
                   <Pressable
-                    style={[styles.modalStatusToggle, { backgroundColor: item.purchased ? colors.primary : colors.backgroundSecondary }]}
+                    style={[styles.modalStatusToggle, { backgroundColor: item.purchased ? CategoryColors.lists : colors.backgroundSecondary }]}
                     onPress={handleToggleShoppingFromModal}
                   >
                     <Feather name={item.purchased ? "check-circle" : "circle"} size={20} color={item.purchased ? colors.buttonText : colors.textSecondary} />
@@ -844,7 +844,7 @@ export default function ListsScreen() {
                       </ThemedText>
                     </Pressable>
                     <Pressable
-                      style={[styles.modalButton, { backgroundColor: colors.primary }]}
+                      style={[styles.modalButton, { backgroundColor: CategoryColors.lists }]}
                       onPress={handleSaveShopping}
                     >
                       <Feather name="save" size={16} color={colors.buttonText} />
@@ -870,7 +870,7 @@ export default function ListsScreen() {
                           </ThemedText>
                         </Pressable>
                         <Pressable
-                          style={[styles.modalButton, { backgroundColor: colors.primary }]}
+                          style={[styles.modalButton, { backgroundColor: CategoryColors.lists }]}
                           onPress={() => setIsEditing(true)}
                         >
                           <Feather name="edit-2" size={16} color={colors.buttonText} />
@@ -1036,7 +1036,7 @@ export default function ListsScreen() {
                     {"Stato"}
                   </ThemedText>
                   <Pressable
-                    style={[styles.modalStatusToggle, { backgroundColor: task.completed ? colors.primary : colors.backgroundSecondary }]}
+                    style={[styles.modalStatusToggle, { backgroundColor: task.completed ? CategoryColors.lists : colors.backgroundSecondary }]}
                     onPress={handleToggleTaskFromModal}
                   >
                     <Feather name={task.completed ? "check-circle" : "circle"} size={20} color={task.completed ? colors.buttonText : colors.textSecondary} />
@@ -1059,7 +1059,7 @@ export default function ListsScreen() {
                       </ThemedText>
                     </Pressable>
                     <Pressable
-                      style={[styles.modalButton, { backgroundColor: colors.primary }]}
+                      style={[styles.modalButton, { backgroundColor: CategoryColors.lists }]}
                       onPress={handleSaveTask}
                     >
                       <Feather name="save" size={16} color={colors.buttonText} />
@@ -1085,7 +1085,7 @@ export default function ListsScreen() {
                           </ThemedText>
                         </Pressable>
                         <Pressable
-                          style={[styles.modalButton, { backgroundColor: colors.primary }]}
+                          style={[styles.modalButton, { backgroundColor: CategoryColors.lists }]}
                           onPress={() => setIsEditing(true)}
                         >
                           <Feather name="edit-2" size={16} color={colors.buttonText} />
@@ -1123,7 +1123,7 @@ export default function ListsScreen() {
   if (isLoading) {
     return (
       <ThemedView style={[styles.centered, { backgroundColor: theme.backgroundRoot }]}>
-        <ActivityIndicator size="large" color={colors.primary} />
+        <ActivityIndicator size="large" color={CategoryColors.lists} />
       </ThemedView>
     );
   }

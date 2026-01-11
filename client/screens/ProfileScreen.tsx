@@ -15,7 +15,7 @@ import { Card } from "@/components/Card";
 import { useTheme } from "@/hooks/useTheme";
 import { useAuth, UserRole } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
-import { Colors, Spacing, BorderRadius, Typography } from "@/constants/theme";
+import { Colors, Spacing, BorderRadius, Typography, CategoryColors } from "@/constants/theme";
 import { queryClient, apiRequest } from "@/lib/query-client";
 import { searchCities, GeocodingResult } from "@/lib/weather";
 
@@ -193,7 +193,7 @@ export default function ProfileScreen() {
   if (isLoading) {
     return (
       <View style={[styles.centered, { backgroundColor: theme.backgroundRoot }]}>
-        <ActivityIndicator size="large" color={colors.primary} />
+        <ActivityIndicator size="large" color={CategoryColors.profile} />
       </View>
     );
   }
@@ -217,7 +217,7 @@ export default function ProfileScreen() {
       scrollIndicatorInsets={{ bottom: insets.bottom }}
     >
       <View style={styles.profileHeader}>
-        <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
+        <View style={[styles.avatar, { backgroundColor: CategoryColors.profile }]}>
           <ThemedText style={[styles.avatarText, { color: colors.buttonText }]}>
             {(user.displayName || user.username).charAt(0).toUpperCase()}
           </ThemedText>
@@ -285,7 +285,7 @@ export default function ProfileScreen() {
               testID="button-select-city"
             >
               <View style={styles.settingsRowLeft}>
-                <Feather name="map-pin" size={20} color={colors.primary} />
+                <Feather name="map-pin" size={20} color={CategoryColors.profile} />
                 <View style={styles.settingsRowContent}>
                   <ThemedText style={[styles.settingsLabel, { color: colors.textSecondary }]}>
                     {t.profile.city}
@@ -307,7 +307,7 @@ export default function ProfileScreen() {
           testID="button-notification-settings"
         >
           <View style={styles.settingsRowLeft}>
-            <Feather name="bell" size={20} color={colors.primary} />
+            <Feather name="bell" size={20} color={CategoryColors.profile} />
             <View style={styles.settingsRowContent}>
               <ThemedText style={[styles.settingsLabel, { color: colors.textSecondary }]}>
                 {t.notifications.settings}
@@ -332,7 +332,7 @@ export default function ProfileScreen() {
               hitSlop={8}
               testID="button-edit-family-name"
             >
-              <Feather name="edit-2" size={18} color={colors.primary} />
+              <Feather name="edit-2" size={18} color={CategoryColors.profile} />
             </Pressable>
           ) : null}
         </View>
@@ -356,7 +356,7 @@ export default function ProfileScreen() {
               hitSlop={8}
               testID="button-manage-members"
             >
-              <ThemedText style={[styles.manageMembersLink, { color: colors.primary }]}>
+              <ThemedText style={[styles.manageMembersLink, { color: CategoryColors.profile }]}>
                 {t.family.manageMembers}
               </ThemedText>
             </Pressable>
@@ -367,7 +367,7 @@ export default function ProfileScreen() {
           <View style={styles.membersList}>
             {members.map((member) => (
               <View key={member.id} style={styles.memberItem}>
-                <View style={[styles.memberAvatar, { backgroundColor: colors.primary }]}>
+                <View style={[styles.memberAvatar, { backgroundColor: CategoryColors.profile }]}>
                   <ThemedText style={[styles.memberAvatarText, { color: colors.buttonText }]}>
                     {(member.displayName || member.username).charAt(0).toUpperCase()}
                   </ThemedText>
@@ -394,7 +394,7 @@ export default function ProfileScreen() {
           <>
             <View style={[styles.divider, { backgroundColor: colors.backgroundSecondary }]} />
             <Pressable
-              style={[styles.inviteButton, { backgroundColor: colors.primary }]}
+              style={[styles.inviteButton, { backgroundColor: CategoryColors.profile }]}
               onPress={() => {
                 setCreatedInvite(null);
                 setSelectedRole("member");
@@ -412,12 +412,12 @@ export default function ProfileScreen() {
 
         <View style={[styles.divider, { backgroundColor: colors.backgroundSecondary }]} />
         <Pressable
-          style={[styles.scanQRButton, { borderColor: colors.primary }]}
+          style={[styles.scanQRButton, { borderColor: CategoryColors.profile }]}
           onPress={() => navigation.navigate("QRScanner" as never)}
           testID="button-scan-qr"
         >
-          <Feather name="camera" size={18} color={colors.primary} />
-          <ThemedText style={[styles.scanQRButtonText, { color: colors.primary }]}>
+          <Feather name="camera" size={18} color={CategoryColors.profile} />
+          <ThemedText style={[styles.scanQRButtonText, { color: CategoryColors.profile }]}>
             {t.family.scanQRToJoin}
           </ThemedText>
         </Pressable>
@@ -426,7 +426,7 @@ export default function ProfileScreen() {
       <Card style={styles.settingsCard}>
         <View style={styles.settingsRow}>
           <View style={styles.settingsRowLeft}>
-            <Feather name="globe" size={20} color={colors.primary} />
+            <Feather name="globe" size={20} color={CategoryColors.profile} />
             <View style={styles.settingsRowContent}>
               <ThemedText style={[styles.settingsLabel, { color: colors.textSecondary }]}>
                 {t.profile.language}
@@ -438,7 +438,7 @@ export default function ProfileScreen() {
               style={[
                 styles.languageOption,
                 { 
-                  backgroundColor: language === "it" ? colors.primary : colors.backgroundSecondary,
+                  backgroundColor: language === "it" ? CategoryColors.profile : colors.backgroundSecondary,
                   borderTopLeftRadius: BorderRadius.sm,
                   borderBottomLeftRadius: BorderRadius.sm,
                 },
@@ -462,7 +462,7 @@ export default function ProfileScreen() {
               style={[
                 styles.languageOption,
                 { 
-                  backgroundColor: language === "en" ? colors.primary : colors.backgroundSecondary,
+                  backgroundColor: language === "en" ? CategoryColors.profile : colors.backgroundSecondary,
                   borderTopRightRadius: BorderRadius.sm,
                   borderBottomRightRadius: BorderRadius.sm,
                 },
@@ -493,7 +493,7 @@ export default function ProfileScreen() {
           testID="button-settings"
         >
           <View style={styles.settingsRowLeft}>
-            <Feather name="settings" size={20} color={colors.primary} />
+            <Feather name="settings" size={20} color={CategoryColors.profile} />
             <View style={styles.settingsRowContent}>
               <ThemedText style={[styles.settingsLabel, { color: colors.textSecondary }]}>
                 {language === "it" ? "Impostazioni" : "Settings"}
@@ -514,7 +514,7 @@ export default function ProfileScreen() {
           testID="button-help"
         >
           <View style={styles.settingsRowLeft}>
-            <Feather name="help-circle" size={20} color={colors.primary} />
+            <Feather name="help-circle" size={20} color={CategoryColors.profile} />
             <View style={styles.settingsRowContent}>
               <ThemedText style={[styles.settingsLabel, { color: colors.textSecondary }]}>
                 {language === "it" ? "Aiuto" : "Help"}
@@ -535,7 +535,7 @@ export default function ProfileScreen() {
           testID="button-donation"
         >
           <View style={styles.settingsRowLeft}>
-            <Feather name="heart" size={20} color={colors.primary} />
+            <Feather name="heart" size={20} color={CategoryColors.profile} />
             <View style={styles.settingsRowContent}>
               <ThemedText style={[styles.settingsLabel, { color: colors.textSecondary }]}>
                 {t.donation.title}
@@ -598,7 +598,7 @@ export default function ProfileScreen() {
             
             {isSearching ? (
               <View style={styles.searchingIndicator}>
-                <ActivityIndicator size="small" color={colors.primary} />
+                <ActivityIndicator size="small" color={CategoryColors.profile} />
               </View>
             ) : cityResults.length > 0 ? (
               <View style={styles.cityResultsList}>
@@ -632,7 +632,7 @@ export default function ProfileScreen() {
             
             {updateCityMutation.isPending ? (
               <View style={styles.savingIndicator}>
-                <ActivityIndicator size="small" color={colors.primary} />
+                <ActivityIndicator size="small" color={CategoryColors.profile} />
               </View>
             ) : null}
           </View>
@@ -662,7 +662,7 @@ export default function ProfileScreen() {
                   {t.profile.inviteCreated}
                 </ThemedText>
                 <View style={[styles.inviteCodeBox, { backgroundColor: colors.backgroundSecondary }]}>
-                  <ThemedText style={[styles.inviteCodeText, { color: colors.primary }]}>
+                  <ThemedText style={[styles.inviteCodeText, { color: CategoryColors.profile }]}>
                     {createdInvite.code}
                   </ThemedText>
                 </View>
@@ -670,7 +670,7 @@ export default function ProfileScreen() {
                   {t.profile.inviteExpires}: {new Date(createdInvite.expiresAt).toLocaleDateString()}
                 </ThemedText>
                 <Pressable
-                  style={[styles.copyButton, { backgroundColor: colors.primary }]}
+                  style={[styles.copyButton, { backgroundColor: CategoryColors.profile }]}
                   onPress={() => copyInviteCode(createdInvite.code)}
                 >
                   <Feather name="copy" size={16} color={colors.buttonText} />
@@ -691,7 +691,7 @@ export default function ProfileScreen() {
                       style={[
                         styles.roleButton,
                         {
-                          backgroundColor: selectedRole === role ? colors.primary : colors.backgroundSecondary,
+                          backgroundColor: selectedRole === role ? CategoryColors.profile : colors.backgroundSecondary,
                           borderColor: colors.border,
                         },
                       ]}
@@ -709,7 +709,7 @@ export default function ProfileScreen() {
                   ))}
                 </View>
                 <Pressable
-                  style={[styles.createInviteButton, { backgroundColor: colors.primary }]}
+                  style={[styles.createInviteButton, { backgroundColor: CategoryColors.profile }]}
                   onPress={() => createInviteMutation.mutate(selectedRole)}
                   disabled={createInviteMutation.isPending}
                 >
@@ -761,7 +761,7 @@ export default function ProfileScreen() {
             />
 
             <Pressable
-              style={[styles.saveButton, { backgroundColor: colors.primary }]}
+              style={[styles.saveButton, { backgroundColor: CategoryColors.profile }]}
               onPress={() => updateFamilyNameMutation.mutate(newFamilyName)}
               disabled={!newFamilyName.trim() || updateFamilyNameMutation.isPending}
             >

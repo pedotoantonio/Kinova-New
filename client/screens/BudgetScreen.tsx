@@ -25,7 +25,7 @@ import { useTheme } from "@/hooks/useTheme";
 import { useAuth } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { apiRequest } from "@/lib/query-client";
-import { Colors, Spacing, BorderRadius, Typography } from "@/constants/theme";
+import { Colors, Spacing, BorderRadius, Typography, CategoryColors } from "@/constants/theme";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { Card } from "@/components/Card";
@@ -321,7 +321,7 @@ export default function BudgetScreen() {
   if (isLoading) {
     return (
       <ThemedView style={styles.centered}>
-        <ActivityIndicator size="large" color={colors.primary} />
+        <ActivityIndicator size="large" color={CategoryColors.budget} />
       </ThemedView>
     );
   }
@@ -415,7 +415,7 @@ export default function BudgetScreen() {
       </ScrollView>
 
       <Pressable
-        style={[styles.fab, { backgroundColor: colors.primary }]}
+        style={[styles.fab, { backgroundColor: CategoryColors.budget }]}
         onPress={() => setShowAddModal(true)}
         accessibilityLabel={t.budget.addExpense}
         accessibilityRole="button"
@@ -501,7 +501,7 @@ export default function BudgetScreen() {
             </View>
 
             <Pressable
-              style={[styles.submitButton, { backgroundColor: colors.primary }]}
+              style={[styles.submitButton, { backgroundColor: CategoryColors.budget }]}
               onPress={handleAddExpense}
               disabled={createExpenseMutation.isPending}
             >
@@ -605,7 +605,7 @@ export default function BudgetScreen() {
                       <ThemedText style={{ color: colors.text }}>{t.common.cancel}</ThemedText>
                     </Pressable>
                     <Pressable
-                      style={[styles.modalButton, { backgroundColor: colors.primary }]}
+                      style={[styles.modalButton, { backgroundColor: CategoryColors.budget }]}
                       onPress={handleSaveExpense}
                       disabled={updateExpenseMutation.isPending}
                     >
@@ -669,7 +669,7 @@ export default function BudgetScreen() {
 
                   <View style={styles.expenseModalButtons}>
                     <Pressable
-                      style={[styles.modalButton, { backgroundColor: colors.primary }]}
+                      style={[styles.modalButton, { backgroundColor: CategoryColors.budget }]}
                       onPress={() => setIsEditing(true)}
                     >
                       <Feather name="edit-2" size={16} color={colors.buttonText} style={{ marginRight: Spacing.xs }} />

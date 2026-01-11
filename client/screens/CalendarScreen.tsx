@@ -23,7 +23,7 @@ import { useTheme } from "@/hooks/useTheme";
 import { useAuth } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { apiRequest } from "@/lib/query-client";
-import { Colors, Spacing, BorderRadius, Typography } from "@/constants/theme";
+import { Colors, Spacing, BorderRadius, Typography, CategoryColors } from "@/constants/theme";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { Card } from "@/components/Card";
@@ -504,7 +504,7 @@ export default function CalendarScreen() {
   if (isLoading) {
     return (
       <ThemedView style={[styles.centered, { backgroundColor: theme.backgroundRoot }]}>
-        <ActivityIndicator size="large" color={colors.primary} />
+        <ActivityIndicator size="large" color={CategoryColors.calendar} />
         <ThemedText style={{ color: colors.textSecondary, marginTop: Spacing.md }}>
           {t.common.loading}
         </ThemedText>
@@ -520,7 +520,7 @@ export default function CalendarScreen() {
           {t.common.error}
         </ThemedText>
         <Pressable
-          style={[styles.retryButton, { backgroundColor: colors.primary }]}
+          style={[styles.retryButton, { backgroundColor: CategoryColors.calendar }]}
           onPress={() => refetch()}
         >
           <ThemedText style={{ color: colors.buttonText }}>{t.common.retry}</ThemedText>
@@ -558,7 +558,7 @@ export default function CalendarScreen() {
             <Pressable
               style={[
                 styles.viewToggleButton,
-                viewMode === "month" && { backgroundColor: colors.primary },
+                viewMode === "month" && { backgroundColor: CategoryColors.calendar },
               ]}
               onPress={() => setViewMode("month")}
             >
@@ -567,7 +567,7 @@ export default function CalendarScreen() {
             <Pressable
               style={[
                 styles.viewToggleButton,
-                viewMode === "week" && { backgroundColor: colors.primary },
+                viewMode === "week" && { backgroundColor: CategoryColors.calendar },
               ]}
               onPress={() => setViewMode("week")}
             >
@@ -577,12 +577,12 @@ export default function CalendarScreen() {
         </View>
 
         {hasActiveFilters ? (
-          <View style={[styles.filterBadge, { backgroundColor: colors.primary + "20" }]}>
-            <ThemedText style={[styles.filterBadgeText, { color: colors.primary }]}>
+          <View style={[styles.filterBadge, { backgroundColor: CategoryColors.calendar + "20" }]}>
+            <ThemedText style={[styles.filterBadgeText, { color: CategoryColors.calendar }]}>
               {t.calendar.filters.active}
             </ThemedText>
             <Pressable onPress={() => setFilters({ category: null, assignedTo: null })}>
-              <Feather name="x" size={16} color={colors.primary} />
+              <Feather name="x" size={16} color={CategoryColors.calendar} />
             </Pressable>
           </View>
         ) : null}
@@ -592,7 +592,7 @@ export default function CalendarScreen() {
             <View style={styles.weekdayHeader}>
               {dayAbbreviations.map((abbr, i) => (
                 <View key={i} style={styles.weekdayCell}>
-                  <ThemedText style={[styles.weekdayText, { color: i === 0 || i === 6 ? colors.primary : colors.textSecondary }]}>
+                  <ThemedText style={[styles.weekdayText, { color: i === 0 || i === 6 ? CategoryColors.calendar : colors.textSecondary }]}>
                     {abbr}
                   </ThemedText>
                 </View>
@@ -614,8 +614,8 @@ export default function CalendarScreen() {
                       styles.monthDayCell,
                       isWeekendDay && { backgroundColor: isDark ? "#1a2a25" : "#f5f9f8" },
                       !isCurrentMonth && { opacity: 0.4 },
-                      isSelected && { backgroundColor: colors.primary },
-                      isToday && !isSelected && { borderColor: colors.primary, borderWidth: 2 },
+                      isSelected && { backgroundColor: CategoryColors.calendar },
+                      isToday && !isSelected && { borderColor: CategoryColors.calendar, borderWidth: 2 },
                     ]}
                     onPress={() => {
                       setSelectedDate(day);
@@ -646,7 +646,7 @@ export default function CalendarScreen() {
                             />
                           ))
                         ) : (
-                          <ThemedText style={[styles.monthEventCount, { color: isSelected ? "#FFF" : colors.primary }]}>
+                          <ThemedText style={[styles.monthEventCount, { color: isSelected ? "#FFF" : CategoryColors.calendar }]}>
                             +{eventCount}
                           </ThemedText>
                         )}
@@ -672,8 +672,8 @@ export default function CalendarScreen() {
                   style={[
                     styles.dayCell,
                     isWeekendDay && { backgroundColor: isDark ? "#1a2a25" : "#f5f9f8" },
-                    isSelected && { backgroundColor: colors.primary },
-                    isToday && !isSelected && { borderColor: colors.primary, borderWidth: 2 },
+                    isSelected && { backgroundColor: CategoryColors.calendar },
+                    isToday && !isSelected && { borderColor: CategoryColors.calendar, borderWidth: 2 },
                   ]}
                   onPress={() => setSelectedDate(day)}
                   testID={`day-cell-${day.getDate()}`}
@@ -681,7 +681,7 @@ export default function CalendarScreen() {
                   <ThemedText
                     style={[
                       styles.dayAbbr,
-                      { color: isSelected ? "#FFF" : isWeekendDay ? colors.primary : colors.textSecondary },
+                      { color: isSelected ? "#FFF" : isWeekendDay ? CategoryColors.calendar : colors.textSecondary },
                     ]}
                   >
                     {dayAbbreviations[day.getDay()]}
@@ -707,8 +707,8 @@ export default function CalendarScreen() {
                           />
                         ))
                       ) : (
-                        <View style={[styles.eventCountBadge, { backgroundColor: isSelected ? "#FFF" : colors.primary }]}>
-                          <ThemedText style={[styles.eventCountText, { color: isSelected ? colors.primary : "#FFF" }]}>
+                        <View style={[styles.eventCountBadge, { backgroundColor: isSelected ? "#FFF" : CategoryColors.calendar }]}>
+                          <ThemedText style={[styles.eventCountText, { color: isSelected ? CategoryColors.calendar : "#FFF" }]}>
                             {eventCount}
                           </ThemedText>
                         </View>
@@ -735,14 +735,14 @@ export default function CalendarScreen() {
             </ThemedText>
             <View style={styles.headerButtons}>
               <Pressable
-                style={[styles.filterButton, { backgroundColor: hasActiveFilters ? colors.primary : colors.backgroundSecondary }]}
+                style={[styles.filterButton, { backgroundColor: hasActiveFilters ? CategoryColors.calendar : colors.backgroundSecondary }]}
                 onPress={() => setShowFilters(true)}
                 testID="button-filter"
               >
                 <Feather name="filter" size={18} color={hasActiveFilters ? colors.buttonText : colors.text} />
               </Pressable>
               <Pressable
-                style={[styles.addButton, { backgroundColor: colors.primary }]}
+                style={[styles.addButton, { backgroundColor: CategoryColors.calendar }]}
                 onPress={openCreateEvent}
                 testID="button-add-event"
                 accessibilityLabel={t.calendar.addEvent}
@@ -949,7 +949,7 @@ export default function CalendarScreen() {
                 <Switch
                   value={formData.allDay}
                   onValueChange={(value) => setFormData({ ...formData, allDay: value })}
-                  trackColor={{ false: colors.border, true: colors.primary }}
+                  trackColor={{ false: colors.border, true: CategoryColors.calendar }}
                   testID="switch-all-day"
                 />
               </View>
@@ -962,7 +962,7 @@ export default function CalendarScreen() {
                 onPress={() => setShowPlacePicker(true)}
                 testID="button-select-place"
               >
-                <Feather name="map-pin" size={18} color={formData.placeId ? colors.primary : colors.textSecondary} />
+                <Feather name="map-pin" size={18} color={formData.placeId ? CategoryColors.calendar : colors.textSecondary} />
                 <ThemedText style={[styles.placeSelectorText, { color: formData.placeId ? colors.text : colors.textSecondary }]}>
                   {formData.placeId ? places?.find(p => p.id === formData.placeId)?.name || t.places.selectPlace : t.places.selectPlace}
                 </ThemedText>
@@ -987,7 +987,7 @@ export default function CalendarScreen() {
                       style={[
                         styles.recurrenceOption,
                         { backgroundColor: theme.backgroundRoot },
-                        formData.recurrenceFrequency === freq && { backgroundColor: colors.primary },
+                        formData.recurrenceFrequency === freq && { backgroundColor: CategoryColors.calendar },
                       ]}
                       onPress={() => setFormData({ ...formData, recurrenceFrequency: freq })}
                       testID={`recurrence-option-${freq}`}
@@ -1042,7 +1042,7 @@ export default function CalendarScreen() {
                 <ThemedText style={{ color: colors.text }}>{t.common.cancel}</ThemedText>
               </Pressable>
               <Pressable
-                style={[styles.saveButton, { backgroundColor: colors.primary }]}
+                style={[styles.saveButton, { backgroundColor: CategoryColors.calendar }]}
                 onPress={handleSaveEvent}
                 testID="button-save-event"
               >
@@ -1073,7 +1073,7 @@ export default function CalendarScreen() {
                 <Pressable
                   style={[
                     styles.filterOption,
-                    { backgroundColor: filters.category === null ? colors.primary : theme.backgroundRoot },
+                    { backgroundColor: filters.category === null ? CategoryColors.calendar : theme.backgroundRoot },
                   ]}
                   onPress={() => setFilters({ ...filters, category: null })}
                 >
@@ -1113,7 +1113,7 @@ export default function CalendarScreen() {
                 <ThemedText style={{ color: colors.text }}>{t.calendar.filters.reset}</ThemedText>
               </Pressable>
               <Pressable
-                style={[styles.saveButton, { backgroundColor: colors.primary, flex: 1 }]}
+                style={[styles.saveButton, { backgroundColor: CategoryColors.calendar, flex: 1 }]}
                 onPress={() => setShowFilters(false)}
               >
                 <ThemedText style={{ color: colors.buttonText }}>{t.common.confirm}</ThemedText>

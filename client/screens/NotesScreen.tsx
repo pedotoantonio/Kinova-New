@@ -28,7 +28,7 @@ import { useTheme } from "@/hooks/useTheme";
 import { useAuth } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { apiRequest } from "@/lib/query-client";
-import { Colors, Spacing, BorderRadius, Typography } from "@/constants/theme";
+import { Colors, Spacing, BorderRadius, Typography, CategoryColors } from "@/constants/theme";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { Card } from "@/components/Card";
@@ -268,7 +268,7 @@ export default function NotesScreen() {
         key={filterType}
         style={[
           styles.filterChip,
-          { backgroundColor: isActive ? theme.primary : theme.surface },
+          { backgroundColor: isActive ? CategoryColors.notes : theme.surface },
         ]}
         onPress={() => setFilter(filterType)}
       >
@@ -335,7 +335,7 @@ export default function NotesScreen() {
                   <Feather name="star" size={20} color="#EAB308" />
                 ) : null}
                 <Pressable
-                  style={[styles.modalEditButton, { backgroundColor: theme.primary }]}
+                  style={[styles.modalEditButton, { backgroundColor: CategoryColors.notes }]}
                   onPress={handleEditNote}
                 >
                   <Feather name="edit-2" size={16} color="#FFFFFF" />
@@ -439,7 +439,7 @@ export default function NotesScreen() {
 
         {isLoading ? (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={theme.primary} />
+            <ActivityIndicator size="large" color={CategoryColors.notes} />
           </View>
         ) : filteredNotes.length === 0 ? (
           <View style={styles.emptyContainer}>
@@ -451,7 +451,7 @@ export default function NotesScreen() {
             </ThemedText>
             {permissions.canModifyItems && !searchQuery ? (
               <Pressable
-                style={[styles.emptyAddButton, { backgroundColor: theme.primary }]}
+                style={[styles.emptyAddButton, { backgroundColor: CategoryColors.notes }]}
                 onPress={() => setIsAddingNote(true)}
               >
                 <ThemedText style={styles.emptyAddButtonText}>
@@ -509,7 +509,7 @@ export default function NotesScreen() {
                 <Pressable
                   style={[
                     styles.addNoteButton,
-                    { backgroundColor: theme.primary },
+                    { backgroundColor: CategoryColors.notes },
                     !newNoteTitle.trim() && { opacity: 0.5 },
                   ]}
                   onPress={handleAddNote}
@@ -530,7 +530,7 @@ export default function NotesScreen() {
           <Pressable
             style={[
               styles.fab,
-              { backgroundColor: theme.primary, bottom: tabBarHeight + Spacing.xl },
+              { backgroundColor: CategoryColors.notes, bottom: tabBarHeight + Spacing.xl },
             ]}
             onPress={() => setIsAddingNote(true)}
           >

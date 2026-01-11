@@ -33,7 +33,7 @@ import Animated, {
 } from "react-native-reanimated";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-import { Colors, Spacing, Typography, BorderRadius } from "@/constants/theme";
+import { Colors, Spacing, Typography, BorderRadius, CategoryColors } from "@/constants/theme";
 import { useI18n } from "@/lib/i18n";
 import { apiRequest, getApiUrl } from "@/lib/query-client";
 import { useAuth } from "@/lib/auth";
@@ -662,7 +662,7 @@ export default function AssistantScreen() {
           <View
             style={[
               styles.messageBubble,
-              isUser ? { backgroundColor: theme.primary } : { backgroundColor: theme.surface },
+              isUser ? { backgroundColor: CategoryColors.assistant } : { backgroundColor: theme.surface },
               isSelected && styles.messageBubbleSelected,
             ]}
           >
@@ -708,7 +708,7 @@ export default function AssistantScreen() {
           <Text style={[styles.messageText, { color: theme.text }]}>
             {streamingContent ? stripActionTags(streamingContent) : t.assistant.thinking}
           </Text>
-          {isStreaming ? <ActivityIndicator size="small" color={theme.primary} style={styles.streamingIndicator} /> : null}
+          {isStreaming ? <ActivityIndicator size="small" color={CategoryColors.assistant} style={styles.streamingIndicator} /> : null}
         </View>
       </View>
     );
@@ -788,7 +788,7 @@ export default function AssistantScreen() {
           style={[styles.suggestionChip, { backgroundColor: theme.surface, borderColor: theme.border }]}
           onPress={() => handleSuggestionPress(chip.text)}
         >
-          <Feather name={chip.icon as keyof typeof Feather.glyphMap} size={14} color={theme.primary} />
+          <Feather name={chip.icon as keyof typeof Feather.glyphMap} size={14} color={CategoryColors.assistant} />
           <Text style={[styles.suggestionText, { color: theme.text }]} numberOfLines={1}>{chip.text}</Text>
         </Pressable>
       ))}
@@ -797,8 +797,8 @@ export default function AssistantScreen() {
 
   const renderEmptyState = () => (
     <View style={styles.emptyState}>
-      <View style={[styles.emptyIcon, { backgroundColor: theme.primary + "20" }]}>
-        <Feather name="message-circle" size={48} color={theme.primary} />
+      <View style={[styles.emptyIcon, { backgroundColor: CategoryColors.assistant + "20" }]}>
+        <Feather name="message-circle" size={48} color={CategoryColors.assistant} />
       </View>
       <Text style={[styles.emptyTitle, { color: theme.text }]}>{t.assistant.title}</Text>
       <Text style={[styles.emptySubtitle, { color: theme.textSecondary }]}>{t.assistant.startChat}</Text>
@@ -818,7 +818,7 @@ export default function AssistantScreen() {
 
   const getAttachmentStatusColor = (status: Attachment["status"]) => {
     switch (status) {
-      case "uploading": return theme.primary;
+      case "uploading": return CategoryColors.assistant;
       case "analyzing": return "#F59E0B";
       case "ready": return "#22C55E";
       case "error": return "#EF4444";
@@ -834,8 +834,8 @@ export default function AssistantScreen() {
     >
       <View style={[styles.header, { paddingTop: insets.top + Spacing.sm, borderBottomColor: theme.border }]}>
         <View style={styles.headerLeft}>
-          <View style={[styles.avatarContainer, { backgroundColor: theme.primary + "20" }]}>
-            <Feather name="cpu" size={20} color={theme.primary} />
+          <View style={[styles.avatarContainer, { backgroundColor: CategoryColors.assistant + "20" }]}>
+            <Feather name="cpu" size={20} color={CategoryColors.assistant} />
           </View>
           <Text style={[styles.headerTitle, { color: theme.text }]}>{t.assistant.title}</Text>
         </View>
@@ -844,7 +844,7 @@ export default function AssistantScreen() {
           onPress={handleNewChat}
           disabled={createConversationMutation.isPending}
         >
-          <Feather name="plus" size={22} color={theme.primary} />
+          <Feather name="plus" size={22} color={CategoryColors.assistant} />
         </Pressable>
       </View>
 
@@ -879,7 +879,7 @@ export default function AssistantScreen() {
       ) : null}
 
       {sharedContentBanner ? (
-        <Animated.View entering={FadeIn} exiting={FadeOut} style={[styles.shareBanner, { backgroundColor: theme.primary }]}>
+        <Animated.View entering={FadeIn} exiting={FadeOut} style={[styles.shareBanner, { backgroundColor: CategoryColors.assistant }]}>
           <Feather name="share-2" size={16} color="#FFFFFF" />
           <Text style={styles.shareBannerText}>{sharedContentBanner}</Text>
         </Animated.View>
@@ -912,7 +912,7 @@ export default function AssistantScreen() {
               </View>
               {att.status === "error" ? (
                 <Pressable onPress={() => retryUpload(att)} hitSlop={8}>
-                  <Feather name="refresh-cw" size={14} color={theme.primary} />
+                  <Feather name="refresh-cw" size={14} color={CategoryColors.assistant} />
                 </Pressable>
               ) : null}
               <Pressable onPress={() => removeAttachment(att.id)} hitSlop={8}>
@@ -950,7 +950,7 @@ export default function AssistantScreen() {
           onPress={() => setShowAttachMenu(!showAttachMenu)}
           disabled={isStreaming}
         >
-          <Feather name="plus" size={22} color={showAttachMenu ? theme.primary : theme.textSecondary} />
+          <Feather name="plus" size={22} color={showAttachMenu ? CategoryColors.assistant : theme.textSecondary} />
         </Pressable>
 
         <TextInput
@@ -973,7 +973,7 @@ export default function AssistantScreen() {
           <Pressable
             style={[
               styles.sendButton,
-              { backgroundColor: (inputText.trim() || attachments.filter(a => a.status === "ready").length > 0) ? theme.primary : theme.border },
+              { backgroundColor: (inputText.trim() || attachments.filter(a => a.status === "ready").length > 0) ? CategoryColors.assistant : theme.border },
             ]}
             onPress={handleSend}
             disabled={!inputText.trim() && attachments.filter(a => a.status === "ready").length === 0}
