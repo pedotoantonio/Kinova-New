@@ -1149,7 +1149,7 @@ export default function ListsScreen() {
         <FlatList
           style={{ flex: 1 }}
           contentContainerStyle={{
-            paddingHorizontal: Spacing.lg,
+            paddingHorizontal: Spacing.screenPadding,
             paddingBottom: Spacing.xl,
             flexGrow: 1,
           }}
@@ -1192,7 +1192,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   headerSection: {
-    paddingHorizontal: Spacing.lg,
+    paddingHorizontal: Spacing.screenPadding,
     marginBottom: Spacing.md,
   },
   tabContainer: {
@@ -1285,7 +1285,7 @@ const styles = StyleSheet.create({
     ...Typography.small,
   },
   addInputContainer: {
-    paddingHorizontal: Spacing.lg,
+    paddingHorizontal: Spacing.screenPadding,
     paddingVertical: Spacing.md,
   },
   addInputRow: {

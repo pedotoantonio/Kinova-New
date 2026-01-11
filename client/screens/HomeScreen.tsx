@@ -432,7 +432,7 @@ export default function HomeScreen() {
       contentContainerStyle={{
         paddingTop: headerHeight + Spacing.xl,
         paddingBottom: tabBarHeight + Spacing.xl,
-        paddingHorizontal: Spacing.lg,
+        paddingHorizontal: Spacing.screenPadding,
         flexGrow: 1,
       }}
       scrollIndicatorInsets={{ bottom: insets.bottom }}

@@ -78,9 +78,9 @@ export default function NotificationSettingsScreen() {
     <ScrollView
       style={{ flex: 1, backgroundColor: theme.backgroundRoot }}
       contentContainerStyle={{
-        paddingTop: headerHeight + Spacing.lg,
+        paddingTop: headerHeight + Spacing.screenPadding,
         paddingBottom: insets.bottom + Spacing.xl,
-        paddingHorizontal: Spacing.lg,
+        paddingHorizontal: Spacing.screenPadding,
       }}
     >
       <Card style={styles.card}>

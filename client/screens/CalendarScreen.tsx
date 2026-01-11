@@ -535,7 +535,7 @@ export default function CalendarScreen() {
         contentContainerStyle={{
           paddingTop: Spacing.lg,
           paddingBottom: tabBarHeight + Spacing.xl,
-          paddingHorizontal: Spacing.lg,
+          paddingHorizontal: Spacing.screenPadding,
         }}
         scrollIndicatorInsets={{ bottom: insets.bottom }}
       >
@@ -1300,11 +1300,6 @@ const styles = StyleSheet.create({
   colorSelected: {
     borderWidth: 3,
     borderColor: "#FFF",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 3,
-    elevation: 3,
   },
   modalActions: {
     flexDirection: "row",

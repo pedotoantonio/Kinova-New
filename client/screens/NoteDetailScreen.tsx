@@ -22,7 +22,7 @@ import { apiRequest } from "@/lib/query-client";
 import { Colors, Spacing, BorderRadius, Typography } from "@/constants/theme";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
-import type { Note, NoteColor, NoteRelatedType, CalendarEvent, Task, Expense, ShoppingItem } from "@shared/types";
+import type { Note, NoteColor, NoteRelatedType, Event, Task, Expense, ShoppingItem } from "@shared/types";
 
 type RouteParams = {
   NoteDetail: {
@@ -77,7 +77,7 @@ export default function NoteDetailScreen() {
     enabled: isAuthenticated && !!noteId,
   });
 
-  const { data: relatedEvent } = useQuery<CalendarEvent>({
+  const { data: relatedEvent } = useQuery<Event>({
     queryKey: ["/api/events", note?.relatedId],
     enabled: isAuthenticated && note?.relatedType === "event" && !!note?.relatedId,
   });
@@ -368,11 +368,6 @@ const styles = StyleSheet.create({
   colorOptionSelected: {
     borderWidth: 3,
     borderColor: "#FFFFFF",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 3,
-    elevation: 3,
   },
   titleInput: {
     ...Typography.subtitle,

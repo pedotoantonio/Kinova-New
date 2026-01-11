@@ -221,7 +221,7 @@ export default function FamilyMembersScreen() {
         style={styles.scrollView}
         contentContainerStyle={[
           styles.contentContainer,
-          { paddingTop: headerHeight + Spacing.lg, paddingBottom: insets.bottom + Spacing.xl },
+          { paddingTop: headerHeight + Spacing.screenPadding, paddingBottom: insets.bottom + Spacing.xl },
         ]}
         showsVerticalScrollIndicator={false}
       >
@@ -528,7 +528,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   contentContainer: {
-    paddingHorizontal: Spacing.lg,
+    paddingHorizontal: Spacing.screenPadding,
   },
   header: {
     flexDirection: "row",

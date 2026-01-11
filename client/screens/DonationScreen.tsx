@@ -224,7 +224,7 @@ export default function DonationScreen() {
 const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
-    paddingHorizontal: Spacing.lg,
+    paddingHorizontal: Spacing.screenPadding,
   },
   loadingContainer: {
     flex: 1,

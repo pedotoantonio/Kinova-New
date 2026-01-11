@@ -265,7 +265,7 @@ const styles = StyleSheet.create({
   actionBar: {
     flexDirection: "row",
     justifyContent: "flex-end",
-    paddingHorizontal: Spacing.lg,
+    paddingHorizontal: Spacing.screenPadding,
     paddingBottom: Spacing.sm,
   },
   actionButton: {
@@ -281,7 +281,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   listContent: {
-    paddingHorizontal: Spacing.lg,
+    paddingHorizontal: Spacing.screenPadding,
   },
   notificationCard: {
     marginBottom: Spacing.sm,

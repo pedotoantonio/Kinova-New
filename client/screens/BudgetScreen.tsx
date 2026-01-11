@@ -336,9 +336,9 @@ export default function BudgetScreen() {
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={{
-          paddingTop: headerHeight + Spacing.lg,
+          paddingTop: headerHeight + Spacing.screenPadding,
           paddingBottom: tabBarHeight + Spacing.xl,
-          paddingHorizontal: Spacing.lg,
+          paddingHorizontal: Spacing.screenPadding,
         }}
         showsVerticalScrollIndicator={false}
       >
@@ -829,11 +829,8 @@ const styles = StyleSheet.create({
     borderRadius: 28,
     justifyContent: "center",
     alignItems: "center",
-    elevation: 4,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
+    borderWidth: 1,
+    borderColor: "#E5DED4",
   },
   modalOverlay: {
     flex: 1,

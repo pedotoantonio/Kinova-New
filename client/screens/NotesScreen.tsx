@@ -662,11 +662,8 @@ const styles = StyleSheet.create({
     borderRadius: 28,
     justifyContent: "center",
     alignItems: "center",
-    elevation: 4,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
+    borderWidth: 1,
+    borderColor: "#E5DED4",
   },
   addNoteContainer: {
     position: "absolute",
@@ -677,11 +674,8 @@ const styles = StyleSheet.create({
   addNoteCard: {
     padding: Spacing.md,
     borderRadius: BorderRadius.lg,
-    elevation: 4,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
+    borderWidth: 1,
+    borderColor: "#E5DED4",
   },
   addNoteInput: {
     ...Typography.body,
@@ -704,11 +698,6 @@ const styles = StyleSheet.create({
   colorOptionSelected: {
     borderWidth: 3,
     borderColor: "#FFFFFF",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 3,
-    elevation: 3,
   },
   addNoteActions: {
     flexDirection: "row",

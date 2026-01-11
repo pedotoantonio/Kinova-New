@@ -58,7 +58,7 @@ export function ErrorFallback({ error, resetError }: ErrorFallbackProps) {
       ) : null}
 
       <View style={styles.content}>
-        <ThemedText type="h1" style={styles.title}>
+        <ThemedText type="largeTitle" style={styles.title}>
           Something went wrong
         </ThemedText>
 
@@ -96,7 +96,7 @@ export function ErrorFallback({ error, resetError }: ErrorFallbackProps) {
           <View style={styles.modalOverlay}>
             <ThemedView style={styles.modalContainer}>
               <View style={styles.modalHeader}>
-                <ThemedText type="h2" style={styles.modalTitle}>
+                <ThemedText type="title" style={styles.modalTitle}>
                   Error Details
                 </ThemedText>
                 <Pressable
@@ -185,14 +185,8 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.md,
     paddingHorizontal: Spacing["2xl"],
     minWidth: 200,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    borderWidth: 1,
+    borderColor: "#E5DED4",
   },
   buttonText: {
     fontWeight: "600",

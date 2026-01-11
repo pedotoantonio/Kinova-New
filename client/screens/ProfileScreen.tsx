@@ -212,7 +212,7 @@ export default function ProfileScreen() {
       contentContainerStyle={{
         paddingTop: headerHeight + Spacing.xl,
         paddingBottom: tabBarHeight + Spacing.xl,
-        paddingHorizontal: Spacing.lg,
+        paddingHorizontal: Spacing.screenPadding,
       }}
       scrollIndicatorInsets={{ bottom: insets.bottom }}
     >
