@@ -10,6 +10,7 @@ import {
   Alert,
   Platform,
   KeyboardAvoidingView,
+  Keyboard,
   Image,
   ScrollView,
 } from "react-native";
@@ -120,8 +121,26 @@ export default function AssistantScreen() {
   const [lastUserMessage, setLastUserMessage] = useState<string>("");
   const [showCopiedToast, setShowCopiedToast] = useState(false);
   const [sharedContentBanner, setSharedContentBanner] = useState<string | null>(null);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
 
   const scrollButtonOpacity = useSharedValue(0);
+
+  useEffect(() => {
+    const showEvent = Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
+    const hideEvent = Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
+
+    const showSubscription = Keyboard.addListener(showEvent, (e) => {
+      setKeyboardHeight(e.endCoordinates.height);
+    });
+    const hideSubscription = Keyboard.addListener(hideEvent, () => {
+      setKeyboardHeight(0);
+    });
+
+    return () => {
+      showSubscription.remove();
+      hideSubscription.remove();
+    };
+  }, []);
 
   useEffect(() => {
     const sharedContent = route.params?.sharedContent;
@@ -730,7 +749,7 @@ export default function AssistantScreen() {
     }
 
     return (
-      <Animated.View entering={FadeIn} style={[styles.actionConfirmation, { backgroundColor: theme.surface, bottom: tabBarHeight + 70 }]}>
+      <Animated.View entering={FadeIn} style={[styles.actionConfirmation, { backgroundColor: theme.surface, bottom: (keyboardHeight > 0 ? keyboardHeight - (Platform.OS === "ios" ? insets.bottom : 0) : tabBarHeight) + 70 }]}>
         <Text style={[styles.actionTitle, { color: theme.text }]}>
           {actionLabels[pendingAction.action.type] || t.assistant.confirmAction}
         </Text>
@@ -834,7 +853,7 @@ export default function AssistantScreen() {
         data={messages}
         keyExtractor={(item) => item.id}
         renderItem={renderMessage}
-        contentContainerStyle={[styles.messagesList, { paddingBottom: tabBarHeight + 80 }]}
+        contentContainerStyle={[styles.messagesList, { paddingBottom: (keyboardHeight > 0 ? keyboardHeight - (Platform.OS === "ios" ? insets.bottom : 0) : tabBarHeight) + 80 }]}
         ListEmptyComponent={!isStreaming && !streamingContent ? renderEmptyState : null}
         ListFooterComponent={renderStreamingMessage}
         onScroll={handleScroll}
@@ -842,7 +861,7 @@ export default function AssistantScreen() {
       />
 
       {showScrollButton ? (
-        <Animated.View style={[styles.scrollButton, { bottom: tabBarHeight + 80 }, animatedScrollButtonStyle]}>
+        <Animated.View style={[styles.scrollButton, { bottom: (keyboardHeight > 0 ? keyboardHeight - (Platform.OS === "ios" ? insets.bottom : 0) : tabBarHeight) + 80 }, animatedScrollButtonStyle]}>
           <Pressable
             style={[styles.scrollButtonInner, { backgroundColor: theme.surface }]}
             onPress={scrollToBottom}
@@ -869,7 +888,7 @@ export default function AssistantScreen() {
       {pendingAction ? renderActionConfirmation() : null}
 
       {attachments.length > 0 ? (
-        <View style={[styles.attachmentsRow, { backgroundColor: theme.surface, bottom: tabBarHeight + 56 }]}>
+        <View style={[styles.attachmentsRow, { backgroundColor: theme.surface, bottom: (keyboardHeight > 0 ? keyboardHeight - (Platform.OS === "ios" ? insets.bottom : 0) : tabBarHeight) + 56 }]}>
           {attachments.map((att) => (
             <View key={att.id} style={[styles.attachmentChip, { backgroundColor: theme.backgroundRoot, borderColor: getAttachmentStatusColor(att.status) }]}>
               {att.status === "uploading" || att.status === "analyzing" ? (
@@ -908,7 +927,7 @@ export default function AssistantScreen() {
         <Animated.View
           entering={FadeIn.duration(150)}
           exiting={FadeOut.duration(150)}
-          style={[styles.attachMenu, { backgroundColor: theme.surface, bottom: tabBarHeight + 60 }]}
+          style={[styles.attachMenu, { backgroundColor: theme.surface, bottom: (keyboardHeight > 0 ? keyboardHeight - (Platform.OS === "ios" ? insets.bottom : 0) : tabBarHeight) + 60 }]}
         >
           <Pressable style={styles.attachMenuItem} onPress={handleAttachPhoto}>
             <Feather name="camera" size={20} color={theme.text} />
@@ -925,7 +944,7 @@ export default function AssistantScreen() {
         </Animated.View>
       ) : null}
 
-      <View style={[styles.inputContainer, { backgroundColor: theme.surface, bottom: tabBarHeight }]}>
+      <View style={[styles.inputContainer, { backgroundColor: theme.surface, bottom: keyboardHeight > 0 ? keyboardHeight - (Platform.OS === "ios" ? insets.bottom : 0) : tabBarHeight }]}>
         <Pressable
           style={styles.attachButton}
           onPress={() => setShowAttachMenu(!showAttachMenu)}

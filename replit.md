@@ -2,12 +2,7 @@
 
 ## Overview
 
-Kinova is a family coordination and connection mobile app built with React Native and Expo. It helps families stay organized and connected in real-time through shared calendars, tasks, and activity tracking. The app follows an organic/natural design aesthetic with a distinctive teal-green color palette (#2F7F6D) that creates a calming, trustworthy presence.
-
-The application uses a monorepo structure with three main directories:
-- `client/` - React Native/Expo mobile application
-- `server/` - Express.js backend API
-- `shared/` - Shared TypeScript types and database schemas
+Kinova is a family coordination and connection mobile app built with React Native and Expo. It aims to help families stay organized and connected in real-time through shared calendars, tasks, and activity tracking. The app features an organic/natural design aesthetic with a teal-green color palette (#2F7F6D), promoting a calming and trustworthy user experience. The application uses a monorepo structure with `client/` (React Native/Expo app), `server/` (Express.js backend), and `shared/` (TypeScript types and schemas). It includes features like shared calendars, tasks, shopping lists, expenses tracking, and an AI assistant.
 
 ## User Preferences
 
@@ -17,274 +12,86 @@ Preferred communication style: Simple, everyday language.
 
 ### Frontend Architecture
 
-**Framework**: React Native with Expo SDK 54, using the new architecture and React 19.1
+**Framework**: React Native with Expo SDK 54, utilizing the new architecture and React 19.1.
 
-**Navigation Pattern**: Tab-based navigation with nested stack navigators
-- Root stack navigator handles auth flow (Login vs Main app)
-- Main tab navigator with 4 tabs: Home, Calendar, Lists, Profile
-- Lists tab combines Shopping and Tasks with tabbed interface and filters
-- Each tab has its own stack navigator for screen hierarchy
+**Navigation Pattern**: Tab-based navigation with nested stack navigators, handling authentication flow, main tabs (Home, Calendar, Lists, Profile), and nested stacks within each tab for screen hierarchies.
 
-**State Management**:
-- TanStack React Query for server state and data fetching
-- React Context for authentication state (`AuthProvider`)
-- Local component state with React hooks
+**State Management**: TanStack React Query for server state and data fetching, React Context for authentication, and local component state with React hooks.
 
-**Theming System**:
-- Automatic light/dark mode support via `useColorScheme`
-- Centralized theme constants in `client/constants/theme.ts`
-- Kinova brand colors: Primary teal (#2F7F6D), Secondary (#6FB7A8)
+**Theming System**: Automatic light/dark mode support and centralized theme constants with Kinova's primary teal (#2F7F6D) and secondary (#6FB7A8) brand colors.
 
-**Key Libraries**:
-- `react-native-reanimated` for animations
-- `react-native-gesture-handler` for touch interactions
-- `expo-haptics` for tactile feedback
-- `expo-blur` and `expo-glass-effect` for visual effects
-- `@react-navigation/*` for navigation
+**Key Libraries**: `react-native-reanimated`, `react-native-gesture-handler`, `expo-haptics`, `expo-blur`, `expo-glass-effect`, and `@react-navigation/*`.
 
 ### Backend Architecture
 
-**Framework**: Express.js with TypeScript
+**Framework**: Express.js with TypeScript, providing a RESTful JSON API.
 
-**API Design**: RESTful JSON API with `/api` prefix
-- Authentication endpoints: `/api/auth/register`, `/api/auth/login`, `/api/auth/me`
-- Family endpoints: `/api/family`, `/api/family/members`
+**API Design**: All API endpoints are prefixed with `/api`. Key areas include authentication, family management, events, tasks, shopping, expenses, and notes.
 
-**Authentication**: Token-based sessions stored in PostgreSQL database (persists across server restarts). Tokens are secure random strings using `randomBytes(32).toString("base64url")`. Password hashing uses scrypt with random salt.
+**Authentication**: Token-based sessions stored in PostgreSQL, using scrypt for password hashing and secure random strings for tokens.
 
-**Database Access**: Storage abstraction layer (`IStorage` interface) with `DatabaseStorage` implementation using Drizzle ORM.
+**Database Access**: Utilizes a storage abstraction layer with Drizzle ORM for PostgreSQL.
 
 ### Data Storage
 
-**Database**: PostgreSQL with Drizzle ORM
+**Database**: PostgreSQL with Drizzle ORM.
 
-**Schema** (defined in `shared/schema.ts`):
-- `families` table: id (UUID), name, createdAt
-- `users` table: id (UUID), username (unique), password, displayName, avatarUrl, familyId (FK), role, createdAt, canViewCalendar, canViewTasks, canViewShopping, canViewBudget, canViewPlaces, canModifyItems (permission flags)
-- `sessions` table: id (UUID), token (unique), userId (FK), familyId (FK), role, type (access/refresh), expiresAt, createdAt
-- `events` table: id (UUID), familyId (FK), title, description, startDate, endDate, allDay, color, createdBy (FK), createdAt, updatedAt
-- `tasks` table: id (UUID), familyId (FK), title, description, completed, dueDate, assignedTo (FK), priority, createdBy (FK), createdAt, updatedAt
-- `shopping_items` table: id (UUID), familyId (FK), name, quantity, unit, category, purchased, createdBy (FK), createdAt, updatedAt
-- `expenses` table: id (UUID), familyId (FK), amount, description, category, paidBy (FK), date, createdBy (FK), createdAt, updatedAt
-- `family_invites` table: id (UUID), familyId (FK), code (unique), role, email, expiresAt, acceptedAt, acceptedBy (FK), createdBy (FK), createdAt
+**Schema**: Includes tables for `families`, `users`, `sessions`, `events`, `tasks`, `shopping_items`, `expenses`, `family_invites`, `notes`, `session_logs`, `error_logs`, `admin_users`, `admin_sessions`, `admin_audit_logs`, `donation_logs`, `ai_usage_logs`, `notification_logs`, and `ai_config`. The `families` table also stores `planType`, `trialStartDate`, `trialEndDate`, and `isActive` for subscription management. Notes support polymorphic relations to link with other entities.
 
-**Migrations**: Managed via `drizzle-kit` with output to `./migrations` directory
+**Migrations**: Managed via `drizzle-kit`.
 
 ### Client-Server Communication
 
-**API Client**: Custom fetch wrapper in `client/lib/query-client.ts`
-- Automatic token injection from AsyncStorage
-- Base URL derived from `EXPO_PUBLIC_DOMAIN` environment variable
-- Integrated with TanStack Query for caching and refetching
+**API Client**: Custom fetch wrapper for automatic token injection and integration with TanStack Query.
 
-**CORS**: Dynamic origin allowlist based on Replit environment variables, plus localhost support for development
+**CORS**: Dynamic origin allowlist based on environment variables for development and production.
+
+### Admin Console
+
+**Architecture**: A separate PWA web application accessible at `/admin`, supporting three admin roles (`super_admin`, `support_admin`, `auditor`) with complete RBAC enforcement.
+
+**Security**: Includes rate limiting, scrypt password hashing, session expiry, and audit logging for all mutations.
+
+### Logging Infrastructure
+
+**System**: Professional logging for tracking app usage and debugging with a hierarchical error code taxonomy (`KINOVA::DOMAIN::CODE`) and bilingual error messages.
+
+**Data**: `session_logs` and `error_logs` tables capture detailed session and error information.
+
+### AI Assistant Features
+
+**Document Auto-Interpretation**: Automatically interprets uploaded documents (images, PDFs, text files) using Vision API and text extraction. It provides summaries and proposes actions.
+
+**PDF Analysis**: The AI assistant can read and analyze PDF documents using `pdf-parse` for text extraction, which is then sent to GPT-4.1-mini for intelligent analysis and action proposals (expenses, events, tasks, notes).
+
+### Role-Based Permission System
+
+**Model**: Three user roles (`admin`, `member`, `child`) with six granular permissions (e.g., `canViewCalendar`, `canModifyItems`). Permissions are stored in the database and applied based on role.
+
+**Enforcement**: Backend enforces permissions on all API endpoints, and the frontend adapts UI elements (e.g., hiding tabs or action buttons) based on user permissions.
 
 ## External Dependencies
 
 ### Third-Party Services
 
-**Database**: PostgreSQL (connection via `DATABASE_URL` environment variable)
+**Database**: PostgreSQL.
 
-**Storage**: `@react-native-async-storage/async-storage` for persisting auth tokens on device
+**Storage**: `@react-native-async-storage/async-storage` for client-side token persistence.
 
 ### Development Environment
 
-**Build System**: 
-- Expo CLI for mobile development
-- esbuild for server bundling
-- Custom build script (`scripts/build.js`) for static exports
+**Build System**: Expo CLI for mobile, esbuild for server bundling, and custom build scripts.
 
-**Environment Variables**:
-- `DATABASE_URL` - PostgreSQL connection string (required)
-- `EXPO_PUBLIC_DOMAIN` - API server domain for client requests
-- `REPLIT_DEV_DOMAIN` - Development domain (Replit-specific)
-- `REPLIT_DOMAINS` - Production domains for CORS (Replit-specific)
+**Environment Variables**: `DATABASE_URL`, `EXPO_PUBLIC_DOMAIN`, `REPLIT_DEV_DOMAIN`, `REPLIT_DOMAINS`.
 
 ### NPM Package Categories
 
-**Expo Modules**: expo-blur, expo-constants, expo-font, expo-haptics, expo-image, expo-linking, expo-splash-screen, expo-status-bar, expo-symbols, expo-system-ui, expo-web-browser, expo-glass-effect
+**Expo Modules**: `expo-blur`, `expo-constants`, `expo-font`, `expo-haptics`, `expo-image`, `expo-linking`, `expo-splash-screen`, `expo-status-bar`, `expo-symbols`, `expo-system-ui`, `expo-web-browser`, `expo-glass-effect`.
 
-**Navigation**: @react-navigation/native, @react-navigation/native-stack, @react-navigation/bottom-tabs, @react-navigation/elements
+**Navigation**: `@react-navigation/native`, `@react-navigation/native-stack`, `@react-navigation/bottom-tabs`, `@react-navigation/elements`.
 
-**Database**: drizzle-orm, drizzle-zod, pg (node-postgres)
+**Database**: `drizzle-orm`, `drizzle-zod`, `pg` (node-postgres).
 
-**Validation**: zod, zod-validation-error
+**Validation**: `zod`, `zod-validation-error`.
 
-## Recent Changes
-
-### GATE 1 BIS - Role-Based Permission System (January 2026)
-
-**Permission Model**:
-- Three user roles: `admin`, `member`, `child`
-- Six granular permissions: canViewCalendar, canViewTasks, canViewShopping, canViewBudget, canViewPlaces, canModifyItems
-- Permissions stored in database, applied at user creation based on role
-
-**Role Defaults**:
-- **Admin**: All permissions true
-- **Member**: All permissions true except canViewBudget=false
-- **Child**: canViewCalendar/Tasks/Places=true, canViewShopping/Budget=false, canModifyItems=false
-
-**Backend Enforcement**:
-- All shopping/expenses/tasks mutation endpoints check canModifyItems
-- Budget endpoints (expenses) check canViewBudget
-- Shopping endpoints check canViewShopping
-- Child role automatically filters events/tasks to only show assignedTo items
-- All unauthorized attempts return 403 FORBIDDEN
-
-**Frontend Adaptation**:
-- MainTabNavigator hides Budget tab if canViewBudget=false
-- MainTabNavigator hides Lists tab if both canViewShopping and canViewTasks are false
-- ListsScreen hides add input and delete buttons if canModifyItems=false
-- Tab selector hidden when user only has access to one list type
-
-**Key Files**:
-- `server/permissions.ts`: Role defaults and permission utilities
-- `shared/types.ts`: UserPermissions interface
-- `client/lib/auth.tsx`: AuthContext with permissions
-
-### GATE 8 - Admin Console (January 2026)
-
-**Architecture**:
-- Separate PWA web application at `/admin` route
-- Three admin roles: `super_admin`, `support_admin`, `auditor`
-- Complete RBAC enforcement on all admin endpoints
-- i18n support (Italian/English) based on browser language
-
-**Admin Database Schema** (in `shared/schema.ts`):
-- `admin_users` table: Admin accounts with MFA support
-- `admin_sessions` table: Admin session tokens (1 hour expiry)
-- `admin_audit_logs` table: All admin actions tracked
-- `donation_logs` table: Donation/payment tracking
-- `ai_usage_logs` table: AI assistant usage metrics
-- `notification_logs` table: Push notification delivery logs
-- `ai_config` table: Global AI configuration
-
-**Trial/Plan Management** (added to `families` table):
-- `planType`: 'trial' | 'free' | 'premium' | 'enterprise'
-- `trialStartDate`, `trialEndDate`: Trial period tracking
-- `isActive`: Family account status
-
-**Admin API Endpoints** (`/api/admin/*`):
-- Auth: login, logout, logout-all, me
-- Dashboard: stats (totals, actives, trials, donations)
-- Users: list, detail, update, reset-sessions, delete
-- Families: list, detail, update, deactivate
-- Trials: list, extend
-- Donations: list
-- Audit: logs with pagination
-- AI: config get/update, usage logs
-- Setup: first super_admin creation (one-time)
-
-**Security**:
-- Rate limiting: 5 login attempts per 15 minutes per email
-- Password hashing: scrypt with random salt
-- Session expiry: 1 hour for admin tokens
-- All mutations logged to audit trail
-
-**Key Files**:
-- `server/admin-routes.ts`: Admin API endpoints and RBAC middleware
-- `server/admin/index.html`: Admin PWA entry point
-- `server/admin/app.js`: Admin React SPA
-
-### Logging Infrastructure (January 2026)
-
-**Session & Error Logging System**:
-- Professional logging infrastructure for tracking app usage and debugging
-- Hierarchical error code taxonomy: `KINOVA::DOMAIN::CODE` pattern
-- Bilingual error messages (Italian default, English option)
-
-**Database Schema**:
-- `session_logs` table: userId, familyId, deviceId, platform, appVersion, osVersion, locale, status (started/ended/crashed), startedAt, endedAt, terminationReason
-- `error_logs` table: sessionId, userId, familyId, requestId, category, severity (info/warning/error/critical), code, message, userMessage, component, stackTrace, context, resolved, resolvedAt, resolvedBy
-
-**Error Code Categories**:
-- AUTH: Authentication and authorization errors
-- NETWORK: Connection and timeout errors
-- PAYMENT: Stripe and payment processing errors
-- ASSISTANT: AI assistant errors
-- CALENDAR, TASKS, SHOPPING, BUDGET: Feature-specific errors
-- FAMILY: Family management errors
-- GENERAL: Fallback and validation errors
-
-**API Endpoints** (`/api/logs/*`):
-- `POST /api/logs/session/start`: Start session tracking
-- `POST /api/logs/session/end`: End session tracking
-- `POST /api/logs/session/crash`: Log app crash
-- `POST /api/logs/error`: Log structured error with code and context
-- `GET /api/logs/error-codes`: Get available error codes and messages
-
-**Admin Endpoints** (`/api/admin/logs/*`):
-- `GET /api/admin/logs/sessions`: List session logs with filtering
-- `GET /api/admin/logs/errors`: List error logs with filtering
-- `GET /api/admin/logs/errors/stats`: Error statistics (total, unresolved, today)
-- `POST /api/admin/logs/errors/:id/resolve`: Mark error as resolved (super_admin, support_admin)
-
-**Client-Side Logging** (`client/lib/logging.ts`):
-- `startSession()`: Initialize session tracking
-- `endSession()`: End current session
-- `logSessionCrash()`: Report app crash
-- `logError()`: Log structured error with automatic locale detection
-- `getErrorMessage()`: Get localized error message for code
-
-**Key Files**:
-- `server/logging-routes.ts`: Logging API endpoints and error taxonomy
-- `client/lib/logging.ts`: Client-side logging utility
-- `server/admin/app.js`: Admin panel with Logs section
-
-### AI Assistant Auto-Interpretation (January 2026)
-
-**Document Auto-Interpretation Feature**:
-- Documents uploaded to the AI assistant are automatically interpreted without requiring user input
-- Similar to ChatGPT behavior: upload → instant analysis → proposed actions
-- Works with images (receipts, invoices, school documents), PDFs, and text files
-
-**Flow**:
-1. User uploads document (photo, PDF, etc.)
-2. Server analyzes document using Vision API for images, text extraction for documents
-3. Client automatically triggers interpretation request
-4. AI responds with document summary and proposes actions
-5. User can confirm/reject proposed actions
-
-**API Endpoint**:
-- `POST /api/assistant/interpret-document`: Automatic document interpretation with streaming response
-
-**Key Files**:
-- `server/assistant.ts`: Document interpretation endpoint and vision analysis
-- `client/screens/AssistantScreen.tsx`: Auto-interpretation trigger in uploadFile()
-
-### Notes Feature (January 2026)
-
-**Full Notes System**:
-- Complete CRUD API for family notes
-- Polymorphic relations to link notes to events, tasks, expenses, or shopping items
-- 8 color options: default, red, orange, yellow, green, blue, purple, pink
-- Pinning support to prioritize important notes
-- Search and filtering by type (all, pinned, events, tasks, expenses, shopping)
-
-**Database Schema**:
-- `notes` table: id (UUID), familyId (FK), title, content, color (8 options), pinned, relatedType (event/task/expense/shopping_item/null), relatedId, createdBy (FK), createdAt, updatedAt
-
-**API Endpoints** (`/api/notes/*`):
-- `GET /api/notes`: List all notes for family (with search and filter params)
-- `POST /api/notes`: Create new note
-- `GET /api/notes/:id`: Get note by ID
-- `PUT /api/notes/:id`: Update note
-- `DELETE /api/notes/:id`: Delete note
-
-**AI Assistant Integration**:
-- `create_note` action for creating notes via assistant
-- Format: {"title":"...", "content":"...", "color":"default", "pinned":false}
-
-**Frontend Screens**:
-- NotesScreen: List view with search, filters, FAB for adding, color-coded cards
-- NoteDetailScreen: Detail/edit view with color picker, pin toggle, related entity display
-- Accessible from Profile → Notes menu item
-
-**Key Files**:
-- `shared/schema.ts`: Notes table definition with polymorphic relations
-- `server/storage.ts`: CRUD operations for notes
-- `server/routes.ts`: Notes API endpoints
-- `client/screens/NotesScreen.tsx`: Notes list with filtering
-- `client/screens/NoteDetailScreen.tsx`: Note detail/edit screen
-- `client/navigation/ProfileStackNavigator.tsx`: Notes screen registration
-- `client/lib/i18n.tsx`: Italian and English translations for notes
+**PDF Processing**: `pdf-parse` for server-side PDF text extraction.

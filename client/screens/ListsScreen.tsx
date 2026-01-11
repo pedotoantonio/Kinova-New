@@ -669,7 +669,13 @@ export default function ListsScreen() {
             </Pressable>
           ) : null}
           <Pressable
-            style={[styles.addButton, { backgroundColor: colors.primary }]}
+            style={[
+              styles.addButton, 
+              { 
+                backgroundColor: colors.primary,
+                opacity: newItemName.trim() ? 1 : 0.5,
+              }
+            ]}
             onPress={handleAddItem}
             disabled={!newItemName.trim()}
             testID="button-add-item"
