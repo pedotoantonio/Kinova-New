@@ -2,173 +2,216 @@
 
 ## 1. Brand Identity
 
-**Purpose**: Kinova is a family coordination app that helps families stay organized, connected, and in sync with joy and energy.
+**Purpose**: Kinova is a premium family coordination app that helps families stay organized, connected, and in sync with joy and vibrancy.
 
-**Aesthetic Direction**: Playful/Professional - Vibrant rainbow colors meet clean organization. Like a well-designed family planner that actually makes you smile. The color palette is directly derived from the Kinova logo's rainbow gradient.
+**Aesthetic Direction**: Vibrant & Professional - A rainbow-inspired color system derived from the Kinova logo creates a distinctive, memorable, and emotionally engaging experience. Each section of the app has its own signature color, making navigation intuitive and visually delightful.
 
-**Memorable Element**: Rainbow-inspired color palette where each family area has its own signature color from the logo, creating instant visual recognition and a unified brand experience.
+**Design Philosophy**: "Every color tells a story" - Each section's unique color creates immediate visual recognition while the rainbow button system adds playful energy and helps users identify different actions at a glance.
 
-## 2. Color Palette (From Kinova Logo)
+## 2. Color Architecture (From Kinova Logo)
 
-### Kinova Brand Colors (Rainbow Sequence)
-- **K - Ruby Red**: `#E53935` - Home, Urgent items
-- **i - Sunset Orange**: `#FF9800` - Lists & Tasks
-- **n - Lime Green**: `#8BC34A` - Success states, Budget
-- **o - Teal Cyan**: `#00BCD4` - AI Assistant, Info
-- **v - Royal Blue**: `#2196F3` - Primary actions, Calendar, Profile
-- **a - Violet Purple**: `#9C27B0` - Notes & Documents
+### Primary Brand Colors (Rainbow Sequence)
+| Letter | Color Name     | Hex Code  | Usage                        |
+|--------|----------------|-----------|------------------------------|
+| **K**  | Ruby Red       | `#E53935` | Home section, Urgent items   |
+| **i**  | Sunset Orange  | `#FF9800` | Lists & Tasks section        |
+| **n**  | Lime Green     | `#8BC34A` | Budget section, Success      |
+| **o**  | Teal Cyan      | `#00BCD4` | AI Assistant, Info           |
+| **v**  | Royal Blue     | `#2196F3` | Calendar, Profile, Primary   |
+| **a**  | Violet Purple  | `#9C27B0` | Notes & Documents            |
+
+### Section Background Colors (Light Mode)
+| Section    | Background    | Color Family      |
+|------------|---------------|-------------------|
+| Home       | `#FFEBEE`     | Soft Rose         |
+| Calendar   | `#E3F2FD`     | Soft Sky          |
+| Lists      | `#FFF3E0`     | Soft Peach        |
+| Notes      | `#F3E5F5`     | Soft Lavender     |
+| Budget     | `#F1F8E9`     | Soft Mint         |
+| Assistant  | `#E0F7FA`     | Soft Aqua         |
+| Profile    | `#E3F2FD`     | Soft Sky          |
+
+### Section Background Colors (Dark Mode)
+| Section    | Background    | Color Family      |
+|------------|---------------|-------------------|
+| Home       | `#1F0D0D`     | Deep Rose         |
+| Calendar   | `#0D1F2D`     | Deep Navy         |
+| Lists      | `#1A1408`     | Deep Amber        |
+| Notes      | `#1A0D1F`     | Deep Purple       |
+| Budget     | `#0D1A0D`     | Deep Forest       |
+| Assistant  | `#0D1A1F`     | Deep Teal         |
+| Profile    | `#0D1F2D`     | Deep Navy         |
+
+### Rainbow Button System
+Each page uses multiple button colors from the rainbow palette to create visual variety:
+- **Red Button**: `#E53935` - Destructive actions, important alerts
+- **Orange Button**: `#FF9800` - Secondary actions, warnings
+- **Green Button**: `#8BC34A` - Confirmations, success actions
+- **Cyan Button**: `#00BCD4` - Info actions, AI features
+- **Blue Button**: `#2196F3` - Primary actions, navigation
+- **Purple Button**: `#9C27B0` - Special actions, notes
 
 ### Neutrals
-- **Background**: `#FFFFFF` (Pure White)
-- **Surface**: `#FAFAFA` (Light Gray)
-- **Text Primary**: `#212121` (Dark Gray)
-- **Text Secondary**: `#616161` (Medium Gray)
-- **Border**: `#E0E0E0` (Soft Gray)
-
-### Semantic Colors
-- **Success**: `#8BC34A` (Lime Green)
-- **Warning**: `#FFC107` (Amber)
-- **Error**: `#E53935` (Ruby Red)
-- **Info**: `#00BCD4` (Teal Cyan)
-
-### Dark Mode
-- Background: `#121212`
-- Surface: `#1E1E1E`
-- Text Primary: `#FAFAFA`
-- Brand colors become slightly lighter for visibility
+- **Surface Light**: `#FFFFFF`
+- **Surface Dark**: `#1E1E1E`
+- **Text Primary Light**: `#212121`
+- **Text Primary Dark**: `#FAFAFA`
+- **Text Secondary Light**: `#616161`
+- **Text Secondary Dark**: `#B0BEC5`
+- **Border Light**: `#E0E0E0`
+- **Border Dark**: `#424242`
 
 ## 3. Gradients
 
-All gradient buttons use the brand color to a lighter tint:
+All gradient buttons transition from the brand color to a lighter tint:
 - **Primary (Blue)**: `#2196F3` → `#42A5F5`
-- **Red**: `#E53935` → `#EF5350`
-- **Orange**: `#FF9800` → `#FFB74D`
-- **Green**: `#8BC34A` → `#AED581`
-- **Teal**: `#00BCD4` → `#4DD0E1`
-- **Purple**: `#9C27B0` → `#BA68C8`
-- **Rainbow**: Full gradient for special headers `#E53935 → #FF9800 → #8BC34A → #00BCD4 → #2196F3 → #9C27B0`
+- **Ruby Red**: `#E53935` → `#EF5350`
+- **Sunset Orange**: `#FF9800` → `#FFB74D`
+- **Lime Green**: `#8BC34A` → `#AED581`
+- **Teal Cyan**: `#00BCD4` → `#4DD0E1`
+- **Violet Purple**: `#9C27B0` → `#BA68C8`
+- **Rainbow Header**: Full gradient `#E53935 → #FF9800 → #8BC34A → #00BCD4 → #2196F3 → #9C27B0`
 
 ## 4. Typography
 
-**Font**: Inter (clean, modern, professional)
+**Font Family**: Inter (clean, modern, professional)
 
-| Style | Size | Weight | Line Height |
-|-------|------|--------|-------------|
-| Large Title | 28px | Bold (700) | 34px |
-| Title | 22px | Bold (700) | 28px |
-| Subtitle | 18px | Semibold (600) | 24px |
-| Body | 16px | Regular (400) | 22px |
-| Label | 14px | Medium (500) | 20px |
-| Caption | 12px | Regular (400) | 16px |
-| Button | 16px | Semibold (600) | 22px |
+| Style       | Size  | Weight        | Line Height |
+|-------------|-------|---------------|-------------|
+| Large Title | 28px  | Bold (700)    | 34px        |
+| Title       | 22px  | Bold (700)    | 28px        |
+| Subtitle    | 18px  | Semibold (600)| 24px        |
+| Body        | 16px  | Regular (400) | 22px        |
+| Label       | 14px  | Medium (500)  | 20px        |
+| Caption     | 12px  | Regular (400) | 16px        |
+| Button      | 16px  | Semibold (600)| 22px        |
 
 ## 5. Spacing & Layout
 
-- xs: 4px, sm: 8px, md: 12px, lg: 16px, xl: 20px, 2xl: 24px, 3xl: 32px
-- **Screen Padding**: 20px horizontal
-- **Card Padding**: 16px
-- **Component Gap**: 12px
+| Token | Value | Usage                    |
+|-------|-------|--------------------------|
+| xs    | 4px   | Tight spacing            |
+| sm    | 8px   | Compact elements         |
+| md    | 12px  | Standard component gap   |
+| lg    | 16px  | Card padding             |
+| xl    | 20px  | Screen padding           |
+| 2xl   | 24px  | Section spacing          |
+| 3xl   | 32px  | Large section breaks     |
+
+- **Screen Horizontal Padding**: 20px
+- **Card Internal Padding**: 16px
 - **Input/Button Height**: 52px
 
 ## 6. Border Radius
 
-- Buttons: 26px (pill-shaped)
-- Cards: 16px
-- Inputs: 12px
-- Badges: 20px (pill)
-- Avatars: 50% (circle)
+| Element   | Radius | Description           |
+|-----------|--------|-----------------------|
+| Buttons   | 26px   | Pill-shaped, friendly |
+| Cards     | 16px   | Rounded, modern       |
+| Inputs    | 12px   | Soft corners          |
+| Badges    | 20px   | Pill-shaped           |
+| Avatars   | 50%    | Circular              |
+| FABs      | 30px   | Circular floating     |
 
-## 7. Components
+## 7. Component Specifications
 
 ### Buttons
-- **Primary**: Gradient background (Royal Blue), white text, height 52px, rounded 26px, subtle colored shadow
-- **Red/Orange/Green/Teal/Purple**: Same style with respective brand color gradient
-- **Secondary**: White background, colored text, 1.5px colored border
-- **Ghost**: Transparent, colored text
-- Press: Scale 0.97 with spring animation (damping: 15, stiffness: 200)
+- **Primary**: Category color background, white text, height 52px, rounded 26px
+- **Rainbow Variants**: Each button in a section uses different rainbow colors
+- **Secondary**: White background, colored border (1.5px), colored text
+- **Ghost**: Transparent background, colored text
+- **Press Animation**: Scale 0.97 with spring (damping: 15, stiffness: 200)
 
 ### Cards
-- Background: White
-- Border: 1px `#E0E0E0`
-- Radius: 16px
-- Shadow: subtle (shadowOffset: {0, 1}, shadowOpacity: 0.05, shadowRadius: 3)
-- **Category Indicator**: 4px colored left border matching category
+- **Background**: White (light) / `#1E1E1E` (dark)
+- **Border**: 1px `#E0E0E0` (light) / `#424242` (dark)
+- **Radius**: 16px
+- **Shadow**: subtle (offset: 0,1, opacity: 0.05, radius: 3)
+- **Category Indicator**: 4px colored left border
 
 ### Inputs
-- Background: White
-- Border: 1.5px `#E0E0E0`
-- Focus Border: Primary color (2px)
-- Radius: 12px
-- Height: 52px
-- Left icon in primary color
+- **Background**: White (light) / `#1E1E1E` (dark)
+- **Border**: 1.5px neutral, 2px colored on focus
+- **Radius**: 12px
+- **Height**: 52px
+- **Icon Color**: Category color
+
+### Floating Action Buttons (FAB)
+- **Background**: Category color
+- **Size**: 56px diameter
+- **Icon**: White, 24px
+- **Position**: Bottom-right, above tab bar
+- **Shadow**: Colored shadow matching button color
 
 ### Tab Bar
-- Background: White
-- Border Top: 1px `#E0E0E0`
-- Active Icon: Category color from Kinova palette
-- Inactive Icon: `#757575`
-- Icon Size: 24px
-- Active Indicator: 3px colored line above icon with animation
+- **Background**: Category background tint
+- **Active Icon**: Category color
+- **Inactive Icon**: `#757575` (light) / `#78909C` (dark)
+- **Icon Size**: 24px
+- **Active Indicator**: 3px colored line with animation
 
-## 8. Category Color Mapping
+## 8. Section Color Mapping
 
-| Section | Icon | Brand Color |
-|---------|------|-------------|
-| Home | home | Ruby Red `#E53935` |
-| Calendar | calendar | Royal Blue `#2196F3` |
-| Lists | list | Sunset Orange `#FF9800` |
-| Notes | file-text | Violet Purple `#9C27B0` |
-| Budget | dollar-sign | Lime Green `#8BC34A` |
-| Assistant | message-circle | Teal Cyan `#00BCD4` |
-| Profile | user | Royal Blue `#2196F3` |
+| Section     | Primary Color | Background (Light) | Icon      |
+|-------------|---------------|-------------------|-----------|
+| Home        | Ruby Red      | Soft Rose         | home      |
+| Calendar    | Royal Blue    | Soft Sky          | calendar  |
+| Lists       | Sunset Orange | Soft Peach        | list      |
+| Notes       | Violet Purple | Soft Lavender     | file-text |
+| Budget      | Lime Green    | Soft Mint         | dollar-sign|
+| Assistant   | Teal Cyan     | Soft Aqua         | message-circle|
+| Profile     | Royal Blue    | Soft Sky          | user      |
 
-## 9. Navigation Architecture
+## 9. Rainbow Button Distribution
 
-**Root**: Tab Navigation (7 tabs)
+Each section should use multiple rainbow button colors to create variety:
 
-**Tabs** (with Kinova logo colors):
-1. **Home** (Ruby Red) - Family overview, greeting, quick actions
-2. **Calendar** (Royal Blue) - Shared events
-3. **Lists** (Sunset Orange) - Tasks, shopping
-4. **Notes** (Violet Purple) - Documents
-5. **Budget** (Lime Green) - Expenses
-6. **Assistant** (Teal Cyan) - AI helper
-7. **Profile** (Royal Blue) - Settings, family
+**Example - Calendar Screen:**
+- Add Event: Blue (primary action)
+- Filter: Purple (secondary action)
+- Month View: Green (toggle)
+- Week View: Orange (toggle)
+
+**Example - Lists Screen:**
+- Add Item: Orange (primary action)
+- Shopping Tab: Green (active tab)
+- Tasks Tab: Cyan (inactive tab)
+- Delete: Red (destructive)
+
+**Example - Budget Screen:**
+- Add Expense: Green (primary action)
+- Filter: Blue (secondary action)
+- Category Pills: Rainbow variety
 
 ## 10. Animations
 
-- **Spring Config**: damping: 15, stiffness: 200
-- **Press Scale**: 0.97
-- **Duration**: Fast (150ms), Normal (250ms), Slow (400ms)
-- **Tab Indicator**: Animated width expansion on tab selection
-- **Cards**: Subtle scale on press
-- **Lists**: FadeIn animations for items
+| Animation     | Config                          |
+|---------------|---------------------------------|
+| Spring Press  | damping: 15, stiffness: 200     |
+| Scale Press   | 0.97                            |
+| Duration Fast | 150ms                           |
+| Duration Normal | 250ms                         |
+| Duration Slow | 400ms                           |
+| Tab Indicator | Width expansion, color morph    |
+| Card Hover    | Subtle scale + shadow increase  |
+| List Items    | FadeInDown staggered            |
 
-## 11. Screen Specifications
+## 11. Accessibility
 
-### Home Screen
-- **Header**: Transparent, greeting "Ciao, {Name}!" (Large Title), avatar top-right
-- **Layout**: ScrollView with:
-  - Welcome card (gradient with primary color, white text)
-  - Quick Actions grid (4 colorful icon buttons matching category colors)
-  - Recent Activity list (cards with colored left borders)
+- **Contrast Ratio**: Minimum 4.5:1 for text
+- **Touch Targets**: Minimum 44x44 points
+- **Focus States**: 2px colored outline
+- **Screen Reader**: All interactive elements labeled
+- **Motion**: Reduced motion support via system settings
 
-### Calendar Screen
-- **Header**: Default with "Calendario" title, plus button (Royal Blue) top-right
-- **Color**: Royal Blue accent throughout
+## 12. Dark Mode Adaptations
 
-### Lists Screen
-- **Header**: Default with "Liste" title
-- **Color**: Sunset Orange accent for active items
+- Category colors shift 1 step lighter for visibility
+- Backgrounds use deep, muted tints of category colors
+- Cards use elevated surface (`#1E1E1E`)
+- Borders become subtle (`#424242`)
+- Shadows replaced with subtle borders
 
-### Notes Screen
-- **Header**: Default with "Note" title
-- **Color**: Violet Purple accent for note items
+---
 
-### Budget Screen
-- **Header**: Default with "Budget" title
-- **Color**: Lime Green accent for expense items
-
-### Assistant Screen
-- **Header**: Default with "Assistente" title
-- **Color**: Teal Cyan accent for AI interactions
+*This design system ensures a cohesive, vibrant, and accessible experience across all Kinova family coordination features.*

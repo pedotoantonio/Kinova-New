@@ -15,7 +15,7 @@ import { Card } from "@/components/Card";
 import { useTheme } from "@/hooks/useTheme";
 import { useAuth, UserRole } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
-import { Colors, Spacing, BorderRadius, Typography, CategoryColors } from "@/constants/theme";
+import { Colors, Spacing, BorderRadius, Typography, CategoryColors, CategoryBackgrounds, RainbowButtonColors } from "@/constants/theme";
 import { queryClient, apiRequest } from "@/lib/query-client";
 import { searchCities, GeocodingResult } from "@/lib/weather";
 
@@ -208,7 +208,7 @@ export default function ProfileScreen() {
 
   return (
     <KeyboardAwareScrollViewCompat
-      style={{ flex: 1, backgroundColor: theme.backgroundRoot }}
+      style={{ flex: 1, backgroundColor: isDark ? CategoryBackgrounds.dark.profile : CategoryBackgrounds.light.profile }}
       contentContainerStyle={{
         paddingTop: headerHeight + Spacing.xl,
         paddingBottom: tabBarHeight + Spacing.xl,

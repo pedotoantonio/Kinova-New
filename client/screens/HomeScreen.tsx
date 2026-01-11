@@ -11,7 +11,7 @@ import * as Haptics from "expo-haptics";
 import { useTheme } from "@/hooks/useTheme";
 import { useAuth } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
-import { Colors, Spacing, BorderRadius, Typography, KinovaColors, CategoryColors } from "@/constants/theme";
+import { Colors, Spacing, BorderRadius, Typography, KinovaColors, CategoryColors, CategoryBackgrounds, RainbowButtonColors } from "@/constants/theme";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { Card } from "@/components/Card";
@@ -448,7 +448,7 @@ export default function HomeScreen() {
 
   return (
     <ScrollView
-      style={{ flex: 1, backgroundColor: theme.backgroundRoot }}
+      style={{ flex: 1, backgroundColor: isDark ? CategoryBackgrounds.dark.home : CategoryBackgrounds.light.home }}
       contentContainerStyle={{
         paddingTop: headerHeight + Spacing.xl,
         paddingBottom: tabBarHeight + Spacing.xl,

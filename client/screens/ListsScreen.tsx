@@ -27,7 +27,7 @@ import { useTheme } from "@/hooks/useTheme";
 import { useAuth } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { apiRequest } from "@/lib/query-client";
-import { Colors, Spacing, BorderRadius, Typography, CategoryColors } from "@/constants/theme";
+import { Colors, Spacing, BorderRadius, Typography, CategoryColors, CategoryBackgrounds, RainbowButtonColors } from "@/constants/theme";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { Card } from "@/components/Card";
@@ -1130,7 +1130,7 @@ export default function ListsScreen() {
 
   return (
     <KeyboardAvoidingView
-      style={{ flex: 1, backgroundColor: theme.backgroundRoot }}
+      style={{ flex: 1, backgroundColor: isDark ? CategoryBackgrounds.dark.lists : CategoryBackgrounds.light.lists }}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
       keyboardVerticalOffset={headerHeight}
     >

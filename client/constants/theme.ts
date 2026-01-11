@@ -19,6 +19,36 @@ export const CategoryColors = {
   home: KinovaColors.rubyRed,
 };
 
+export const CategoryBackgrounds = {
+  light: {
+    calendar: "#E3F2FD",
+    lists: "#FFF3E0",
+    notes: "#F3E5F5",
+    budget: "#F1F8E9",
+    assistant: "#E0F7FA",
+    profile: "#E3F2FD",
+    home: "#FFEBEE",
+  },
+  dark: {
+    calendar: "#0D1F2D",
+    lists: "#1A1408",
+    notes: "#1A0D1F",
+    budget: "#0D1A0D",
+    assistant: "#0D1A1F",
+    profile: "#0D1F2D",
+    home: "#1F0D0D",
+  },
+};
+
+export const RainbowButtonColors = {
+  red: KinovaColors.rubyRed,
+  orange: KinovaColors.sunsetOrange,
+  green: KinovaColors.limeGreen,
+  cyan: KinovaColors.tealCyan,
+  blue: KinovaColors.royalBlue,
+  purple: KinovaColors.violetPurple,
+};
+
 export const Gradients = {
   rainbow: [KinovaColors.rubyRed, KinovaColors.sunsetOrange, KinovaColors.limeGreen, KinovaColors.tealCyan, KinovaColors.royalBlue, KinovaColors.violetPurple],
   primary: [KinovaColors.royalBlue, "#42A5F5"],

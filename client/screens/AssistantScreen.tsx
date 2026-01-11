@@ -33,7 +33,7 @@ import Animated, {
 } from "react-native-reanimated";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-import { Colors, Spacing, Typography, BorderRadius, CategoryColors } from "@/constants/theme";
+import { Colors, Spacing, Typography, BorderRadius, CategoryColors, CategoryBackgrounds, RainbowButtonColors } from "@/constants/theme";
 import { useI18n } from "@/lib/i18n";
 import { apiRequest, getApiUrl } from "@/lib/query-client";
 import { useAuth } from "@/lib/auth";
@@ -102,7 +102,7 @@ export default function AssistantScreen() {
   const route = useRoute<RouteProp<{ Assistant: AssistantScreenParams }, "Assistant">>();
   const { t, language } = useI18n();
   const { user } = useAuth();
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
   const queryClient = useQueryClient();
   const flatListRef = useRef<FlatList>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -828,7 +828,7 @@ export default function AssistantScreen() {
 
   return (
     <KeyboardAvoidingView
-      style={[styles.container, { backgroundColor: theme.backgroundRoot }]}
+      style={[styles.container, { backgroundColor: isDark ? CategoryBackgrounds.dark.assistant : CategoryBackgrounds.light.assistant }]}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
       keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
     >

@@ -28,7 +28,7 @@ import { useTheme } from "@/hooks/useTheme";
 import { useAuth } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { apiRequest } from "@/lib/query-client";
-import { Colors, Spacing, BorderRadius, Typography, CategoryColors } from "@/constants/theme";
+import { Colors, Spacing, BorderRadius, Typography, CategoryColors, CategoryBackgrounds, RainbowButtonColors } from "@/constants/theme";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { Card } from "@/components/Card";
@@ -399,10 +399,10 @@ export default function NotesScreen() {
 
   return (
     <KeyboardAvoidingView
-      style={styles.container}
+      style={[styles.container, { backgroundColor: isDark ? CategoryBackgrounds.dark.notes : CategoryBackgrounds.light.notes }]}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
-      <ThemedView style={[styles.container, { paddingTop: headerHeight + Spacing.md }]}>
+      <ThemedView style={[styles.container, { paddingTop: headerHeight + Spacing.md, backgroundColor: isDark ? CategoryBackgrounds.dark.notes : CategoryBackgrounds.light.notes }]}>
         <View style={[styles.searchContainer, { backgroundColor: theme.surface }]}>
           <Feather name="search" size={18} color={theme.textSecondary} />
           <TextInput

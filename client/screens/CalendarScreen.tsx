@@ -23,7 +23,7 @@ import { useTheme } from "@/hooks/useTheme";
 import { useAuth } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { apiRequest } from "@/lib/query-client";
-import { Colors, Spacing, BorderRadius, Typography, CategoryColors } from "@/constants/theme";
+import { Colors, Spacing, BorderRadius, Typography, CategoryColors, CategoryBackgrounds, RainbowButtonColors } from "@/constants/theme";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { Card } from "@/components/Card";
@@ -530,7 +530,7 @@ export default function CalendarScreen() {
   }
 
   return (
-    <ThemedView style={[styles.container, { backgroundColor: theme.backgroundRoot }]}>
+    <ThemedView style={[styles.container, { backgroundColor: isDark ? CategoryBackgrounds.dark.calendar : CategoryBackgrounds.light.calendar }]}>
       <ScrollView
         contentContainerStyle={{
           paddingTop: Spacing.lg,
