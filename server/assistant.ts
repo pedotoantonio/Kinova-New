@@ -5,10 +5,26 @@ import type { UserRole } from "@shared/schema";
 import fs from "node:fs";
 import path from "node:path";
 
-const openai = new OpenAI({
-  apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
-  baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
-});
+// Lazy initialization to ensure env vars are available
+let openaiClient: OpenAI | null = null;
+
+function getOpenAIClient(): OpenAI {
+  if (!openaiClient) {
+    const apiKey = process.env.AI_INTEGRATIONS_OPENAI_API_KEY;
+    const baseURL = process.env.AI_INTEGRATIONS_OPENAI_BASE_URL;
+    
+    if (!apiKey || !baseURL) {
+      console.error("OpenAI configuration missing:", { 
+        hasApiKey: !!apiKey, 
+        hasBaseURL: !!baseURL 
+      });
+      throw new Error("OpenAI integration not configured");
+    }
+    
+    openaiClient = new OpenAI({ apiKey, baseURL });
+  }
+  return openaiClient;
+}
 
 interface AuthRequest extends Request {
   auth?: {
@@ -442,6 +458,37 @@ export function registerAssistantRoutes(app: Express, authMiddleware: (req: Auth
     fs.mkdirSync(uploadsDir, { recursive: true });
   }
 
+  // Health check for AI assistant configuration
+  app.get("/api/assistant/health", async (_req, res: Response) => {
+    try {
+      const hasApiKey = !!process.env.AI_INTEGRATIONS_OPENAI_API_KEY;
+      const hasBaseURL = !!process.env.AI_INTEGRATIONS_OPENAI_BASE_URL;
+      
+      if (!hasApiKey || !hasBaseURL) {
+        return res.status(503).json({
+          status: "unavailable",
+          message: "OpenAI integration not configured",
+          config: { hasApiKey, hasBaseURL }
+        });
+      }
+      
+      // Try to initialize the client
+      try {
+        getOpenAIClient();
+        res.json({ status: "ok", message: "AI Assistant is ready" });
+      } catch (clientError) {
+        res.status(503).json({
+          status: "error",
+          message: "Failed to initialize OpenAI client",
+          error: clientError instanceof Error ? clientError.message : "Unknown error"
+        });
+      }
+    } catch (error) {
+      console.error("Assistant health check error:", error);
+      res.status(500).json({ status: "error", message: "Health check failed" });
+    }
+  });
+
   app.get("/api/assistant/conversations", authMiddleware, async (req: AuthRequest, res: Response) => {
     try {
       const conversations = await storage.getAssistantConversations(req.auth!.familyId, req.auth!.userId);
@@ -537,7 +584,7 @@ export function registerAssistantRoutes(app: Express, authMiddleware: (req: Auth
       res.setHeader("Connection", "keep-alive");
       res.setHeader("X-Accel-Buffering", "no");
 
-      const stream = await openai.chat.completions.create({
+      const stream = await getOpenAIClient().chat.completions.create({
         model: "gpt-4.1-mini",
         messages: chatMessages,
         stream: true,
@@ -1172,7 +1219,7 @@ Respond conversationally but efficiently, like ChatGPT would.`;
       res.setHeader("Connection", "keep-alive");
       res.setHeader("X-Accel-Buffering", "no");
 
-      const stream = await openai.chat.completions.create({
+      const stream = await getOpenAIClient().chat.completions.create({
         model: "gpt-4.1-mini",
         messages: chatMessages,
         stream: true,
@@ -1297,13 +1344,20 @@ Respond conversationally but efficiently, like ChatGPT would.`;
 
       if (mimeType === "application/pdf") {
         try {
-          const pdfParseModule = await import("pdf-parse");
-          const pdfParse = pdfParseModule.default || pdfParseModule;
+          // Dynamic import with proper fallback for ESM/CJS compatibility
+          let pdfParse: (data: Buffer) => Promise<{ text: string }>;
+          try {
+            const pdfParseModule = await import("pdf-parse");
+            pdfParse = pdfParseModule.default || pdfParseModule;
+          } catch (importError) {
+            console.error("Failed to import pdf-parse:", importError);
+            return res.status(500).json({ error: "PDF parsing not available" });
+          }
           const pdfData = await pdfParse(fileData);
           const pdfText = pdfData.text.slice(0, 15000);
           
           if (pdfText.trim().length > 50) {
-            const pdfAnalysisResponse = await openai.chat.completions.create({
+            const pdfAnalysisResponse = await getOpenAIClient().chat.completions.create({
               model: "gpt-4.1-mini",
               max_completion_tokens: 1024,
               messages: [
@@ -1357,7 +1411,7 @@ Analizza bollette, fatture, contratti, documenti scolastici, certificati, comuni
           const base64Image = fileData.toString("base64");
           const imageUrl = `data:${mimeType};base64,${base64Image}`;
           
-          const visionResponse = await openai.chat.completions.create({
+          const visionResponse = await getOpenAIClient().chat.completions.create({
             model: "gpt-4.1-mini",
             max_completion_tokens: 1024,
             messages: [
