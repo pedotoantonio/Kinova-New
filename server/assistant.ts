@@ -212,20 +212,27 @@ AZIONI DISPONIBILI:
 • complete_purchase: Registra l'acquisto completato con spesa automatica
   {"items":[{"id":"item-uuid1","actualPrice":3.50},{"id":"item-uuid2","actualPrice":2.00}],"totalAmount":5.50,"store":"Supermercato"}
   IMPORTANTE: Questa azione segna i prodotti come acquistati, registra la data, crea una spesa nel budget e sottrae automaticamente l'importo!
-• create_expense: Registra una spesa manuale
-  {"amount":50.00,"description":"descrizione","category":"food"}
+• create_expense: Registra UNA spesa manuale
+  {"amount":50.00,"description":"descrizione","category":"food","date":"2026-01-15"}
+• create_expenses: Registra MULTIPLE spese (usa per documenti complessi con più voci)
+  {"expenses":[{"amount":50.00,"description":"spesa1","category":"food","date":"2026-01-15"},{"amount":30.00,"description":"spesa2","category":"utilities"}]}
+  Categorie: food, utilities, transport, health, education, entertainment, shopping, family, home, other
 
 📅 CALENDARIO:
-• create_event: Crea un evento
-  {"title":"titolo","startDate":"2026-01-10T10:00:00","description":"desc"}
+• create_event: Crea UN evento
+  {"title":"titolo","startDate":"2026-01-10T10:00:00","description":"desc","category":"family"}
+• create_events: Crea MULTIPLI eventi (usa per documenti complessi)
+  {"events":[{"title":"evento1","startDate":"2026-01-10","category":"health"},{"title":"evento2","startDate":"2026-02-15","category":"family"}]}
 • update_event: Modifica un evento
   {"id":"event-uuid","title":"nuovo titolo"}
 • delete_event: Elimina un evento
   {"id":"event-uuid"}
 
 ✅ ATTIVITÀ:
-• create_task: Crea un'attività
+• create_task: Crea UN'attività
   {"title":"titolo","dueDate":"2026-01-15","priority":"medium","assignedTo":"member-uuid"}
+• create_tasks: Crea MULTIPLE attività (usa per documenti complessi)
+  {"tasks":[{"title":"task1","dueDate":"2026-01-15","priority":"high"},{"title":"task2","priority":"medium"}]}
 • complete_task: Completa un'attività
   {"id":"task-uuid"}
 
@@ -255,17 +262,35 @@ REGOLE SPECIALI:
 RICERCA INFORMAZIONI:
 Puoi cercare informazioni per rispondere su: ricette, notizie, meteo, eventi locali, prezzi indicativi prodotti.
 
-📄 LETTURA DOCUMENTI:
+📄 LETTURA DOCUMENTI COMPLESSI:
 Puoi leggere e analizzare documenti che l'utente ti invia:
-• PDF: Bollette, fatture, contratti, documenti scolastici, certificati - estraggo il testo e propongo azioni appropriate
-• IMMAGINI: Scontrini, ricevute, foto di documenti - analizzo con la visione e estraggo dati
-• TESTO: File .txt, .csv - leggo e interpreto il contenuto
+• PDF: Bollette, fatture, contratti, documenti scolastici, certificati, pianificazioni finanziarie
+• IMMAGINI: Scontrini, ricevute, foto di documenti
+• TESTO: File .txt, .csv, fogli di calcolo
 
-Quando ricevi un documento:
-1. Analizza il contenuto estratto automaticamente
-2. Riassumi le informazioni principali (importi, date, scadenze)
-3. Proponi azioni pertinenti: creare spese, eventi per scadenze, task per azioni da fare, note per memorizzare
-4. Chiedi conferma prima di ogni azione
+⚠️ REGOLA CRITICA PER DOCUMENTI COMPLESSI:
+Quando ricevi un documento con MOLTE voci (calendario spese, budget annuale, pianificazione familiare):
+1. ESTRAI TUTTI gli elementi rilevanti, non solo il primo!
+2. Per ogni CATEGORIA di dati, usa l'azione BATCH appropriata:
+   - Molti eventi/scadenze → usa create_events con array events
+   - Molte spese/voci budget → usa create_expenses con array expenses  
+   - Molte attività da fare → usa create_tasks con array tasks
+   - Molti prodotti da comprare → usa add_shopping_items con array items
+3. Proponi UNA azione batch per categoria, non tante azioni singole
+4. Riassumi PRIMA cosa hai trovato (conteggi per categoria)
+5. Chiedi conferma per ogni azione batch
+
+ESEMPIO per documento con calendario spese annuali:
+"Ho analizzato il documento. Contiene:
+- 12 eventi/scadenze nel calendario annuale
+- 11 voci di spese mensili ricorrenti
+- 4 spese straordinarie pianificate
+
+Vuoi che importi tutto? Propongo:
+[AZIONE_PROPOSTA: create_events | {"events":[...tutti i 12 eventi...]}]
+[AZIONE_PROPOSTA: create_expenses | {"expenses":[...tutte le spese...]}]
+
+Confermi l'importazione?"
 `
     : `
 IMPORTANT RULES:
@@ -292,20 +317,27 @@ AVAILABLE ACTIONS:
 • complete_purchase: Records completed purchase with automatic expense
   {"items":[{"id":"item-uuid1","actualPrice":3.50},{"id":"item-uuid2","actualPrice":2.00}],"totalAmount":5.50,"store":"Supermarket"}
   IMPORTANT: This action marks items as purchased, records the date, creates a budget expense and automatically deducts the amount!
-• create_expense: Records a manual expense
-  {"amount":50.00,"description":"description","category":"food"}
+• create_expense: Records ONE manual expense
+  {"amount":50.00,"description":"description","category":"food","date":"2026-01-15"}
+• create_expenses: Records MULTIPLE expenses (use for complex documents with many entries)
+  {"expenses":[{"amount":50.00,"description":"expense1","category":"food","date":"2026-01-15"},{"amount":30.00,"description":"expense2","category":"utilities"}]}
+  Categories: food, utilities, transport, health, education, entertainment, shopping, family, home, other
 
 📅 CALENDAR:
-• create_event: Creates an event
-  {"title":"title","startDate":"2026-01-10T10:00:00","description":"desc"}
+• create_event: Creates ONE event
+  {"title":"title","startDate":"2026-01-10T10:00:00","description":"desc","category":"family"}
+• create_events: Creates MULTIPLE events (use for complex documents)
+  {"events":[{"title":"event1","startDate":"2026-01-10","category":"health"},{"title":"event2","startDate":"2026-02-15","category":"family"}]}
 • update_event: Modifies an event
   {"id":"event-uuid","title":"new title"}
 • delete_event: Deletes an event
   {"id":"event-uuid"}
 
 ✅ TASKS:
-• create_task: Creates a task
+• create_task: Creates ONE task
   {"title":"title","dueDate":"2026-01-15","priority":"medium","assignedTo":"member-uuid"}
+• create_tasks: Creates MULTIPLE tasks (use for complex documents)
+  {"tasks":[{"title":"task1","dueDate":"2026-01-15","priority":"high"},{"title":"task2","priority":"medium"}]}
 • complete_task: Completes a task
   {"id":"task-uuid"}
 
@@ -335,17 +367,35 @@ SPECIAL RULES:
 INFORMATION SEARCH:
 You can search for information about: recipes, news, weather, local events, indicative product prices.
 
-📄 DOCUMENT READING:
+📄 COMPLEX DOCUMENT READING:
 You can read and analyze documents that the user sends:
-• PDF: Bills, invoices, contracts, school documents, certificates - I extract the text and propose appropriate actions
-• IMAGES: Receipts, photos of documents - I analyze with vision and extract data
-• TEXT: .txt, .csv files - I read and interpret the content
+• PDF: Bills, invoices, contracts, school documents, certificates, financial planning
+• IMAGES: Receipts, photos of documents
+• TEXT: .txt, .csv, spreadsheets
 
-When you receive a document:
-1. Analyze the automatically extracted content
-2. Summarize key information (amounts, dates, deadlines)
-3. Propose relevant actions: create expenses, events for deadlines, tasks for actions to take, notes to remember
-4. Ask for confirmation before each action
+⚠️ CRITICAL RULE FOR COMPLEX DOCUMENTS:
+When you receive a document with MANY entries (expense calendar, annual budget, family planning):
+1. EXTRACT ALL relevant elements, not just the first one!
+2. For each DATA CATEGORY, use the appropriate BATCH action:
+   - Many events/deadlines → use create_events with events array
+   - Many expenses/budget items → use create_expenses with expenses array  
+   - Many tasks to do → use create_tasks with tasks array
+   - Many products to buy → use add_shopping_items with items array
+3. Propose ONE batch action per category, not many single actions
+4. Summarize FIRST what you found (counts per category)
+5. Ask for confirmation for each batch action
+
+EXAMPLE for document with annual expense calendar:
+"I analyzed the document. It contains:
+- 12 events/deadlines in the annual calendar
+- 11 recurring monthly expense entries
+- 4 planned extraordinary expenses
+
+Would you like me to import everything? I propose:
+[PROPOSED_ACTION: create_events | {"events":[...all 12 events...]}]
+[PROPOSED_ACTION: create_expenses | {"expenses":[...all expenses...]}]
+
+Confirm the import?"
 `;
 
   if (isChild) {
@@ -563,9 +613,9 @@ export function registerAssistantRoutes(app: Express, authMiddleware: (req: Auth
 
       if (req.auth!.role === "child") {
         const restrictedActions = [
-          "create_event", "update_event", "delete_event",
-          "create_task", "update_task", "complete_task", "delete_task",
-          "create_expense", "update_expense", "delete_expense",
+          "create_event", "create_events", "update_event", "delete_event",
+          "create_task", "create_tasks", "update_task", "complete_task", "delete_task",
+          "create_expense", "create_expenses", "update_expense", "delete_expense",
           "add_shopping", "add_shopping_item", "add_shopping_items", "update_shopping", "update_shopping_item", "delete_shopping", "delete_shopping_item", "remove_shopping", "complete_purchase"
         ];
         if (restrictedActions.includes(actionType)) {
@@ -691,6 +741,122 @@ export function registerAssistantRoutes(app: Express, authMiddleware: (req: Auth
         case "delete_expense": {
           const deleted = await storage.deleteExpense(actionData.id, req.auth!.familyId);
           result = { success: deleted, message: language === "it" ? "Spesa eliminata" : "Expense deleted" };
+          break;
+        }
+
+        case "create_events": {
+          const events = actionData.events as Array<{
+            title: string;
+            startDate: string;
+            endDate?: string;
+            description?: string;
+            allDay?: boolean;
+            color?: string;
+            category?: string;
+            assignedTo?: string;
+          }>;
+          if (!events || !Array.isArray(events) || events.length === 0) {
+            result = { success: false, message: language === "it" ? "Nessun evento specificato" : "No events specified" };
+            break;
+          }
+          const createdEvents = [];
+          for (const event of events) {
+            const created = await storage.createEvent({
+              familyId: req.auth!.familyId,
+              title: event.title,
+              description: event.description || null,
+              startDate: new Date(event.startDate),
+              endDate: event.endDate ? new Date(event.endDate) : null,
+              allDay: event.allDay ?? true,
+              color: event.color || null,
+              category: (event.category || "family") as "family" | "course" | "shift" | "vacation" | "holiday" | "other",
+              assignedTo: event.assignedTo || null,
+              shortCode: null,
+              isHoliday: false,
+              placeId: null,
+              createdBy: req.auth!.userId,
+            });
+            createdEvents.push(created);
+          }
+          result = {
+            success: true,
+            message: language === "it"
+              ? `${createdEvents.length} eventi creati`
+              : `${createdEvents.length} events created`,
+            data: createdEvents,
+          };
+          break;
+        }
+
+        case "create_expenses": {
+          const expenses = actionData.expenses as Array<{
+            amount: number | string;
+            description: string;
+            category?: string;
+            date?: string;
+            paidBy?: string;
+          }>;
+          if (!expenses || !Array.isArray(expenses) || expenses.length === 0) {
+            result = { success: false, message: language === "it" ? "Nessuna spesa specificata" : "No expenses specified" };
+            break;
+          }
+          const createdExpenses = [];
+          for (const expense of expenses) {
+            const created = await storage.createExpense({
+              familyId: req.auth!.familyId,
+              amount: String(expense.amount),
+              description: expense.description,
+              category: expense.category || "other",
+              paidBy: expense.paidBy || req.auth!.userId,
+              date: expense.date ? new Date(expense.date) : new Date(),
+              createdBy: req.auth!.userId,
+            });
+            createdExpenses.push(created);
+          }
+          result = {
+            success: true,
+            message: language === "it"
+              ? `${createdExpenses.length} spese aggiunte`
+              : `${createdExpenses.length} expenses added`,
+            data: createdExpenses,
+          };
+          break;
+        }
+
+        case "create_tasks": {
+          const tasks = actionData.tasks as Array<{
+            title: string;
+            description?: string;
+            dueDate?: string;
+            assignedTo?: string;
+            priority?: string;
+          }>;
+          if (!tasks || !Array.isArray(tasks) || tasks.length === 0) {
+            result = { success: false, message: language === "it" ? "Nessuna attività specificata" : "No tasks specified" };
+            break;
+          }
+          const createdTasks = [];
+          for (const task of tasks) {
+            const created = await storage.createTask({
+              familyId: req.auth!.familyId,
+              title: task.title,
+              description: task.description || null,
+              dueDate: task.dueDate ? new Date(task.dueDate) : null,
+              assignedTo: task.assignedTo || null,
+              priority: (task.priority || "medium") as "low" | "medium" | "high",
+              completed: false,
+              placeId: null,
+              createdBy: req.auth!.userId,
+            });
+            createdTasks.push(created);
+          }
+          result = {
+            success: true,
+            message: language === "it"
+              ? `${createdTasks.length} attività create`
+              : `${createdTasks.length} tasks created`,
+            data: createdTasks,
+          };
           break;
         }
 
