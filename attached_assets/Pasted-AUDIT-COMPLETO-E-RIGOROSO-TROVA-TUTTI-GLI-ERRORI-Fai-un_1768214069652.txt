@@ -1,0 +1,69 @@
+AUDIT COMPLETO E RIGOROSO - TROVA TUTTI GLI ERRORI
+
+Fai un controllo DETTAGLIATO e SEVERO del codice e dell'app. NON essere superficiale. Devi trovare:
+
+1. ERRORI DI CONSOLE:
+   - Usa grep per cercare console.log, console.error, console.warn
+   - Controlla che NON ci siano messaggi di errore nel runtime
+   - Verifica bundle errors nelle build
+   - Cerca import/export errors
+
+2. MISSING IMPORTS & REFERENCES:
+   - ScrollableHeader rimosso? Verifica che non ci siano import rimasti
+   - Controlla che tutti gli import utilizzati siano presenti
+   - Cerca Reference Errors (undefined variables)
+   - Verifica component imports vs usages
+
+3. ERRORI NEL CODICE:
+   - Syntax errors
+   - Type errors (se usi TS)
+   - Missing props in componenti
+   - Invalid JSX
+   - Broken navigation references
+
+4. PROBLEMI DI LAYOUT:
+   - Scorri ogni screen nel preview
+   - Verifica che NON ci siano element sovrapposti
+   - Controlla safe areas (notch, home bar)
+   - Verifica responsive design
+   - Vedi se ci sono elementi tagliati o nascosti
+
+5. LOGICA DELL'APP:
+   - Login/Signup flow: funzionano?
+   - Navigation tra screen: errori?
+   - Data flow: le prop passano correttamente?
+   - State management: context funziona?
+
+6. SPECIFICHE PER OGNI FILE:
+   - HomeScreen.tsx: cerca errori
+   - CalendarScreen.tsx: verifica calendar rendering
+   - ListsScreen.tsx: lista items
+   - NotesScreen.tsx: note rendering
+   - BudgetScreen.tsx: budget display
+   - AssistantScreen.tsx: assistant chat
+   - ProfileScreen.tsx: user info
+   - SettingsScreen.tsx: settings form
+   - LoginScreen.tsx: login form
+   - SignupScreen.tsx: signup form
+
+7. ERRORS TO FIND:
+   - TypeError: Cannot read property (undefined access)
+   - ReferenceError: variable is not defined
+   - SyntaxError: unexpected token
+   - Module not found errors
+   - Navigation undefined errors
+   - Missing component props
+   - Unused variables
+   - Unreachable code
+
+8. TESTING:
+   - Scrolla ogni screen nel preview
+   - Clicca bottoni, campi input
+   - Prova navigation tra screen
+   - Verifica che le icone bottom nav funzionino
+   - Controlla le transizioni
+
+USA GREP, SEARCH, LOG - NON ESSERE SUPERFICIALE.
+Trova TUTTI gli errori e CORREGGILI!
+
+Inizia controllo adesso!
