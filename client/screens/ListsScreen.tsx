@@ -33,7 +33,6 @@ import { ThemedView } from "@/components/ThemedView";
 import { Card } from "@/components/Card";
 import { PlacePickerModal, Place } from "@/components/PlacePickerModal";
 import type { Task, ShoppingItem, FamilyMember } from "@shared/types";
-import { ScrollableHeader } from "@/components/ScrollableHeader";
 
 type TabType = "shopping" | "tasks";
 type ShoppingFilter = "all" | "toBuy" | "purchased";
@@ -1142,7 +1141,6 @@ export default function ListsScreen() {
           paddingBottom: tabBarHeight,
         }}
       >
-        <ScrollableHeader />
         <View style={styles.headerSection}>
           {renderTabSelector()}
           {activeTab === "shopping" ? renderShoppingFilters() : renderTaskFilters()}

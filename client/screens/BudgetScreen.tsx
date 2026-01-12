@@ -30,7 +30,6 @@ import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { Card } from "@/components/Card";
 import type { Expense, FamilyMember } from "@shared/types";
-import { ScrollableHeader } from "@/components/ScrollableHeader";
 
 const EXPENSE_CATEGORIES = ["home", "groceries", "school", "transport", "leisure", "other"] as const;
 type ExpenseCategory = typeof EXPENSE_CATEGORIES[number];
@@ -342,7 +341,6 @@ export default function BudgetScreen() {
         }}
         showsVerticalScrollIndicator={false}
       >
-        <ScrollableHeader />
         <View style={{ paddingHorizontal: Spacing.screenPadding }}>
         <Card style={styles.summaryCard}>
           <ThemedText style={[styles.monthLabel, { color: colors.textSecondary }]}>

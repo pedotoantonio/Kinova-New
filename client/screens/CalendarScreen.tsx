@@ -29,7 +29,6 @@ import { ThemedView } from "@/components/ThemedView";
 import { Card } from "@/components/Card";
 import type { Event, EventCategory, RecurrenceFrequency, EventRecurrence } from "@shared/types";
 import { PlacePickerModal, Place } from "@/components/PlacePickerModal";
-import { ScrollableHeader } from "@/components/ScrollableHeader";
 
 const EVENT_COLORS = [
   "#2F7F6D",
@@ -539,7 +538,6 @@ export default function CalendarScreen() {
         }}
         scrollIndicatorInsets={{ bottom: insets.bottom }}
       >
-        <ScrollableHeader />
         <View style={{ paddingHorizontal: Spacing.screenPadding }}>
         <View style={styles.calendarHeader}>
           <View style={styles.weekNav}>

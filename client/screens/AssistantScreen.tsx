@@ -38,7 +38,6 @@ import { useI18n } from "@/lib/i18n";
 import { apiRequest, getApiUrl } from "@/lib/query-client";
 import { useAuth } from "@/lib/auth";
 import { useTheme } from "@/hooks/useTheme";
-import { ScrollableHeader } from "@/components/ScrollableHeader";
 
 type AssistantScreenParams = {
   sharedContent?: {
@@ -834,7 +833,12 @@ export default function AssistantScreen() {
       keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
     >
       <View style={[styles.header, { paddingTop: insets.top + Spacing.sm, borderBottomColor: theme.border }]}>
-        <ScrollableHeader style={{ paddingHorizontal: 0, paddingTop: 0, paddingBottom: 0 }} />
+        <View style={styles.headerLeft}>
+          <View style={[styles.avatarContainer, { backgroundColor: CategoryColors.assistant + "20" }]}>
+            <Feather name="cpu" size={20} color={CategoryColors.assistant} />
+          </View>
+          <Text style={[styles.headerTitle, { color: theme.text }]}>{t.assistant.title}</Text>
+        </View>
         <Pressable
           style={styles.newChatButton}
           onPress={handleNewChat}
