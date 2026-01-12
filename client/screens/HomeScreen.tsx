@@ -16,6 +16,7 @@ import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { Card } from "@/components/Card";
 import { WeatherWidget } from "@/components/WeatherWidget";
+import { ScrollableHeader } from "@/components/ScrollableHeader";
 import type { Event, Task, ShoppingItem, Expense } from "@shared/types";
 
 interface Family {
@@ -464,6 +465,7 @@ export default function HomeScreen() {
       }
       testID="home-scroll"
     >
+      <ScrollableHeader />
       <View style={{ paddingHorizontal: Spacing.screenPadding }}>
         {renderHeader()}
       </View>

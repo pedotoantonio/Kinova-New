@@ -10,6 +10,7 @@ import * as Clipboard from "expo-clipboard";
 import { useQuery, useMutation } from "@tanstack/react-query";
 
 import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollViewCompat";
+import { ScrollableHeader } from "@/components/ScrollableHeader";
 import { ThemedText } from "@/components/ThemedText";
 import { Card } from "@/components/Card";
 import { useTheme } from "@/hooks/useTheme";
@@ -215,6 +216,7 @@ export default function ProfileScreen() {
       }}
       scrollIndicatorInsets={{ bottom: insets.bottom }}
     >
+      <ScrollableHeader />
       <View style={{ paddingHorizontal: Spacing.screenPadding }}>
         <View style={styles.profileHeader}>
         <View style={[styles.avatar, { backgroundColor: CategoryColors.profile }]}>

@@ -33,6 +33,7 @@ import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { Card } from "@/components/Card";
 import type { Note, NoteColor, NoteRelatedType } from "@shared/types";
+import { ScrollableHeader } from "@/components/ScrollableHeader";
 
 type FilterType = "all" | "pinned" | "event" | "task" | "expense" | "shopping_item";
 
@@ -403,6 +404,7 @@ export default function NotesScreen() {
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
       <ThemedView style={[styles.container, { paddingTop: insets.top + Spacing.md, backgroundColor: isDark ? CategoryBackgrounds.dark.notes : CategoryBackgrounds.light.notes }]}>
+        <ScrollableHeader />
         <View style={[styles.searchContainer, { backgroundColor: theme.surface }]}>
           <Feather name="search" size={18} color={theme.textSecondary} />
           <TextInput
