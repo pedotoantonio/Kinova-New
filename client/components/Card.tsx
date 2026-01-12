@@ -10,7 +10,7 @@ import * as Haptics from "expo-haptics";
 
 import { ThemedText } from "@/components/ThemedText";
 import { useTheme } from "@/hooks/useTheme";
-import { Spacing, BorderRadius, Shadows, Animation, CategoryColors, Colors } from "@/constants/theme";
+import { Spacing, BorderRadius, Shadows, Animation, CategoryColors, Colors, DepthEffects } from "@/constants/theme";
 
 type CategoryColor = "calendar" | "lists" | "notes" | "budget" | "assistant" | "profile" | "home" | "none";
 
@@ -82,11 +82,13 @@ export function Card({
       case 0:
         return {};
       case 1:
-        return Shadows.sm;
-      case 2:
         return Shadows.md;
+      case 2:
+        return Shadows.card;
+      case 3:
+        return Shadows.xl;
       default:
-        return Shadows.lg;
+        return Shadows.floating;
     }
   };
 
@@ -122,7 +124,8 @@ export function Card({
     styles.card,
     {
       backgroundColor: cardBackgroundColor,
-      borderColor: colors.border,
+      borderColor: isDark ? DepthEffects.card.borderHighlight : colors.border,
+      borderTopColor: isDark ? DepthEffects.card.borderHighlight : colors.borderLight,
     },
     getShadowStyle(),
   ];
@@ -154,8 +157,9 @@ export function Card({
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: BorderRadius.card,
+    borderRadius: BorderRadius.lg,
     borderWidth: 1,
+    borderTopWidth: 1.5,
     overflow: "hidden",
   },
   cardWithIndicator: {

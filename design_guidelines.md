@@ -116,25 +116,36 @@ All gradient buttons transition from the brand color to a lighter tint:
 ## 7. Component Specifications
 
 ### Buttons
-- **Primary**: Category color background, white text, height 52px, rounded 26px
+- **Primary**: Category color gradient, white text, height 52px, rounded 26px
 - **Rainbow Variants**: Each button in a section uses different rainbow colors
+- **Colored Shadows**: Buttons cast colored shadows matching their variant
+  - Red: `shadowColor: #E53935, opacity: 0.4, radius: 10`
+  - Orange: `shadowColor: #FF9800, opacity: 0.4, radius: 10`
+  - Green: `shadowColor: #8BC34A, opacity: 0.4, radius: 10`
+  - Cyan: `shadowColor: #00BCD4, opacity: 0.4, radius: 10`
+  - Blue: `shadowColor: #2196F3, opacity: 0.4, radius: 10`
+  - Purple: `shadowColor: #9C27B0, opacity: 0.4, radius: 10`
 - **Secondary**: White background, colored border (1.5px), colored text
 - **Ghost**: Transparent background, colored text
 - **Press Animation**: Scale 0.97 with spring (damping: 15, stiffness: 200)
+- **Depth Effect**: 4px Y-offset shadow creates floating appearance
 
 ### Cards
 - **Background**: White (light) / `#1E1E1E` (dark)
-- **Border**: 1px `#E0E0E0` (light) / `#424242` (dark)
-- **Radius**: 16px
-- **Shadow**: subtle (offset: 0,1, opacity: 0.05, radius: 3)
+- **Border**: 1px bottom/sides, 1.5px top highlight `rgba(255,255,255,0.12)` (dark)
+- **Radius**: 20px (elevated corners)
+- **Shadow**: Layered depth (offset: 0,6, opacity: 0.12, radius: 12)
 - **Category Indicator**: 4px colored left border
+- **Depth Effect**: Subtle top border highlight creates 3D lift
 
 ### Inputs
 - **Background**: White (light) / `#1E1E1E` (dark)
-- **Border**: 1.5px neutral, 2px colored on focus
+- **Border**: 1.5px sides/bottom, 2px top for depth
 - **Radius**: 12px
 - **Height**: 52px
 - **Icon Color**: Category color
+- **Focus State**: Enhanced shadow (offset: 0,2, opacity: 0.1)
+- **Default State**: Subtle shadow (offset: 0,1, opacity: 0.05)
 
 ### Floating Action Buttons (FAB)
 - **Background**: Category color
@@ -210,8 +221,37 @@ Each section should use multiple rainbow button colors to create variety:
 - Backgrounds use deep, muted tints of category colors
 - Cards use elevated surface (`#1E1E1E`)
 - Borders become subtle (`#424242`)
-- Shadows replaced with subtle borders
+- Top highlight borders `rgba(255,255,255,0.12)` create depth
+
+## 13. Depth Effects System
+
+### Shadow Hierarchy
+| Level     | Y-Offset | Opacity | Blur Radius | Use Case             |
+|-----------|----------|---------|-------------|----------------------|
+| sm        | 1px      | 0.05    | 3px         | Subtle elements      |
+| md        | 2px      | 0.10    | 4px         | Default cards        |
+| card      | 6px      | 0.12    | 12px        | Elevated cards       |
+| xl        | 8px      | 0.20    | 16px        | Modal dialogs        |
+| floating  | 12px     | 0.25    | 20px        | FABs, popovers       |
+
+### Colored Button Shadows
+Each button variant casts a shadow in its own color:
+- Creates "glow" effect beneath buttons
+- Opacity: 0.4 (vibrant but not overwhelming)
+- Blur radius: 10px
+- Y-offset: 4px
+
+### Card Depth Techniques
+1. **Top Border Highlight**: 1.5px lighter border on top edge
+2. **Layered Shadows**: Multiple shadow layers for soft depth
+3. **Border Gradient**: Light mode uses subtle gradient border
+
+### Glass Effect (Optional)
+- Use `ElevatedView` component with `glassEffect={true}`
+- Gradient overlay: white→transparent (top→bottom)
+- Light mode: 90%→70% white opacity
+- Dark mode: 8%→2% white opacity
 
 ---
 
-*This design system ensures a cohesive, vibrant, and accessible experience across all Kinova family coordination features.*
+*This design system ensures a cohesive, vibrant, and accessible experience across all Kinova family coordination features with professional depth and dimensionality.*

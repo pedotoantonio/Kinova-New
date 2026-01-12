@@ -11,7 +11,7 @@ import * as Haptics from "expo-haptics";
 
 import { ThemedText } from "@/components/ThemedText";
 import { useTheme } from "@/hooks/useTheme";
-import { BorderRadius, Spacing, Typography, Shadows, Animation, Gradients, Colors } from "@/constants/theme";
+import { BorderRadius, Spacing, Typography, Shadows, Animation, Gradients, Colors, ColoredShadows, DepthEffects } from "@/constants/theme";
 
 type ButtonVariant = "primary" | "secondary" | "outline" | "ghost" | "red" | "orange" | "green" | "teal" | "purple" | "coral" | "lavender" | "yellow";
 
@@ -97,6 +97,28 @@ export function Button({
     }
   };
 
+  const getColoredShadow = () => {
+    switch (variant) {
+      case "red":
+        return ColoredShadows.red;
+      case "orange":
+      case "coral":
+        return ColoredShadows.orange;
+      case "green":
+        return ColoredShadows.green;
+      case "teal":
+        return ColoredShadows.cyan;
+      case "purple":
+      case "lavender":
+        return ColoredShadows.purple;
+      case "yellow":
+        return ColoredShadows.orange;
+      case "primary":
+      default:
+        return ColoredShadows.blue;
+    }
+  };
+
   const usesGradient = ["primary", "red", "orange", "coral", "green", "teal", "purple", "lavender", "yellow"].includes(variant);
 
   const getButtonStyles = (): ViewStyle => {
@@ -171,7 +193,7 @@ export function Button({
           colors={getGradientColors()}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
-          style={[styles.button, styles.gradientButton, Shadows.button]}
+          style={[styles.button, styles.gradientButton, getColoredShadow()]}
         >
           {buttonContent}
         </LinearGradient>

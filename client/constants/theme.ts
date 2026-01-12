@@ -267,12 +267,95 @@ export const Shadows = {
     shadowRadius: 8,
     elevation: 4,
   },
+  xl: {
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.2,
+    shadowRadius: 16,
+    elevation: 8,
+  },
   button: {
     shadowColor: KinovaColors.royalBlue,
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  card: {
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    elevation: 5,
+  },
+  floating: {
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 12 },
     shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+};
+
+export const DepthEffects = {
+  card: {
+    innerHighlight: "rgba(255, 255, 255, 0.08)",
+    innerShadow: "rgba(0, 0, 0, 0.04)",
+    borderHighlight: "rgba(255, 255, 255, 0.12)",
+  },
+  button: {
+    pressedOverlay: "rgba(0, 0, 0, 0.1)",
+    highlightOverlay: "rgba(255, 255, 255, 0.15)",
+  },
+  glass: {
+    blur: 20,
+    opacity: 0.85,
+    borderOpacity: 0.2,
+  },
+};
+
+export const ColoredShadows = {
+  red: {
+    shadowColor: KinovaColors.rubyRed,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 10,
+    elevation: 6,
+  },
+  orange: {
+    shadowColor: KinovaColors.sunsetOrange,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 10,
+    elevation: 6,
+  },
+  green: {
+    shadowColor: KinovaColors.limeGreen,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 10,
+    elevation: 6,
+  },
+  cyan: {
+    shadowColor: KinovaColors.tealCyan,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 10,
+    elevation: 6,
+  },
+  blue: {
+    shadowColor: KinovaColors.royalBlue,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 10,
+    elevation: 6,
+  },
+  purple: {
+    shadowColor: KinovaColors.violetPurple,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 10,
+    elevation: 6,
   },
 };
 

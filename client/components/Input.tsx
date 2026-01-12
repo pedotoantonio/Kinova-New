@@ -12,7 +12,7 @@ import { Feather } from "@expo/vector-icons";
 
 import { ThemedText } from "@/components/ThemedText";
 import { useTheme } from "@/hooks/useTheme";
-import { BorderRadius, Spacing, Typography } from "@/constants/theme";
+import { BorderRadius, Spacing, Typography, Shadows, Colors } from "@/constants/theme";
 
 interface InputProps extends Omit<TextInputProps, "style"> {
   label?: string;
@@ -76,7 +76,9 @@ export function Input({
           {
             backgroundColor: theme.inputBackground || theme.surface,
             borderColor: getBorderColor(),
+            borderTopColor: isFocused ? getBorderColor() : "rgba(0, 0, 0, 0.08)",
           },
+          isFocused ? styles.inputFocused : styles.inputDefault,
         ]}
       >
         {leftIcon ? (
@@ -159,7 +161,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     height: Spacing.inputHeight,
     borderRadius: BorderRadius.input,
-    borderWidth: 1,
+    borderWidth: 1.5,
+    borderTopWidth: 2,
+  },
+  inputDefault: {
+    ...Shadows.sm,
+  },
+  inputFocused: {
+    ...Shadows.md,
   },
   leftIcon: {
     marginLeft: Spacing.lg,
