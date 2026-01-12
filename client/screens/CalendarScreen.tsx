@@ -29,6 +29,7 @@ import { ThemedView } from "@/components/ThemedView";
 import { Card } from "@/components/Card";
 import type { Event, EventCategory, RecurrenceFrequency, EventRecurrence } from "@shared/types";
 import { PlacePickerModal, Place } from "@/components/PlacePickerModal";
+import { ScrollableHeader } from "@/components/ScrollableHeader";
 
 const EVENT_COLORS = [
   "#2F7F6D",
@@ -533,12 +534,13 @@ export default function CalendarScreen() {
     <ThemedView style={[styles.container, { backgroundColor: isDark ? CategoryBackgrounds.dark.calendar : CategoryBackgrounds.light.calendar }]}>
       <ScrollView
         contentContainerStyle={{
-          paddingTop: Spacing.lg,
+          paddingTop: insets.top + Spacing.md,
           paddingBottom: tabBarHeight + Spacing.xl,
-          paddingHorizontal: Spacing.screenPadding,
         }}
         scrollIndicatorInsets={{ bottom: insets.bottom }}
       >
+        <ScrollableHeader />
+        <View style={{ paddingHorizontal: Spacing.screenPadding }}>
         <View style={styles.calendarHeader}>
           <View style={styles.weekNav}>
             <Pressable onPress={viewMode === "month" ? goToPrevMonth : goToPrevWeek} style={styles.navButton}>
@@ -842,6 +844,7 @@ export default function CalendarScreen() {
               );
             })
           )}
+        </View>
         </View>
       </ScrollView>
 

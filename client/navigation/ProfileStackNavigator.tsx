@@ -34,9 +34,7 @@ export default function ProfileStackNavigator() {
         name="Profile"
         component={ProfileScreen}
         options={{
-          headerTitle: () => <HeaderTitle />,
-          headerTransparent: true,
-          headerStyle: { backgroundColor: "transparent" },
+          headerShown: false,
         }}
       />
       <Stack.Screen

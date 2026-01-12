@@ -1,13 +1,14 @@
 import React from "react";
 import { View, StyleSheet, Image } from "react-native";
+import { Spacing } from "@/constants/theme";
 
-interface HeaderTitleProps {
-  title?: string;
+interface ScrollableHeaderProps {
+  style?: any;
 }
 
-export function HeaderTitle({ title = "Kinova" }: HeaderTitleProps) {
+export function ScrollableHeader({ style }: ScrollableHeaderProps) {
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, style]}>
       <Image
         source={require("../../assets/images/kinova-text-logo.png")}
         style={styles.logo}
@@ -22,7 +23,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "flex-start",
-    marginLeft: -16,
+    paddingHorizontal: Spacing.screenPadding,
+    paddingTop: Spacing.md,
+    paddingBottom: Spacing.lg,
   },
   logo: {
     width: 120,

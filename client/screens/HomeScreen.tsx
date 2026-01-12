@@ -16,6 +16,7 @@ import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { Card } from "@/components/Card";
 import { WeatherWidget } from "@/components/WeatherWidget";
+import { ScrollableHeader } from "@/components/ScrollableHeader";
 import type { Event, Task, ShoppingItem, Expense } from "@shared/types";
 
 interface Family {
@@ -450,9 +451,8 @@ export default function HomeScreen() {
     <ScrollView
       style={{ flex: 1, backgroundColor: isDark ? CategoryBackgrounds.dark.home : CategoryBackgrounds.light.home }}
       contentContainerStyle={{
-        paddingTop: headerHeight + Spacing.xl,
+        paddingTop: insets.top + Spacing.md,
         paddingBottom: tabBarHeight + Spacing.xl,
-        paddingHorizontal: Spacing.screenPadding,
         flexGrow: 1,
       }}
       scrollIndicatorInsets={{ bottom: insets.bottom }}
@@ -465,7 +465,10 @@ export default function HomeScreen() {
       }
       testID="home-scroll"
     >
-      {renderHeader()}
+      <ScrollableHeader />
+      <View style={{ paddingHorizontal: Spacing.screenPadding }}>
+        {renderHeader()}
+      </View>
     </ScrollView>
   );
 }

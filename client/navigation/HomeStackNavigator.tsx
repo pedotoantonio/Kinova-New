@@ -23,9 +23,7 @@ export default function HomeStackNavigator() {
         name="Home"
         component={HomeScreen}
         options={{
-          headerTitle: () => <HeaderTitle />,
-          headerTransparent: true,
-          headerStyle: { backgroundColor: "transparent" },
+          headerShown: false,
         }}
       />
       <Stack.Screen

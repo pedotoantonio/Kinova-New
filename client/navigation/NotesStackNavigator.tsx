@@ -24,9 +24,7 @@ export default function NotesStackNavigator() {
         name="Notes"
         component={NotesScreen}
         options={{
-          headerTitle: () => <HeaderTitle />,
-          headerTransparent: true,
-          headerStyle: { backgroundColor: "transparent" },
+          headerShown: false,
         }}
       />
       <Stack.Screen

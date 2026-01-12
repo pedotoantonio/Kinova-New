@@ -33,6 +33,7 @@ import { ThemedView } from "@/components/ThemedView";
 import { Card } from "@/components/Card";
 import { PlacePickerModal, Place } from "@/components/PlacePickerModal";
 import type { Task, ShoppingItem, FamilyMember } from "@shared/types";
+import { ScrollableHeader } from "@/components/ScrollableHeader";
 
 type TabType = "shopping" | "tasks";
 type ShoppingFilter = "all" | "toBuy" | "purchased";
@@ -1132,15 +1133,16 @@ export default function ListsScreen() {
     <KeyboardAvoidingView
       style={{ flex: 1, backgroundColor: isDark ? CategoryBackgrounds.dark.lists : CategoryBackgrounds.light.lists }}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
-      keyboardVerticalOffset={headerHeight}
+      keyboardVerticalOffset={0}
     >
       <View
         style={{
           flex: 1,
-          paddingTop: headerHeight + Spacing.md,
+          paddingTop: insets.top + Spacing.md,
           paddingBottom: tabBarHeight,
         }}
       >
+        <ScrollableHeader />
         <View style={styles.headerSection}>
           {renderTabSelector()}
           {activeTab === "shopping" ? renderShoppingFilters() : renderTaskFilters()}
