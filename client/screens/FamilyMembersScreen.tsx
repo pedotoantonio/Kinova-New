@@ -66,7 +66,7 @@ export default function FamilyMembersScreen() {
   const insets = useSafeAreaInsets();
   const headerHeight = useHeaderHeight();
   const { theme, isDark } = useTheme();
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const { t, language } = useI18n();
   const colors = isDark ? Colors.dark : Colors.light;
 
@@ -162,6 +162,7 @@ export default function FamilyMembersScreen() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/family/members"] });
+      refreshUser();
       setUploadingAvatarId(null);
       if (Platform.OS !== "web") {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
