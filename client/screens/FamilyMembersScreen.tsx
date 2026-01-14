@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { View, Pressable, StyleSheet, ScrollView, Modal, Switch, TextInput, Platform, Alert, Image, ActivityIndicator } from "react-native";
+import { View, Pressable, StyleSheet, ScrollView, Modal, Switch, TextInput, Platform, Alert, ActivityIndicator } from "react-native";
+import { Image } from "expo-image";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { Feather } from "@expo/vector-icons";
