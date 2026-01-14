@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from "react";
 import { View, Pressable, StyleSheet, Alert, ActivityIndicator, Platform, TextInput, Modal, ScrollView } from "react-native";
+import { Image } from "expo-image";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
@@ -219,11 +220,19 @@ export default function ProfileScreen() {
       <ScrollableHeader />
       <View style={{ paddingHorizontal: Spacing.screenPadding }}>
         <View style={styles.profileHeader}>
-        <View style={[styles.avatar, { backgroundColor: CategoryColors.profile }]}>
-          <ThemedText style={[styles.avatarText, { color: colors.buttonText }]}>
-            {(user.displayName || user.username).charAt(0).toUpperCase()}
-          </ThemedText>
-        </View>
+        {user.avatarUrl ? (
+          <Image
+            source={{ uri: user.avatarUrl }}
+            style={styles.avatarImage}
+            contentFit="cover"
+          />
+        ) : (
+          <View style={[styles.avatar, { backgroundColor: CategoryColors.profile }]}>
+            <ThemedText style={[styles.avatarText, { color: colors.buttonText }]}>
+              {(user.displayName || user.username).charAt(0).toUpperCase()}
+            </ThemedText>
+          </View>
+        )}
         <ThemedText style={[styles.displayName, { color: colors.text }]}>
           {user.displayName || user.username}
         </ThemedText>
@@ -369,11 +378,19 @@ export default function ProfileScreen() {
           <View style={styles.membersList}>
             {members.map((member) => (
               <View key={member.id} style={styles.memberItem}>
-                <View style={[styles.memberAvatar, { backgroundColor: CategoryColors.profile }]}>
-                  <ThemedText style={[styles.memberAvatarText, { color: colors.buttonText }]}>
-                    {(member.displayName || member.username).charAt(0).toUpperCase()}
-                  </ThemedText>
-                </View>
+                {member.avatarUrl ? (
+                  <Image
+                    source={{ uri: member.avatarUrl }}
+                    style={styles.memberAvatarImage}
+                    contentFit="cover"
+                  />
+                ) : (
+                  <View style={[styles.memberAvatar, { backgroundColor: CategoryColors.profile }]}>
+                    <ThemedText style={[styles.memberAvatarText, { color: colors.buttonText }]}>
+                      {(member.displayName || member.username).charAt(0).toUpperCase()}
+                    </ThemedText>
+                  </View>
+                )}
                 <View style={styles.memberInfo}>
                   <ThemedText style={[styles.memberName, { color: colors.text }]}>
                     {member.displayName || member.username}
@@ -801,6 +818,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: Spacing.lg,
   },
+  avatarImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    marginBottom: Spacing.lg,
+  },
   avatarText: {
     fontSize: 32,
     fontWeight: "700",
@@ -1001,6 +1024,11 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     justifyContent: "center",
     alignItems: "center",
+  },
+  memberAvatarImage: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
   },
   memberAvatarText: {
     fontSize: 16,
