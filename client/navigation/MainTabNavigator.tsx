@@ -81,9 +81,9 @@ export default function MainTabNavigator() {
           borderTopWidth: 1,
           borderTopColor: colors.border,
           elevation: 0,
-          height: Platform.OS === "ios" ? 88 : 68,
-          paddingBottom: Platform.OS === "ios" ? 28 : 12,
-          paddingTop: 8,
+          height: Platform.OS === "ios" ? 95 : 80,
+          paddingBottom: Platform.OS === "ios" ? 28 : 14,
+          paddingTop: 10,
         },
         headerShown: false,
         tabBarLabelStyle: {
