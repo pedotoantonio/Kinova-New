@@ -34,6 +34,7 @@ import { Card } from "@/components/Card";
 import { PlacePickerModal, Place } from "@/components/PlacePickerModal";
 import type { Task, ShoppingItem, FamilyMember } from "@shared/types";
 import { ScrollableHeader } from "@/components/ScrollableHeader";
+import { MemberAvatar } from "@/components/MemberAvatar";
 
 type TabType = "shopping" | "tasks";
 type ShoppingFilter = "all" | "toBuy" | "purchased";
@@ -86,6 +87,11 @@ export default function ListsScreen() {
     const member = members?.find((m) => m.id === userId);
     return member?.displayName || member?.username || t.tasks.noAssignment;
   }, [members, t]);
+
+  const getMember = useCallback((userId: string | null | undefined) => {
+    if (!userId) return null;
+    return members?.find((m) => m.id === userId) || null;
+  }, [members]);
 
   const {
     data: shoppingItems,
@@ -482,9 +488,16 @@ export default function ListsScreen() {
                   </ThemedText>
                 ) : null}
                 {item.assignedTo ? (
-                  <ThemedText style={[styles.assigneeText, { color: colors.textSecondary }]}>
-                    <Feather name="user" size={12} /> {getMemberName(item.assignedTo)}
-                  </ThemedText>
+                  <View style={styles.assigneeContainer}>
+                    <MemberAvatar 
+                      avatarUrl={getMember(item.assignedTo)?.avatarUrl}
+                      displayName={getMember(item.assignedTo)?.displayName}
+                      username={getMember(item.assignedTo)?.username}
+                      size={16}
+                      showName={true}
+                      color={colors.textSecondary}
+                    />
+                  </View>
                 ) : null}
                 {permissions.canViewPlaces && item.placeId ? (
                   <ThemedText style={[styles.placeText, { color: colors.textSecondary }]}>
@@ -1010,10 +1023,14 @@ export default function ListsScreen() {
                         {"Assegnato a"}
                       </ThemedText>
                       <View style={styles.modalMetaRow}>
-                        <Feather name="user" size={16} color={colors.textSecondary} />
-                        <ThemedText style={[styles.modalMetaText, { color: colors.text }]}>
-                          {getMemberName(task.assignedTo)}
-                        </ThemedText>
+                        <MemberAvatar 
+                          avatarUrl={getMember(task.assignedTo)?.avatarUrl}
+                          displayName={getMember(task.assignedTo)?.displayName}
+                          username={getMember(task.assignedTo)?.username}
+                          size={20}
+                          showName={true}
+                          color={colors.text}
+                        />
                       </View>
                     </View>
                   ) : null}
@@ -1282,6 +1299,10 @@ const styles = StyleSheet.create({
   },
   assigneeText: {
     ...Typography.small,
+  },
+  assigneeContainer: {
+    flexDirection: "row",
+    alignItems: "center",
   },
   placeText: {
     ...Typography.small,

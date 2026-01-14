@@ -31,6 +31,7 @@ import { ThemedView } from "@/components/ThemedView";
 import { Card } from "@/components/Card";
 import type { Expense, FamilyMember } from "@shared/types";
 import { ScrollableHeader } from "@/components/ScrollableHeader";
+import { MemberAvatar } from "@/components/MemberAvatar";
 
 const EXPENSE_CATEGORIES = ["home", "groceries", "school", "transport", "leisure", "other"] as const;
 type ExpenseCategory = typeof EXPENSE_CATEGORIES[number];
@@ -90,6 +91,11 @@ export default function BudgetScreen() {
     const member = members?.find((m) => m.id === userId);
     return member?.displayName || member?.username || "-";
   }, [members, user, t]);
+
+  const getMember = useCallback((userId: string | null | undefined) => {
+    if (!userId) return null;
+    return members?.find((m) => m.id === userId) || null;
+  }, [members]);
 
   const {
     data: expenses,
@@ -300,9 +306,20 @@ export default function BudgetScreen() {
               <View style={[styles.categoryDot, { backgroundColor: CATEGORY_COLORS[item.category as ExpenseCategory] || CATEGORY_COLORS.other }]} />
               <View style={styles.expenseInfo}>
                 <ThemedText style={styles.expenseDescription}>{item.description}</ThemedText>
-                <ThemedText style={[styles.expenseSubtext, { color: colors.textSecondary }]}>
-                  {getCategoryLabel(item.category || "other")} • {getMemberName(item.paidBy)}
-                </ThemedText>
+                <View style={styles.expenseMetaRow}>
+                  <ThemedText style={[styles.expenseSubtext, { color: colors.textSecondary }]}>
+                    {getCategoryLabel(item.category || "other")}
+                  </ThemedText>
+                  <ThemedText style={[styles.expenseSubtext, { color: colors.textSecondary }]}> • </ThemedText>
+                  <MemberAvatar 
+                    avatarUrl={getMember(item.paidBy)?.avatarUrl}
+                    displayName={getMember(item.paidBy)?.displayName}
+                    username={getMember(item.paidBy)?.username}
+                    size={14}
+                    showName={true}
+                    color={colors.textSecondary}
+                  />
+                </View>
               </View>
             </View>
             <View style={styles.expenseRight}>
@@ -665,9 +682,14 @@ export default function BudgetScreen() {
                     <ThemedText style={[styles.expenseDetailLabel, { color: colors.textSecondary }]}>
                       Pagato da
                     </ThemedText>
-                    <ThemedText style={styles.expenseDetailValue}>
-                      {getMemberName(selectedExpense.paidBy)}
-                    </ThemedText>
+                    <MemberAvatar 
+                      avatarUrl={getMember(selectedExpense.paidBy)?.avatarUrl}
+                      displayName={getMember(selectedExpense.paidBy)?.displayName}
+                      username={getMember(selectedExpense.paidBy)?.username}
+                      size={20}
+                      showName={true}
+                      color={colors.text}
+                    />
                   </View>
 
                   <View style={styles.expenseModalButtons}>
@@ -810,6 +832,11 @@ const styles = StyleSheet.create({
   },
   expenseSubtext: {
     ...Typography.small,
+    marginTop: 2,
+  },
+  expenseMetaRow: {
+    flexDirection: "row",
+    alignItems: "center",
     marginTop: 2,
   },
   expenseRight: {
