@@ -1,10 +1,12 @@
 import React, { useState } from "react";
-import { View, Pressable, StyleSheet, ScrollView, Modal, Switch, TextInput, Platform, Alert } from "react-native";
+import { View, Pressable, StyleSheet, ScrollView, Modal, Switch, TextInput, Platform, Alert, Image, ActivityIndicator } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import * as Clipboard from "expo-clipboard";
+import * as ImagePicker from "expo-image-picker";
+import { File } from "expo-file-system/next";
 import QRCode from "react-native-qrcode-svg";
 import { useQuery, useMutation } from "@tanstack/react-query";
 
@@ -14,7 +16,7 @@ import { useTheme } from "@/hooks/useTheme";
 import { useAuth, UserRole } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { Colors, Spacing, BorderRadius, Typography } from "@/constants/theme";
-import { queryClient, apiRequest } from "@/lib/query-client";
+import { queryClient, apiRequest, getApiUrl } from "@/lib/query-client";
 
 interface FamilyMember {
   id: string;
@@ -72,6 +74,7 @@ export default function FamilyMembersScreen() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedMember, setSelectedMember] = useState<FamilyMember | null>(null);
   const [createdInvite, setCreatedInvite] = useState<Invite | null>(null);
+  const [uploadingAvatarId, setUploadingAvatarId] = useState<string | null>(null);
 
   const [inviteForm, setInviteForm] = useState({
     role: "member" as UserRole,
@@ -138,6 +141,76 @@ export default function FamilyMembersScreen() {
       }
     },
   });
+
+  const uploadAvatarMutation = useMutation({
+    mutationFn: async ({ memberId, imageUri }: { memberId: string; imageUri: string }) => {
+      const formData = new FormData();
+      const file = new File(imageUri);
+      formData.append("avatar", file as any);
+      
+      const response = await fetch(new URL(`/api/family/members/${memberId}/avatar`, getApiUrl()).toString(), {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${await getAuthToken()}`,
+        },
+        body: formData,
+      });
+      
+      if (!response.ok) {
+        throw new Error("Failed to upload avatar");
+      }
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/family/members"] });
+      setUploadingAvatarId(null);
+      if (Platform.OS !== "web") {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      }
+    },
+    onError: () => {
+      setUploadingAvatarId(null);
+      Alert.alert(
+        language === "it" ? "Errore" : "Error",
+        language === "it" ? "Impossibile caricare l'immagine" : "Failed to upload image"
+      );
+    },
+  });
+
+  const getAuthToken = async () => {
+    const AsyncStorage = (await import("@react-native-async-storage/async-storage")).default;
+    return AsyncStorage.getItem("@kinova/auth_token");
+  };
+
+  const handlePickAvatar = async (memberId: string) => {
+    if (!isAdmin && memberId !== user?.id) return;
+    
+    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    
+    if (!permissionResult.granted) {
+      Alert.alert(
+        language === "it" ? "Permesso negato" : "Permission denied",
+        language === "it" ? "È necessario il permesso per accedere alla galleria" : "Permission to access gallery is required"
+      );
+      return;
+    }
+    
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+    
+    if (!result.canceled && result.assets[0]) {
+      if (Platform.OS !== "web") {
+        Haptics.selectionAsync();
+      }
+      setUploadingAvatarId(memberId);
+      uploadAvatarMutation.mutate({ memberId, imageUri: result.assets[0].uri });
+    }
+  };
 
   const copyInviteCode = async (code: string) => {
     await Clipboard.setStringAsync(code);
@@ -243,11 +316,33 @@ export default function FamilyMembersScreen() {
         {members.map((member) => (
           <Card key={member.id} style={styles.memberCard}>
             <View style={styles.memberHeader}>
-              <View style={[styles.avatar, { backgroundColor: colors.primary + "20" }]}>
-                <ThemedText style={[styles.avatarText, { color: colors.primary }]}>
-                  {(member.displayName || member.username).charAt(0).toUpperCase()}
-                </ThemedText>
-              </View>
+              <Pressable
+                style={[styles.avatarContainer]}
+                onPress={() => handlePickAvatar(member.id)}
+                disabled={!isAdmin && member.id !== user?.id}
+              >
+                {uploadingAvatarId === member.id ? (
+                  <View style={[styles.avatar, { backgroundColor: colors.primary + "20" }]}>
+                    <ActivityIndicator size="small" color={colors.primary} />
+                  </View>
+                ) : member.avatarUrl ? (
+                  <Image
+                    source={{ uri: member.avatarUrl }}
+                    style={styles.avatarImage}
+                  />
+                ) : (
+                  <View style={[styles.avatar, { backgroundColor: colors.primary + "20" }]}>
+                    <ThemedText style={[styles.avatarText, { color: colors.primary }]}>
+                      {(member.displayName || member.username).charAt(0).toUpperCase()}
+                    </ThemedText>
+                  </View>
+                )}
+                {(isAdmin || member.id === user?.id) ? (
+                  <View style={[styles.avatarEditBadge, { backgroundColor: colors.primary }]}>
+                    <Feather name="camera" size={10} color="#fff" />
+                  </View>
+                ) : null}
+              </Pressable>
               <View style={styles.memberInfo}>
                 <ThemedText style={[styles.memberName, { color: theme.text }]}>
                   {member.displayName || member.username}
@@ -554,13 +649,33 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
   },
+  avatarContainer: {
+    position: "relative",
+    marginRight: Spacing.md,
+  },
   avatar: {
     width: 48,
     height: 48,
     borderRadius: 24,
     justifyContent: "center",
     alignItems: "center",
-    marginRight: Spacing.md,
+  },
+  avatarImage: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+  },
+  avatarEditBadge: {
+    position: "absolute",
+    bottom: -2,
+    right: -2,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 2,
+    borderColor: "#fff",
   },
   avatarText: {
     ...Typography.subtitle,
