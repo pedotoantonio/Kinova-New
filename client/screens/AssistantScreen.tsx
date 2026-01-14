@@ -940,7 +940,20 @@ export default function AssistantScreen() {
         </Animated.View>
       ) : null}
 
-      <View style={[styles.inputContainer, { backgroundColor: theme.surface, bottom: keyboardHeight > 0 ? keyboardHeight - (Platform.OS === "ios" ? insets.bottom : 0) : tabBarHeight }]}>
+      <View style={[
+        styles.inputContainer, 
+        { 
+          backgroundColor: theme.surface, 
+          bottom: keyboardHeight > 0 ? keyboardHeight - (Platform.OS === "ios" ? insets.bottom : 0) : tabBarHeight,
+          borderTopWidth: 1,
+          borderTopColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)',
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: -4 },
+          shadowOpacity: isDark ? 0.3 : 0.12,
+          shadowRadius: 8,
+          elevation: 12,
+        }
+      ]}>
         <Pressable
           style={styles.attachButton}
           onPress={() => setShowAttachMenu(!showAttachMenu)}
@@ -950,7 +963,20 @@ export default function AssistantScreen() {
         </Pressable>
 
         <TextInput
-          style={[styles.input, { backgroundColor: theme.backgroundRoot, color: theme.text }]}
+          style={[
+            styles.input, 
+            { 
+              backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)', 
+              color: theme.text,
+              borderWidth: 1,
+              borderColor: isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.1)',
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: isDark ? 0.2 : 0.08,
+              shadowRadius: 4,
+              elevation: 3,
+            }
+          ]}
           placeholder={t.assistant.placeholder}
           placeholderTextColor={theme.textSecondary}
           value={inputText}
