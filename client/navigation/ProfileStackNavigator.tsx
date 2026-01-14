@@ -10,7 +10,6 @@ import SettingsScreen from "@/screens/SettingsScreen";
 import HelpScreen from "@/screens/HelpScreen";
 import { useScreenOptions } from "@/hooks/useScreenOptions";
 import { useI18n } from "@/lib/i18n";
-import { HeaderTitle } from "@/components/HeaderTitle";
 
 export type ProfileStackParamList = {
   Profile: undefined;
