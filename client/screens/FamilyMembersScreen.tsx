@@ -6,7 +6,6 @@ import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import * as Clipboard from "expo-clipboard";
 import * as ImagePicker from "expo-image-picker";
-import { File } from "expo-file-system/next";
 import QRCode from "react-native-qrcode-svg";
 import { useQuery, useMutation } from "@tanstack/react-query";
 
@@ -143,17 +142,15 @@ export default function FamilyMembersScreen() {
   });
 
   const uploadAvatarMutation = useMutation({
-    mutationFn: async ({ memberId, imageUri }: { memberId: string; imageUri: string }) => {
-      const formData = new FormData();
-      const file = new File(imageUri);
-      formData.append("avatar", file as any);
-      
+    mutationFn: async ({ memberId, base64Data }: { memberId: string; base64Data: string }) => {
+      const token = await getAuthToken();
       const response = await fetch(new URL(`/api/family/members/${memberId}/avatar`, getApiUrl()).toString(), {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${await getAuthToken()}`,
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
         },
-        body: formData,
+        body: JSON.stringify({ avatarBase64: base64Data }),
       });
       
       if (!response.ok) {
@@ -200,15 +197,27 @@ export default function FamilyMembersScreen() {
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       aspect: [1, 1],
-      quality: 0.8,
+      quality: 0.5,
+      base64: true,
     });
     
     if (!result.canceled && result.assets[0]) {
       if (Platform.OS !== "web") {
         Haptics.selectionAsync();
       }
-      setUploadingAvatarId(memberId);
-      uploadAvatarMutation.mutate({ memberId, imageUri: result.assets[0].uri });
+      
+      const asset = result.assets[0];
+      if (asset.base64) {
+        const mimeType = asset.mimeType || "image/jpeg";
+        const base64Data = `data:${mimeType};base64,${asset.base64}`;
+        setUploadingAvatarId(memberId);
+        uploadAvatarMutation.mutate({ memberId, base64Data });
+      } else {
+        Alert.alert(
+          language === "it" ? "Errore" : "Error",
+          language === "it" ? "Impossibile leggere l'immagine" : "Failed to read image"
+        );
+      }
     }
   };
 

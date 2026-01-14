@@ -697,6 +697,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/family/members/:memberId/avatar", authMiddleware, async (req: AuthRequest, res: Response) => {
     try {
       const { memberId } = req.params;
+      const { avatarBase64 } = req.body;
       const isAdmin = req.auth!.role === "admin";
       
       if (!isAdmin && memberId !== req.auth!.userId) {
@@ -712,47 +713,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: { code: "FORBIDDEN", message: "Member does not belong to your family" } });
       }
 
-      const chunks: Buffer[] = [];
-      req.on("data", (chunk: Buffer) => chunks.push(chunk));
-      req.on("end", async () => {
-        try {
-          const buffer = Buffer.concat(chunks);
-          const boundary = req.headers["content-type"]?.split("boundary=")[1];
-          
-          if (!boundary) {
-            return res.status(400).json({ error: { code: "BAD_REQUEST", message: "Missing multipart boundary" } });
-          }
-          
-          const parts = buffer.toString("binary").split(`--${boundary}`);
-          let imageData: string | null = null;
-          
-          for (const part of parts) {
-            if (part.includes("Content-Type: image/")) {
-              const contentTypeMatch = part.match(/Content-Type: (image\/[^\r\n]+)/);
-              const mimeType = contentTypeMatch ? contentTypeMatch[1] : "image/jpeg";
-              const dataStart = part.indexOf("\r\n\r\n") + 4;
-              const dataEnd = part.lastIndexOf("\r\n");
-              const binaryData = part.slice(dataStart, dataEnd);
-              const base64 = Buffer.from(binaryData, "binary").toString("base64");
-              imageData = `data:${mimeType};base64,${base64}`;
-              break;
-            }
-          }
-          
-          if (!imageData) {
-            return res.status(400).json({ error: { code: "BAD_REQUEST", message: "No image found in request" } });
-          }
-          
-          const updated = await storage.updateUser(memberId, { avatarUrl: imageData });
-          
-          res.json({
-            id: updated!.id,
-            avatarUrl: updated!.avatarUrl,
-          });
-        } catch (error) {
-          console.error("Upload avatar parse error:", error);
-          res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Failed to process image" } });
-        }
+      if (!avatarBase64 || !avatarBase64.startsWith("data:image/")) {
+        return res.status(400).json({ error: { code: "BAD_REQUEST", message: "Invalid image data" } });
+      }
+
+      const updated = await storage.updateUser(memberId, { avatarUrl: avatarBase64 });
+      
+      res.json({
+        id: updated!.id,
+        avatarUrl: updated!.avatarUrl,
       });
     } catch (error) {
       console.error("Upload avatar error:", error);
