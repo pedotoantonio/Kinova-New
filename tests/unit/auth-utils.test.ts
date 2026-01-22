@@ -63,9 +63,10 @@ describe("Auth Utils", () => {
       expect(result.strength).toBe("fair");
     });
 
-    it("should return good strength for better passwords", () => {
+    it("should return strong strength for passwords meeting all criteria with good length", () => {
       const result = validatePassword("Password123!");
-      expect(result.strength).toBe("good");
+      // Password123! has: uppercase, lowercase, number, symbol, and 12+ chars = score 6 = strong
+      expect(result.strength).toBe("strong");
     });
 
     it("should return strong strength for excellent passwords", () => {

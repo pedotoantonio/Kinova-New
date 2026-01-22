@@ -106,7 +106,7 @@ export function createMockStorage() {
       return Promise.resolve(events);
     }),
     createEvent: vi.fn((data: any) => {
-      const event = { id: `event-${Date.now()}`, ...data, createdAt: new Date() };
+      const event = { id: `event-${Date.now()}-${Math.random().toString(36).slice(2)}`, ...data, createdAt: new Date() };
       mockEvents.set(event.id, event);
       return Promise.resolve(event);
     }),
@@ -134,7 +134,7 @@ export function createMockStorage() {
       return Promise.resolve(tasks);
     }),
     createTask: vi.fn((data: any) => {
-      const task = { id: `task-${Date.now()}`, ...data, createdAt: new Date() };
+      const task = { id: `task-${Date.now()}-${Math.random().toString(36).slice(2)}`, ...data, createdAt: new Date() };
       mockTasks.set(task.id, task);
       return Promise.resolve(task);
     }),
@@ -155,7 +155,8 @@ export function createMockStorage() {
     // Session operations
     createSession: vi.fn((data: any) => {
       const session = { id: `session-${Date.now()}`, ...data, createdAt: new Date() };
-      mockSessions.set(session.id, session);
+      // Store by token for easy lookup
+      mockSessions.set(data.token, session);
       return Promise.resolve(session);
     }),
     getSession: vi.fn((id: string) => Promise.resolve(mockSessions.get(id) || null)),

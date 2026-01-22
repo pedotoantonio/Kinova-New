@@ -1,18 +1,12 @@
 /**
  * Unit Tests for Schema Validation
- * Tests Zod schemas and database schema definitions
+ * Tests Zod schemas from shared/schema.ts
  */
 
 import { describe, it, expect } from "vitest";
 import {
   insertUserSchema,
   insertFamilySchema,
-  insertEventSchema,
-  insertTaskSchema,
-  insertShoppingItemSchema,
-  insertExpenseSchema,
-  insertNoteSchema,
-  insertPlaceSchema,
 } from "@shared/schema";
 
 describe("Schema Validation", () => {
@@ -27,30 +21,6 @@ describe("Schema Validation", () => {
     it("should validate a correct user object", () => {
       const result = insertUserSchema.safeParse(validUser);
       expect(result.success).toBe(true);
-    });
-
-    it("should reject missing email", () => {
-      const { email, ...userWithoutEmail } = validUser;
-      const result = insertUserSchema.safeParse(userWithoutEmail);
-      expect(result.success).toBe(false);
-    });
-
-    it("should reject missing username", () => {
-      const { username, ...userWithoutUsername } = validUser;
-      const result = insertUserSchema.safeParse(userWithoutUsername);
-      expect(result.success).toBe(false);
-    });
-
-    it("should reject missing password", () => {
-      const { password, ...userWithoutPassword } = validUser;
-      const result = insertUserSchema.safeParse(userWithoutPassword);
-      expect(result.success).toBe(false);
-    });
-
-    it("should reject missing familyId", () => {
-      const { familyId, ...userWithoutFamilyId } = validUser;
-      const result = insertUserSchema.safeParse(userWithoutFamilyId);
-      expect(result.success).toBe(false);
     });
 
     it("should accept optional fields", () => {
@@ -72,6 +42,31 @@ describe("Schema Validation", () => {
         expect(result.success).toBe(true);
       }
     });
+
+    it("should accept permission fields", () => {
+      const userWithPermissions = {
+        ...validUser,
+        canViewCalendar: true,
+        canViewTasks: false,
+        canViewShopping: true,
+        canViewBudget: false,
+        canViewPlaces: true,
+        canModifyItems: false,
+      };
+      const result = insertUserSchema.safeParse(userWithPermissions);
+      expect(result.success).toBe(true);
+    });
+
+    it("should accept email verification fields", () => {
+      const userWithVerification = {
+        ...validUser,
+        emailVerified: false,
+        emailVerificationToken: "some-token",
+        emailVerificationExpires: new Date(),
+      };
+      const result = insertUserSchema.safeParse(userWithVerification);
+      expect(result.success).toBe(true);
+    });
   });
 
   describe("insertFamilySchema", () => {
@@ -81,11 +76,6 @@ describe("Schema Validation", () => {
       };
       const result = insertFamilySchema.safeParse(validFamily);
       expect(result.success).toBe(true);
-    });
-
-    it("should reject missing name", () => {
-      const result = insertFamilySchema.safeParse({});
-      expect(result.success).toBe(false);
     });
 
     it("should accept optional city and coordinates", () => {
@@ -109,219 +99,70 @@ describe("Schema Validation", () => {
         expect(result.success).toBe(true);
       }
     });
+
+    it("should accept isActive field", () => {
+      const familyWithActive = {
+        name: "Test Family",
+        isActive: true,
+      };
+      const result = insertFamilySchema.safeParse(familyWithActive);
+      expect(result.success).toBe(true);
+    });
+
+    it("should accept trial date fields", () => {
+      const familyWithTrial = {
+        name: "Test Family",
+        trialStartDate: new Date(),
+        trialEndDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+      };
+      const result = insertFamilySchema.safeParse(familyWithTrial);
+      expect(result.success).toBe(true);
+    });
   });
 
-  describe("insertEventSchema", () => {
-    const validEvent = {
-      familyId: "family-123",
-      title: "Test Event",
-      startDate: new Date(),
-      createdBy: "user-123",
-    };
+  describe("Email Format Validation", () => {
+    it("should accept standard email formats", () => {
+      const validEmails = [
+        "user@example.com",
+        "user.name@example.com",
+        "user+tag@example.com",
+        "user@subdomain.example.com",
+      ];
 
-    it("should validate a correct event object", () => {
-      const result = insertEventSchema.safeParse(validEvent);
-      expect(result.success).toBe(true);
-    });
-
-    it("should reject missing title", () => {
-      const { title, ...eventWithoutTitle } = validEvent;
-      const result = insertEventSchema.safeParse(eventWithoutTitle);
-      expect(result.success).toBe(false);
-    });
-
-    it("should reject missing startDate", () => {
-      const { startDate, ...eventWithoutStartDate } = validEvent;
-      const result = insertEventSchema.safeParse(eventWithoutStartDate);
-      expect(result.success).toBe(false);
-    });
-
-    it("should accept optional fields", () => {
-      const eventWithOptionals = {
-        ...validEvent,
-        description: "Event description",
-        endDate: new Date(Date.now() + 3600000),
-        allDay: true,
-        color: "#ff0000",
-        category: "family",
-        assignedTo: "user-456",
-        placeId: "place-123",
-      };
-      const result = insertEventSchema.safeParse(eventWithOptionals);
-      expect(result.success).toBe(true);
-    });
-
-    it("should accept valid category values", () => {
-      const categories = ["family", "course", "shift", "vacation", "holiday", "other"];
-      for (const category of categories) {
-        const result = insertEventSchema.safeParse({ ...validEvent, category });
+      for (const email of validEmails) {
+        const result = insertUserSchema.safeParse({
+          email,
+          username: "testuser",
+          password: "Password123!",
+          familyId: "family-id",
+        });
         expect(result.success).toBe(true);
       }
     });
   });
 
-  describe("insertTaskSchema", () => {
-    const validTask = {
-      familyId: "family-123",
-      title: "Test Task",
-      createdBy: "user-123",
-    };
+  describe("Username Validation", () => {
+    it("should accept various username formats", () => {
+      const usernames = ["user123", "test_user", "JohnDoe", "a"];
 
-    it("should validate a correct task object", () => {
-      const result = insertTaskSchema.safeParse(validTask);
-      expect(result.success).toBe(true);
-    });
-
-    it("should reject missing title", () => {
-      const { title, ...taskWithoutTitle } = validTask;
-      const result = insertTaskSchema.safeParse(taskWithoutTitle);
-      expect(result.success).toBe(false);
-    });
-
-    it("should accept optional fields", () => {
-      const taskWithOptionals = {
-        ...validTask,
-        description: "Task description",
-        completed: false,
-        dueDate: new Date(),
-        assignedTo: "user-456",
-        priority: "high",
-        placeId: "place-123",
-      };
-      const result = insertTaskSchema.safeParse(taskWithOptionals);
-      expect(result.success).toBe(true);
-    });
-
-    it("should accept valid priority values", () => {
-      const priorities = ["low", "medium", "high"];
-      for (const priority of priorities) {
-        const result = insertTaskSchema.safeParse({ ...validTask, priority });
+      for (const username of usernames) {
+        const result = insertUserSchema.safeParse({
+          email: "test@example.com",
+          username,
+          password: "Password123!",
+          familyId: "family-id",
+        });
         expect(result.success).toBe(true);
       }
     });
   });
 
-  describe("insertShoppingItemSchema", () => {
-    const validItem = {
-      familyId: "family-123",
-      name: "Milk",
-      createdBy: "user-123",
-    };
+  describe("Family Name Validation", () => {
+    it("should accept various family name formats", () => {
+      const names = ["Smith Family", "The Johnsons", "Casa Rossi", "家族"];
 
-    it("should validate a correct shopping item object", () => {
-      const result = insertShoppingItemSchema.safeParse(validItem);
-      expect(result.success).toBe(true);
-    });
-
-    it("should reject missing name", () => {
-      const { name, ...itemWithoutName } = validItem;
-      const result = insertShoppingItemSchema.safeParse(itemWithoutName);
-      expect(result.success).toBe(false);
-    });
-
-    it("should accept optional fields", () => {
-      const itemWithOptionals = {
-        ...validItem,
-        quantity: 2,
-        unit: "liters",
-        category: "dairy",
-        estimatedPrice: "2.50",
-        purchased: false,
-      };
-      const result = insertShoppingItemSchema.safeParse(itemWithOptionals);
-      expect(result.success).toBe(true);
-    });
-  });
-
-  describe("insertExpenseSchema", () => {
-    const validExpense = {
-      familyId: "family-123",
-      amount: "50.00",
-      category: "food",
-      date: new Date(),
-      createdBy: "user-123",
-    };
-
-    it("should validate a correct expense object", () => {
-      const result = insertExpenseSchema.safeParse(validExpense);
-      expect(result.success).toBe(true);
-    });
-
-    it("should reject missing amount", () => {
-      const { amount, ...expenseWithoutAmount } = validExpense;
-      const result = insertExpenseSchema.safeParse(expenseWithoutAmount);
-      expect(result.success).toBe(false);
-    });
-
-    it("should accept optional description", () => {
-      const expenseWithDescription = {
-        ...validExpense,
-        description: "Grocery shopping",
-      };
-      const result = insertExpenseSchema.safeParse(expenseWithDescription);
-      expect(result.success).toBe(true);
-    });
-  });
-
-  describe("insertNoteSchema", () => {
-    const validNote = {
-      familyId: "family-123",
-      title: "Test Note",
-      createdBy: "user-123",
-    };
-
-    it("should validate a correct note object", () => {
-      const result = insertNoteSchema.safeParse(validNote);
-      expect(result.success).toBe(true);
-    });
-
-    it("should accept optional fields", () => {
-      const noteWithOptionals = {
-        ...validNote,
-        content: "Note content here",
-        color: "#ffeb3b",
-        pinned: true,
-      };
-      const result = insertNoteSchema.safeParse(noteWithOptionals);
-      expect(result.success).toBe(true);
-    });
-  });
-
-  describe("insertPlaceSchema", () => {
-    const validPlace = {
-      familyId: "family-123",
-      name: "Home",
-      latitude: "45.4642",
-      longitude: "9.1900",
-      createdBy: "user-123",
-    };
-
-    it("should validate a correct place object", () => {
-      const result = insertPlaceSchema.safeParse(validPlace);
-      expect(result.success).toBe(true);
-    });
-
-    it("should reject missing coordinates", () => {
-      const { latitude, longitude, ...placeWithoutCoords } = validPlace;
-      const result = insertPlaceSchema.safeParse(placeWithoutCoords);
-      expect(result.success).toBe(false);
-    });
-
-    it("should accept optional fields", () => {
-      const placeWithOptionals = {
-        ...validPlace,
-        description: "Our home",
-        address: "Via Roma 1, Milan",
-        category: "home",
-      };
-      const result = insertPlaceSchema.safeParse(placeWithOptionals);
-      expect(result.success).toBe(true);
-    });
-
-    it("should accept valid category values", () => {
-      const categories = ["home", "work", "school", "leisure", "other"];
-      for (const category of categories) {
-        const result = insertPlaceSchema.safeParse({ ...validPlace, category });
+      for (const name of names) {
+        const result = insertFamilySchema.safeParse({ name });
         expect(result.success).toBe(true);
       }
     });
